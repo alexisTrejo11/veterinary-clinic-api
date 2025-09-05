@@ -108,3 +108,18 @@ func ToCreateParams(medHist entity.MedicalHistory) sqlc.CreateMedicalHistoryPara
 
 	return params
 }
+
+func entityToUpdateParam(medHistory entity.MedicalHistory, notes pgtype.Text) sqlc.UpdateMedicalHistoryParams {
+	return sqlc.UpdateMedicalHistoryParams{
+		ID:             int32(medHistory.ID().GetValue()),
+		PetID:          int32(medHistory.PetID().GetValue()),
+		OwnerID:        int32(medHistory.OwnerID().GetValue()),
+		VeterinarianID: int32(medHistory.VetID().GetValue()),
+		VisitDate:      pgtype.Timestamptz{Time: medHistory.VisitDate(), Valid: true},
+		Diagnosis:      pgtype.Text{String: medHistory.Diagnosis(), Valid: true},
+		Treatment:      pgtype.Text{String: medHistory.Treatment(), Valid: true},
+		Notes:          notes,
+		VisitType:      medHistory.VisitType().ToString(),
+		Condition:      pgtype.Text{String: medHistory.Condition().ToString(), Valid: true},
+	}
+}
