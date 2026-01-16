@@ -293,11 +293,22 @@ func (app *Application) waitForShutdown(ctx context.Context) {
 
 // cleanup handles cleanup of resources
 func (app *Application) cleanup() {
+	// Close MongoDB connection
+	if err := config.CloseMongoDB(); err != nil {
+		log.App.Error(fmt.Sprintf("Error closing MongoDB: %v", err))
+	}
+
+	// Close Redis connection
+	if err := config.CloseRedis(); err != nil {
+		log.App.Error(fmt.Sprintf("Error closing Redis: %v", err))
+	}
+
+	// Close PostgreSQL connection pool
+	config.ClosePgxPool()
+
 	// Sync logger before exit
 	config.SyncLogger()
 
-	// Close database connections
-	// Note: Add any other cleanup tasks here
 	log.App.Info("Cleanup completed")
 }
 
@@ -314,6 +325,13 @@ func healthCheck(c *gin.Context) {
 		"status":    "ok",
 		"timestamp": time.Now().Unix(),
 		"service":   "clinic-vet-api",
-		"version":   "2.0.0",
+		"version":   getEnvWithDefault("APP_VERSION", "2.0.0"),
 	})
+}
+
+func getEnvWithDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

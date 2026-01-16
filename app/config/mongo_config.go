@@ -19,23 +19,24 @@ type MongoConfig struct {
 var mongoClient *mongo.Client
 
 func InitMongoDB(config MongoConfig) *mongo.Client {
+	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
+	defer cancel()
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI(config.URI).SetServerAPIOptions(serverAPI)
 	client, err := mongo.Connect(opts)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Failed to connect to MongoDB: %v", err))
 	}
-	defer func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
 
+	// Verify connection with ping
 	var result bson.M
-	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Decode(&result); err != nil {
-		panic(err)
+	if err := client.Database("admin").RunCommand(ctx, bson.D{{Key: "ping", Value: 1}}).Decode(&result); err != nil {
+		panic(fmt.Sprintf("Failed to ping MongoDB: %v", err))
 	}
+
+	// Store client globally for later cleanup
+	mongoClient = client
 
 	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
 
@@ -47,4 +48,18 @@ func GetMongoClient() *mongo.Client {
 		panic("MongoDB client is not initialized. Call InitMongoDB first.")
 	}
 	return mongoClient
+}
+
+// CloseMongoDB closes the MongoDB connection gracefully
+func CloseMongoDB() error {
+	if mongoClient != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := mongoClient.Disconnect(ctx); err != nil {
+			return fmt.Errorf("failed to disconnect MongoDB: %w", err)
+		}
+		mongoClient = nil
+		fmt.Println("MongoDB connection closed successfully")
+	}
+	return nil
 }

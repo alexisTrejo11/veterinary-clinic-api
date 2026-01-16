@@ -18,8 +18,13 @@ type DatabaseConfig struct {
 	ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
 }
 
+var pgPool *pgxpool.Pool
+
 func PostgresConn(dbURL string) *pgx.Conn {
-	conn, err := pgx.Connect(context.Background(), dbURL)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	conn, err := pgx.Connect(ctx, dbURL)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
@@ -41,20 +46,35 @@ func CreatePgxPool(dbURL string) *pgxpool.Pool {
 	config.MaxConnLifetime = 1 * time.Hour
 	config.MaxConnIdleTime = 30 * time.Minute
 
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Verificar la conexión
-	if err := pool.Ping(context.Background()); err != nil {
+	if err := pool.Ping(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
 
+	// Store pool globally for later cleanup
+	pgPool = pool
+
 	fmt.Println("Successfully connected to PostgreSQL database with pgx pool!")
 	return pool
+}
+
+// ClosePgxPool closes the PostgreSQL connection pool gracefully
+func ClosePgxPool() {
+	if pgPool != nil {
+		pgPool.Close()
+		pgPool = nil
+		fmt.Println("PostgreSQL connection pool closed successfully")
+	}
 }
 
 func loadDatabaseConfig(config *DatabaseConfig) error {

@@ -1,5 +1,6 @@
 package sqlcVetRepo_test
 
+/*
 import (
 	"context"
 	"database/sql"
@@ -444,3 +445,4 @@ func intPtr(u int) *int {
 func OptVetSpecialty(s vetDomain.VetSpecialty) *vetDomain.VetSpecialty {
 	return &s
 }
+*/

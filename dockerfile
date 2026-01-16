@@ -33,7 +33,6 @@ WORKDIR /root/
 
 # Copy the built binary from the builder stage
 COPY --from=builder /app/main .
-COPY --from=builder /app/.env .
 COPY --from=builder /app/db/migrations ./db/migrations/
 COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 
