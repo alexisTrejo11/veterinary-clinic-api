@@ -8,107 +8,191 @@ package sqlc
 import (
 	"context"
 
-	"clinic-vet-api/db/models"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const countActiveUsers = `-- name: CountActiveUsers :one
-SELECT COUNT(*)
-FROM users
-WHERE status = 'active' 
-AND deleted_at IS NULL
+const countUsersBySpec = `-- name: CountUsersBySpec :one
+SELECT COUNT(*) FROM users
+WHERE 
+    ($1::INT IS NULL OR id = $1)
+    AND ($2::TEXT IS NULL OR $2 = '' OR email = $2)
+    AND ($3::TEXT IS NULL OR $3 = '' OR phone_number = $3)
+    AND ($4::TEXT IS NULL OR $4 = '' OR role = $4)
+    AND ($5::TEXT IS NULL OR $5 = '' OR status = $5)
+    AND ($6::TEXT IS NULL OR $6 = '' OR oauth_provider = $6)
+    AND ($7::BOOLEAN IS NULL OR email_verified = $7)
+    AND ($8::BOOLEAN IS NULL OR two_fa_enabled = $8)
+    AND ($9::TEXT IS NULL OR $9 = '' OR name ILIKE '%' || $9 || '%')
+    AND ($10::TIMESTAMP IS NULL OR created_at >= $10)
+    AND ($11::TIMESTAMP IS NULL OR created_at <= $11)
+    AND ($12::TIMESTAMP IS NULL OR last_login >= $12)
+    AND deleted_at IS NULL
 `
 
-func (q *Queries) CountActiveUsers(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countActiveUsers)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
+type CountUsersBySpecParams struct {
+	Column1  int32
+	Column2  string
+	Column3  string
+	Column4  string
+	Column5  string
+	Column6  string
+	Column7  bool
+	Column8  bool
+	Column9  string
+	Column10 pgtype.Timestamp
+	Column11 pgtype.Timestamp
+	Column12 pgtype.Timestamp
 }
 
-const countAllUsers = `-- name: CountAllUsers :one
-SELECT COUNT(*)
-FROM users
-WHERE deleted_at IS NULL
-`
-
-func (q *Queries) CountAllUsers(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countAllUsers)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const countUsersByRole = `-- name: CountUsersByRole :one
-SELECT COUNT(*)
-FROM users
-WHERE role = $1
-AND deleted_at IS NULL
-`
-
-func (q *Queries) CountUsersByRole(ctx context.Context, role models.UserRole) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsersByRole, role)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const countUsersByStatus = `-- name: CountUsersByStatus :one
-SELECT COUNT(*)
-FROM users
-WHERE status = $1
-AND deleted_at IS NULL
-`
-
-func (q *Queries) CountUsersByStatus(ctx context.Context, status models.UserStatus) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsersByStatus, status)
+func (q *Queries) CountUsersBySpec(ctx context.Context, arg CountUsersBySpecParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countUsersBySpec,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+		arg.Column5,
+		arg.Column6,
+		arg.Column7,
+		arg.Column8,
+		arg.Column9,
+		arg.Column10,
+		arg.Column11,
+		arg.Column12,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 const createUser = `-- name: CreateUser :one
+
 INSERT INTO users (
     email, 
     phone_number, 
-    password, 
-    status, 
+    hashed_password, 
     role, 
+    status,
+    name,
+    gender,
+    photo_url,
+    bio,
+    date_of_birth,
+    oauth_provider,
+    oauth_provider_id,
+    oauth_access_token,
+    oauth_refresh_token,
+    oauth_token_expiry,
+    email_verified,
+    two_fa_method,
+    two_fa_secret,
+    two_fa_enabled,
+    two_fa_enabled_at,
+    two_fa_backup_codes,
+    two_fa_backup_codes_generated_at,
+    last_2fa_code_used_at,
+    last_login,
+    login_attempts,
+    locked_until,
     created_at,
     updated_at
-)
-VALUES (
-    $1, $2, $3, $4, $5,
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+    $21, $22, $23, $24, $25, $26,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-)
-RETURNING id, email, phone_number, password, status, role, last_login, created_at, updated_at, deleted_at
+) RETURNING id, email, phone_number, hashed_password, role, status, name, gender, photo_url, bio, date_of_birth, oauth_provider, oauth_provider_id, oauth_access_token, oauth_refresh_token, oauth_token_expiry, email_verified, two_fa_method, two_fa_secret, two_fa_enabled, two_fa_enabled_at, two_fa_backup_codes, two_fa_backup_codes_generated_at, last_2fa_code_used_at, last_login, login_attempts, locked_until, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
-	Email       pgtype.Text
-	PhoneNumber pgtype.Text
-	Password    pgtype.Text
-	Status      models.UserStatus
-	Role        models.UserRole
+	Email                       pgtype.Text
+	PhoneNumber                 pgtype.Text
+	HashedPassword              pgtype.Text
+	Role                        string
+	Status                      string
+	Name                        string
+	Gender                      pgtype.Text
+	PhotoUrl                    pgtype.Text
+	Bio                         pgtype.Text
+	DateOfBirth                 pgtype.Date
+	OauthProvider               string
+	OauthProviderID             pgtype.Text
+	OauthAccessToken            pgtype.Text
+	OauthRefreshToken           pgtype.Text
+	OauthTokenExpiry            pgtype.Timestamptz
+	EmailVerified               pgtype.Bool
+	TwoFaMethod                 string
+	TwoFaSecret                 pgtype.Text
+	TwoFaEnabled                pgtype.Bool
+	TwoFaEnabledAt              pgtype.Timestamptz
+	TwoFaBackupCodes            []string
+	TwoFaBackupCodesGeneratedAt pgtype.Timestamptz
+	Last2faCodeUsedAt           pgtype.Timestamptz
+	LastLogin                   pgtype.Timestamptz
+	LoginAttempts               pgtype.Int4
+	LockedUntil                 pgtype.Timestamptz
 }
 
+// ========================================
+// CREATE & UPDATE OPERATIONS
+// ========================================
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.Email,
 		arg.PhoneNumber,
-		arg.Password,
-		arg.Status,
+		arg.HashedPassword,
 		arg.Role,
+		arg.Status,
+		arg.Name,
+		arg.Gender,
+		arg.PhotoUrl,
+		arg.Bio,
+		arg.DateOfBirth,
+		arg.OauthProvider,
+		arg.OauthProviderID,
+		arg.OauthAccessToken,
+		arg.OauthRefreshToken,
+		arg.OauthTokenExpiry,
+		arg.EmailVerified,
+		arg.TwoFaMethod,
+		arg.TwoFaSecret,
+		arg.TwoFaEnabled,
+		arg.TwoFaEnabledAt,
+		arg.TwoFaBackupCodes,
+		arg.TwoFaBackupCodesGeneratedAt,
+		arg.Last2faCodeUsedAt,
+		arg.LastLogin,
+		arg.LoginAttempts,
+		arg.LockedUntil,
 	)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.PhoneNumber,
-		&i.Password,
-		&i.Status,
+		&i.HashedPassword,
 		&i.Role,
+		&i.Status,
+		&i.Name,
+		&i.Gender,
+		&i.PhotoUrl,
+		&i.Bio,
+		&i.DateOfBirth,
+		&i.OauthProvider,
+		&i.OauthProviderID,
+		&i.OauthAccessToken,
+		&i.OauthRefreshToken,
+		&i.OauthTokenExpiry,
+		&i.EmailVerified,
+		&i.TwoFaMethod,
+		&i.TwoFaSecret,
+		&i.TwoFaEnabled,
+		&i.TwoFaEnabledAt,
+		&i.TwoFaBackupCodes,
+		&i.TwoFaBackupCodesGeneratedAt,
+		&i.Last2faCodeUsedAt,
 		&i.LastLogin,
+		&i.LoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -118,9 +202,11 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 
 const existsUserByCustomerID = `-- name: ExistsUserByCustomerID :one
 SELECT COUNT(*) > 0
-FROM customers
-WHERE id = $1
-AND deleted_at IS NULL
+FROM users u
+INNER JOIN customers c ON u.id = c.user_id
+WHERE c.id = $1
+AND u.deleted_at IS NULL
+AND c.deleted_at IS NULL
 `
 
 func (q *Queries) ExistsUserByCustomerID(ctx context.Context, id int32) (bool, error) {
@@ -131,9 +217,9 @@ func (q *Queries) ExistsUserByCustomerID(ctx context.Context, id int32) (bool, e
 }
 
 const existsUserByEmail = `-- name: ExistsUserByEmail :one
-SELECT COUNT(*) > 0
-FROM users
+SELECT COUNT(*) > 0 FROM users
 WHERE email = $1
+AND deleted_at IS NULL
 `
 
 func (q *Queries) ExistsUserByEmail(ctx context.Context, email pgtype.Text) (bool, error) {
@@ -145,9 +231,11 @@ func (q *Queries) ExistsUserByEmail(ctx context.Context, email pgtype.Text) (boo
 
 const existsUserByEmployeeID = `-- name: ExistsUserByEmployeeID :one
 SELECT COUNT(*) > 0
-FROM employees
-WHERE id = $1
-AND deleted_at IS NULL
+FROM users u
+INNER JOIN employees e ON u.id = e.user_id
+WHERE e.id = $1
+AND u.deleted_at IS NULL
+AND e.deleted_at IS NULL
 `
 
 func (q *Queries) ExistsUserByEmployeeID(ctx context.Context, id int32) (bool, error) {
@@ -158,11 +246,15 @@ func (q *Queries) ExistsUserByEmployeeID(ctx context.Context, id int32) (bool, e
 }
 
 const existsUserByID = `-- name: ExistsUserByID :one
-SELECT COUNT(*) > 0
-FROM users
+
+SELECT COUNT(*) > 0 FROM users
 WHERE id = $1
+AND deleted_at IS NULL
 `
 
+// ========================================
+// EXISTS OPERATIONS
+// ========================================
 func (q *Queries) ExistsUserByID(ctx context.Context, id int32) (bool, error) {
 	row := q.db.QueryRow(ctx, existsUserByID, id)
 	var column_1 bool
@@ -171,9 +263,9 @@ func (q *Queries) ExistsUserByID(ctx context.Context, id int32) (bool, error) {
 }
 
 const existsUserByPhoneNumber = `-- name: ExistsUserByPhoneNumber :one
-SELECT COUNT(*) > 0
-FROM users
+SELECT COUNT(*) > 0 FROM users
 WHERE phone_number = $1
+AND deleted_at IS NULL
 `
 
 func (q *Queries) ExistsUserByPhoneNumber(ctx context.Context, phoneNumber pgtype.Text) (bool, error) {
@@ -183,192 +275,13 @@ func (q *Queries) ExistsUserByPhoneNumber(ctx context.Context, phoneNumber pgtyp
 	return column_1, err
 }
 
-const findActiveUsers = `-- name: FindActiveUsers :many
-SELECT id, email, phone_number, password, status, role, last_login, created_at, updated_at, deleted_at
-FROM users
-WHERE status = 'active'
-AND deleted_at IS NULL
-ORDER BY created_at DESC
-LIMIT $1 OFFSET $2
-`
-
-type FindActiveUsersParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) FindActiveUsers(ctx context.Context, arg FindActiveUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, findActiveUsers, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.ID,
-			&i.Email,
-			&i.PhoneNumber,
-			&i.Password,
-			&i.Status,
-			&i.Role,
-			&i.LastLogin,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findAllUsers = `-- name: FindAllUsers :many
-SELECT id, email, phone_number, password, status, role, last_login, created_at, updated_at, deleted_at
-FROM users
-WHERE deleted_at IS NULL
-ORDER BY created_at DESC
-LIMIT $1 OFFSET $2
-`
-
-type FindAllUsersParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) FindAllUsers(ctx context.Context, arg FindAllUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, findAllUsers, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.ID,
-			&i.Email,
-			&i.PhoneNumber,
-			&i.Password,
-			&i.Status,
-			&i.Role,
-			&i.LastLogin,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findInactiveUsers = `-- name: FindInactiveUsers :many
-SELECT id, email, phone_number, password, status, role, last_login, created_at, updated_at, deleted_at
-FROM users
-WHERE status != 'active'
-AND deleted_at IS NULL
-ORDER BY created_at DESC
-LIMIT $1 OFFSET $2
-`
-
-type FindInactiveUsersParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) FindInactiveUsers(ctx context.Context, arg FindInactiveUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, findInactiveUsers, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.ID,
-			&i.Email,
-			&i.PhoneNumber,
-			&i.Password,
-			&i.Status,
-			&i.Role,
-			&i.LastLogin,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findRecentlyLoggedInUsers = `-- name: FindRecentlyLoggedInUsers :many
-SELECT id, email, phone_number, password, status, role, last_login, created_at, updated_at, deleted_at
-FROM users
-WHERE last_login >= $1
-AND deleted_at IS NULL
-ORDER BY last_login DESC
-LIMIT $2 OFFSET $3
-`
-
-type FindRecentlyLoggedInUsersParams struct {
-	LastLogin pgtype.Timestamptz
-	Limit     int32
-	Offset    int32
-}
-
-func (q *Queries) FindRecentlyLoggedInUsers(ctx context.Context, arg FindRecentlyLoggedInUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, findRecentlyLoggedInUsers, arg.LastLogin, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.ID,
-			&i.Email,
-			&i.PhoneNumber,
-			&i.Password,
-			&i.Status,
-			&i.Role,
-			&i.LastLogin,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const findUserByCustomerID = `-- name: FindUserByCustomerID :one
-SELECT u.id, u.email, u.phone_number, u.password, u.status, u.role, u.last_login, u.created_at, u.updated_at, u.deleted_at
+SELECT u.id, u.email, u.phone_number, u.hashed_password, u.role, u.status, u.name, u.gender, u.photo_url, u.bio, u.date_of_birth, u.oauth_provider, u.oauth_provider_id, u.oauth_access_token, u.oauth_refresh_token, u.oauth_token_expiry, u.email_verified, u.two_fa_method, u.two_fa_secret, u.two_fa_enabled, u.two_fa_enabled_at, u.two_fa_backup_codes, u.two_fa_backup_codes_generated_at, u.last_2fa_code_used_at, u.last_login, u.login_attempts, u.locked_until, u.created_at, u.updated_at, u.deleted_at
 FROM users u
 INNER JOIN customers c ON u.id = c.user_id
 WHERE c.id = $1
 AND u.deleted_at IS NULL
+AND c.deleted_at IS NULL
 `
 
 func (q *Queries) FindUserByCustomerID(ctx context.Context, id int32) (User, error) {
@@ -378,10 +291,30 @@ func (q *Queries) FindUserByCustomerID(ctx context.Context, id int32) (User, err
 		&i.ID,
 		&i.Email,
 		&i.PhoneNumber,
-		&i.Password,
-		&i.Status,
+		&i.HashedPassword,
 		&i.Role,
+		&i.Status,
+		&i.Name,
+		&i.Gender,
+		&i.PhotoUrl,
+		&i.Bio,
+		&i.DateOfBirth,
+		&i.OauthProvider,
+		&i.OauthProviderID,
+		&i.OauthAccessToken,
+		&i.OauthRefreshToken,
+		&i.OauthTokenExpiry,
+		&i.EmailVerified,
+		&i.TwoFaMethod,
+		&i.TwoFaSecret,
+		&i.TwoFaEnabled,
+		&i.TwoFaEnabledAt,
+		&i.TwoFaBackupCodes,
+		&i.TwoFaBackupCodesGeneratedAt,
+		&i.Last2faCodeUsedAt,
 		&i.LastLogin,
+		&i.LoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -390,65 +323,56 @@ func (q *Queries) FindUserByCustomerID(ctx context.Context, id int32) (User, err
 }
 
 const findUserByEmail = `-- name: FindUserByEmail :one
-SELECT 
-    u.id, u.email, u.phone_number, u.password, u.status, u.role, u.last_login, u.created_at, u.updated_at, u.deleted_at,
-    c.id as customer_id,
-    e.id as employee_id,
-    CASE 
-        WHEN c.id IS NOT NULL THEN 'customer'
-        WHEN e.id IS NOT NULL THEN 'employee'
-        ELSE 'user'
-    END as user_type
-FROM users u
-LEFT JOIN customers c ON u.id = c.user_id AND c.deleted_at IS NULL
-LEFT JOIN employees e ON u.id = e.user_id AND e.deleted_at IS NULL
-WHERE u.email = $1
-AND u.deleted_at IS NULL
+SELECT id, email, phone_number, hashed_password, role, status, name, gender, photo_url, bio, date_of_birth, oauth_provider, oauth_provider_id, oauth_access_token, oauth_refresh_token, oauth_token_expiry, email_verified, two_fa_method, two_fa_secret, two_fa_enabled, two_fa_enabled_at, two_fa_backup_codes, two_fa_backup_codes_generated_at, last_2fa_code_used_at, last_login, login_attempts, locked_until, created_at, updated_at, deleted_at FROM users
+WHERE email = $1
+AND deleted_at IS NULL
 `
 
-type FindUserByEmailRow struct {
-	ID          int32
-	Email       pgtype.Text
-	PhoneNumber pgtype.Text
-	Password    pgtype.Text
-	Status      models.UserStatus
-	Role        models.UserRole
-	LastLogin   pgtype.Timestamptz
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	DeletedAt   pgtype.Timestamp
-	CustomerID  pgtype.Int4
-	EmployeeID  pgtype.Int4
-	UserType    string
-}
-
-func (q *Queries) FindUserByEmail(ctx context.Context, email pgtype.Text) (FindUserByEmailRow, error) {
+func (q *Queries) FindUserByEmail(ctx context.Context, email pgtype.Text) (User, error) {
 	row := q.db.QueryRow(ctx, findUserByEmail, email)
-	var i FindUserByEmailRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.PhoneNumber,
-		&i.Password,
-		&i.Status,
+		&i.HashedPassword,
 		&i.Role,
+		&i.Status,
+		&i.Name,
+		&i.Gender,
+		&i.PhotoUrl,
+		&i.Bio,
+		&i.DateOfBirth,
+		&i.OauthProvider,
+		&i.OauthProviderID,
+		&i.OauthAccessToken,
+		&i.OauthRefreshToken,
+		&i.OauthTokenExpiry,
+		&i.EmailVerified,
+		&i.TwoFaMethod,
+		&i.TwoFaSecret,
+		&i.TwoFaEnabled,
+		&i.TwoFaEnabledAt,
+		&i.TwoFaBackupCodes,
+		&i.TwoFaBackupCodesGeneratedAt,
+		&i.Last2faCodeUsedAt,
 		&i.LastLogin,
+		&i.LoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-		&i.CustomerID,
-		&i.EmployeeID,
-		&i.UserType,
 	)
 	return i, err
 }
 
 const findUserByEmployeeID = `-- name: FindUserByEmployeeID :one
-SELECT u.id, u.email, u.phone_number, u.password, u.status, u.role, u.last_login, u.created_at, u.updated_at, u.deleted_at
+SELECT u.id, u.email, u.phone_number, u.hashed_password, u.role, u.status, u.name, u.gender, u.photo_url, u.bio, u.date_of_birth, u.oauth_provider, u.oauth_provider_id, u.oauth_access_token, u.oauth_refresh_token, u.oauth_token_expiry, u.email_verified, u.two_fa_method, u.two_fa_secret, u.two_fa_enabled, u.two_fa_enabled_at, u.two_fa_backup_codes, u.two_fa_backup_codes_generated_at, u.last_2fa_code_used_at, u.last_login, u.login_attempts, u.locked_until, u.created_at, u.updated_at, u.deleted_at
 FROM users u
 INNER JOIN employees e ON u.id = e.user_id
 WHERE e.id = $1
 AND u.deleted_at IS NULL
+AND e.deleted_at IS NULL
 `
 
 func (q *Queries) FindUserByEmployeeID(ctx context.Context, id int32) (User, error) {
@@ -458,10 +382,30 @@ func (q *Queries) FindUserByEmployeeID(ctx context.Context, id int32) (User, err
 		&i.ID,
 		&i.Email,
 		&i.PhoneNumber,
-		&i.Password,
-		&i.Status,
+		&i.HashedPassword,
 		&i.Role,
+		&i.Status,
+		&i.Name,
+		&i.Gender,
+		&i.PhotoUrl,
+		&i.Bio,
+		&i.DateOfBirth,
+		&i.OauthProvider,
+		&i.OauthProviderID,
+		&i.OauthAccessToken,
+		&i.OauthRefreshToken,
+		&i.OauthTokenExpiry,
+		&i.EmailVerified,
+		&i.TwoFaMethod,
+		&i.TwoFaSecret,
+		&i.TwoFaEnabled,
+		&i.TwoFaEnabledAt,
+		&i.TwoFaBackupCodes,
+		&i.TwoFaBackupCodesGeneratedAt,
+		&i.Last2faCodeUsedAt,
 		&i.LastLogin,
+		&i.LoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -470,131 +414,201 @@ func (q *Queries) FindUserByEmployeeID(ctx context.Context, id int32) (User, err
 }
 
 const findUserByID = `-- name: FindUserByID :one
-SELECT 
-    u.id, u.email, u.phone_number, u.password, u.status, u.role, u.last_login, u.created_at, u.updated_at, u.deleted_at,
-    c.id as customer_id,
-    e.id as employee_id,
-    CASE 
-        WHEN c.id IS NOT NULL THEN 'customer'
-        WHEN e.id IS NOT NULL THEN 'employee'
-        ELSE 'user'
-    END as user_type
-FROM users u
-LEFT JOIN customers c ON u.id = c.user_id AND c.deleted_at IS NULL
-LEFT JOIN employees e ON u.id = e.user_id AND e.deleted_at IS NULL
-WHERE u.id = $1 
-AND u.deleted_at IS NULL
+
+SELECT id, email, phone_number, hashed_password, role, status, name, gender, photo_url, bio, date_of_birth, oauth_provider, oauth_provider_id, oauth_access_token, oauth_refresh_token, oauth_token_expiry, email_verified, two_fa_method, two_fa_secret, two_fa_enabled, two_fa_enabled_at, two_fa_backup_codes, two_fa_backup_codes_generated_at, last_2fa_code_used_at, last_login, login_attempts, locked_until, created_at, updated_at, deleted_at FROM users 
+WHERE id = $1 
+AND deleted_at IS NULL
 `
 
-type FindUserByIDRow struct {
-	ID          int32
-	Email       pgtype.Text
-	PhoneNumber pgtype.Text
-	Password    pgtype.Text
-	Status      models.UserStatus
-	Role        models.UserRole
-	LastLogin   pgtype.Timestamptz
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	DeletedAt   pgtype.Timestamp
-	CustomerID  pgtype.Int4
-	EmployeeID  pgtype.Int4
-	UserType    string
-}
-
-func (q *Queries) FindUserByID(ctx context.Context, id int32) (FindUserByIDRow, error) {
+// ========================================
+// FIND OPERATIONS
+// ========================================
+func (q *Queries) FindUserByID(ctx context.Context, id int32) (User, error) {
 	row := q.db.QueryRow(ctx, findUserByID, id)
-	var i FindUserByIDRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.PhoneNumber,
-		&i.Password,
-		&i.Status,
+		&i.HashedPassword,
 		&i.Role,
+		&i.Status,
+		&i.Name,
+		&i.Gender,
+		&i.PhotoUrl,
+		&i.Bio,
+		&i.DateOfBirth,
+		&i.OauthProvider,
+		&i.OauthProviderID,
+		&i.OauthAccessToken,
+		&i.OauthRefreshToken,
+		&i.OauthTokenExpiry,
+		&i.EmailVerified,
+		&i.TwoFaMethod,
+		&i.TwoFaSecret,
+		&i.TwoFaEnabled,
+		&i.TwoFaEnabledAt,
+		&i.TwoFaBackupCodes,
+		&i.TwoFaBackupCodesGeneratedAt,
+		&i.Last2faCodeUsedAt,
 		&i.LastLogin,
+		&i.LoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-		&i.CustomerID,
-		&i.EmployeeID,
-		&i.UserType,
+	)
+	return i, err
+}
+
+const findUserByOAuthProvider = `-- name: FindUserByOAuthProvider :one
+SELECT id, email, phone_number, hashed_password, role, status, name, gender, photo_url, bio, date_of_birth, oauth_provider, oauth_provider_id, oauth_access_token, oauth_refresh_token, oauth_token_expiry, email_verified, two_fa_method, two_fa_secret, two_fa_enabled, two_fa_enabled_at, two_fa_backup_codes, two_fa_backup_codes_generated_at, last_2fa_code_used_at, last_login, login_attempts, locked_until, created_at, updated_at, deleted_at FROM users
+WHERE oauth_provider = $1
+AND oauth_provider_id = $2
+AND deleted_at IS NULL
+`
+
+type FindUserByOAuthProviderParams struct {
+	OauthProvider   string
+	OauthProviderID pgtype.Text
+}
+
+func (q *Queries) FindUserByOAuthProvider(ctx context.Context, arg FindUserByOAuthProviderParams) (User, error) {
+	row := q.db.QueryRow(ctx, findUserByOAuthProvider, arg.OauthProvider, arg.OauthProviderID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.HashedPassword,
+		&i.Role,
+		&i.Status,
+		&i.Name,
+		&i.Gender,
+		&i.PhotoUrl,
+		&i.Bio,
+		&i.DateOfBirth,
+		&i.OauthProvider,
+		&i.OauthProviderID,
+		&i.OauthAccessToken,
+		&i.OauthRefreshToken,
+		&i.OauthTokenExpiry,
+		&i.EmailVerified,
+		&i.TwoFaMethod,
+		&i.TwoFaSecret,
+		&i.TwoFaEnabled,
+		&i.TwoFaEnabledAt,
+		&i.TwoFaBackupCodes,
+		&i.TwoFaBackupCodesGeneratedAt,
+		&i.Last2faCodeUsedAt,
+		&i.LastLogin,
+		&i.LoginAttempts,
+		&i.LockedUntil,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const findUserByPhoneNumber = `-- name: FindUserByPhoneNumber :one
-SELECT 
-    u.id, u.email, u.phone_number, u.password, u.status, u.role, u.last_login, u.created_at, u.updated_at, u.deleted_at,
-    c.id as customer_id,
-    e.id as employee_id,
-    CASE 
-        WHEN c.id IS NOT NULL THEN 'customer'
-        WHEN e.id IS NOT NULL THEN 'employee'
-        ELSE 'user'
-    END as user_type
-FROM users u
-LEFT JOIN customers c ON u.id = c.user_id AND c.deleted_at IS NULL
-LEFT JOIN employees e ON u.id = e.user_id AND e.deleted_at IS NULL
-WHERE u.phone_number = $1
-AND u.deleted_at IS NULL
+SELECT id, email, phone_number, hashed_password, role, status, name, gender, photo_url, bio, date_of_birth, oauth_provider, oauth_provider_id, oauth_access_token, oauth_refresh_token, oauth_token_expiry, email_verified, two_fa_method, two_fa_secret, two_fa_enabled, two_fa_enabled_at, two_fa_backup_codes, two_fa_backup_codes_generated_at, last_2fa_code_used_at, last_login, login_attempts, locked_until, created_at, updated_at, deleted_at FROM users
+WHERE phone_number = $1
+AND deleted_at IS NULL
 `
 
-type FindUserByPhoneNumberRow struct {
-	ID          int32
-	Email       pgtype.Text
-	PhoneNumber pgtype.Text
-	Password    pgtype.Text
-	Status      models.UserStatus
-	Role        models.UserRole
-	LastLogin   pgtype.Timestamptz
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	DeletedAt   pgtype.Timestamp
-	CustomerID  pgtype.Int4
-	EmployeeID  pgtype.Int4
-	UserType    string
-}
-
-func (q *Queries) FindUserByPhoneNumber(ctx context.Context, phoneNumber pgtype.Text) (FindUserByPhoneNumberRow, error) {
+func (q *Queries) FindUserByPhoneNumber(ctx context.Context, phoneNumber pgtype.Text) (User, error) {
 	row := q.db.QueryRow(ctx, findUserByPhoneNumber, phoneNumber)
-	var i FindUserByPhoneNumberRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.PhoneNumber,
-		&i.Password,
-		&i.Status,
+		&i.HashedPassword,
 		&i.Role,
+		&i.Status,
+		&i.Name,
+		&i.Gender,
+		&i.PhotoUrl,
+		&i.Bio,
+		&i.DateOfBirth,
+		&i.OauthProvider,
+		&i.OauthProviderID,
+		&i.OauthAccessToken,
+		&i.OauthRefreshToken,
+		&i.OauthTokenExpiry,
+		&i.EmailVerified,
+		&i.TwoFaMethod,
+		&i.TwoFaSecret,
+		&i.TwoFaEnabled,
+		&i.TwoFaEnabledAt,
+		&i.TwoFaBackupCodes,
+		&i.TwoFaBackupCodesGeneratedAt,
+		&i.Last2faCodeUsedAt,
 		&i.LastLogin,
+		&i.LoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-		&i.CustomerID,
-		&i.EmployeeID,
-		&i.UserType,
 	)
 	return i, err
 }
 
-const findUsersByRole = `-- name: FindUsersByRole :many
-SELECT id, email, phone_number, password, status, role, last_login, created_at, updated_at, deleted_at
-FROM users
-WHERE role = $1
-AND deleted_at IS NULL
+const findUsersBySpec = `-- name: FindUsersBySpec :many
+SELECT id, email, phone_number, hashed_password, role, status, name, gender, photo_url, bio, date_of_birth, oauth_provider, oauth_provider_id, oauth_access_token, oauth_refresh_token, oauth_token_expiry, email_verified, two_fa_method, two_fa_secret, two_fa_enabled, two_fa_enabled_at, two_fa_backup_codes, two_fa_backup_codes_generated_at, last_2fa_code_used_at, last_login, login_attempts, locked_until, created_at, updated_at, deleted_at FROM users
+WHERE 
+    ($1::INT IS NULL OR id = $1)
+    AND ($2::TEXT IS NULL OR $2 = '' OR email = $2)
+    AND ($3::TEXT IS NULL OR $3 = '' OR phone_number = $3)
+    AND ($4::TEXT IS NULL OR $4 = '' OR role = $4)
+    AND ($5::TEXT IS NULL OR $5 = '' OR status = $5)
+    AND ($6::TEXT IS NULL OR $6 = '' OR oauth_provider = $6)
+    AND ($7::BOOLEAN IS NULL OR email_verified = $7)
+    AND ($8::BOOLEAN IS NULL OR two_fa_enabled = $8)
+    AND ($9::TEXT IS NULL OR $9 = '' OR name ILIKE '%' || $9 || '%')
+    AND ($10::TIMESTAMP IS NULL OR created_at >= $10)
+    AND ($11::TIMESTAMP IS NULL OR created_at <= $11)
+    AND ($12::TIMESTAMP IS NULL OR last_login >= $12)
+    AND deleted_at IS NULL
 ORDER BY created_at DESC
-LIMIT $2
-OFFSET $3
+LIMIT $13 OFFSET $14
 `
 
-type FindUsersByRoleParams struct {
-	Role   models.UserRole
-	Limit  int32
-	Offset int32
+type FindUsersBySpecParams struct {
+	Column1  int32
+	Column2  string
+	Column3  string
+	Column4  string
+	Column5  string
+	Column6  string
+	Column7  bool
+	Column8  bool
+	Column9  string
+	Column10 pgtype.Timestamp
+	Column11 pgtype.Timestamp
+	Column12 pgtype.Timestamp
+	Limit    int32
+	Offset   int32
 }
 
-func (q *Queries) FindUsersByRole(ctx context.Context, arg FindUsersByRoleParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, findUsersByRole, arg.Role, arg.Limit, arg.Offset)
+func (q *Queries) FindUsersBySpec(ctx context.Context, arg FindUsersBySpecParams) ([]User, error) {
+	rows, err := q.db.Query(ctx, findUsersBySpec,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+		arg.Column5,
+		arg.Column6,
+		arg.Column7,
+		arg.Column8,
+		arg.Column9,
+		arg.Column10,
+		arg.Column11,
+		arg.Column12,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -606,10 +620,30 @@ func (q *Queries) FindUsersByRole(ctx context.Context, arg FindUsersByRoleParams
 			&i.ID,
 			&i.Email,
 			&i.PhoneNumber,
-			&i.Password,
-			&i.Status,
+			&i.HashedPassword,
 			&i.Role,
+			&i.Status,
+			&i.Name,
+			&i.Gender,
+			&i.PhotoUrl,
+			&i.Bio,
+			&i.DateOfBirth,
+			&i.OauthProvider,
+			&i.OauthProviderID,
+			&i.OauthAccessToken,
+			&i.OauthRefreshToken,
+			&i.OauthTokenExpiry,
+			&i.EmailVerified,
+			&i.TwoFaMethod,
+			&i.TwoFaSecret,
+			&i.TwoFaEnabled,
+			&i.TwoFaEnabledAt,
+			&i.TwoFaBackupCodes,
+			&i.TwoFaBackupCodesGeneratedAt,
+			&i.Last2faCodeUsedAt,
 			&i.LastLogin,
+			&i.LoginAttempts,
+			&i.LockedUntil,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -622,164 +656,6 @@ func (q *Queries) FindUsersByRole(ctx context.Context, arg FindUsersByRoleParams
 		return nil, err
 	}
 	return items, nil
-}
-
-const getCustomerIDByUserID = `-- name: GetCustomerIDByUserID :one
-SELECT c.id
-FROM customers c
-WHERE c.user_id = $1
-AND c.deleted_at IS NULL
-`
-
-func (q *Queries) GetCustomerIDByUserID(ctx context.Context, userID pgtype.Int4) (int32, error) {
-	row := q.db.QueryRow(ctx, getCustomerIDByUserID, userID)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
-}
-
-const getEmployeeIDByUserID = `-- name: GetEmployeeIDByUserID :one
-SELECT e.id
-FROM employees e
-WHERE e.user_id = $1
-AND e.deleted_at IS NULL
-`
-
-func (q *Queries) GetEmployeeIDByUserID(ctx context.Context, userID pgtype.Int4) (int32, error) {
-	row := q.db.QueryRow(ctx, getEmployeeIDByUserID, userID)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
-}
-
-const getUserCustomerProfile = `-- name: GetUserCustomerProfile :one
-SELECT u.id, u.email, u.phone_number, u.password, u.status, u.role, u.last_login, u.created_at, u.updated_at, u.deleted_at, c.id, c.first_name, c.last_name, c.photo, c.date_of_birth, c.gender, c.user_id, c.is_active, c.created_at, c.updated_at, c.deleted_at
-FROM users u
-JOIN customers c ON u.id = c.user_id
-WHERE u.id = $1
-AND u.deleted_at IS NULL
-`
-
-type GetUserCustomerProfileRow struct {
-	ID          int32
-	Email       pgtype.Text
-	PhoneNumber pgtype.Text
-	Password    pgtype.Text
-	Status      models.UserStatus
-	Role        models.UserRole
-	LastLogin   pgtype.Timestamptz
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	DeletedAt   pgtype.Timestamp
-	ID_2        int32
-	FirstName   string
-	LastName    string
-	Photo       string
-	DateOfBirth pgtype.Date
-	Gender      models.PersonGender
-	UserID      pgtype.Int4
-	IsActive    bool
-	CreatedAt_2 pgtype.Timestamp
-	UpdatedAt_2 pgtype.Timestamp
-	DeletedAt_2 pgtype.Timestamp
-}
-
-func (q *Queries) GetUserCustomerProfile(ctx context.Context, id int32) (GetUserCustomerProfileRow, error) {
-	row := q.db.QueryRow(ctx, getUserCustomerProfile, id)
-	var i GetUserCustomerProfileRow
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.PhoneNumber,
-		&i.Password,
-		&i.Status,
-		&i.Role,
-		&i.LastLogin,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-		&i.ID_2,
-		&i.FirstName,
-		&i.LastName,
-		&i.Photo,
-		&i.DateOfBirth,
-		&i.Gender,
-		&i.UserID,
-		&i.IsActive,
-		&i.CreatedAt_2,
-		&i.UpdatedAt_2,
-		&i.DeletedAt_2,
-	)
-	return i, err
-}
-
-const getUserEmployeeProfile = `-- name: GetUserEmployeeProfile :one
-SELECT u.id, u.email, u.phone_number, u.password, u.status, u.role, u.last_login, u.created_at, u.updated_at, u.deleted_at, e.id, e.first_name, e.last_name, e.gender, e.date_of_birth, e.photo, e.license_number, e.speciality, e.years_of_experience, e.is_active, e.user_id, e.schedule_json, e.created_at, e.updated_at, e.deleted_at
-FROM users u
-JOIN employees e ON u.id = e.user_id
-WHERE u.id = $1
-AND u.deleted_at IS NULL
-`
-
-type GetUserEmployeeProfileRow struct {
-	ID                int32
-	Email             pgtype.Text
-	PhoneNumber       pgtype.Text
-	Password          pgtype.Text
-	Status            models.UserStatus
-	Role              models.UserRole
-	LastLogin         pgtype.Timestamptz
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-	DeletedAt         pgtype.Timestamp
-	ID_2              int32
-	FirstName         string
-	LastName          string
-	Gender            models.PersonGender
-	DateOfBirth       pgtype.Date
-	Photo             string
-	LicenseNumber     string
-	Speciality        models.VeterinarianSpeciality
-	YearsOfExperience int32
-	IsActive          bool
-	UserID            pgtype.Int4
-	ScheduleJson      []byte
-	CreatedAt_2       pgtype.Timestamptz
-	UpdatedAt_2       pgtype.Timestamptz
-	DeletedAt_2       pgtype.Timestamp
-}
-
-func (q *Queries) GetUserEmployeeProfile(ctx context.Context, id int32) (GetUserEmployeeProfileRow, error) {
-	row := q.db.QueryRow(ctx, getUserEmployeeProfile, id)
-	var i GetUserEmployeeProfileRow
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.PhoneNumber,
-		&i.Password,
-		&i.Status,
-		&i.Role,
-		&i.LastLogin,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-		&i.ID_2,
-		&i.FirstName,
-		&i.LastName,
-		&i.Gender,
-		&i.DateOfBirth,
-		&i.Photo,
-		&i.LicenseNumber,
-		&i.Speciality,
-		&i.YearsOfExperience,
-		&i.IsActive,
-		&i.UserID,
-		&i.ScheduleJson,
-		&i.CreatedAt_2,
-		&i.UpdatedAt_2,
-		&i.DeletedAt_2,
-	)
-	return i, err
 }
 
 const hardDeleteUser = `-- name: HardDeleteUser :exec
@@ -804,11 +680,15 @@ func (q *Queries) RestoreUser(ctx context.Context, id int32) error {
 }
 
 const softDeleteUser = `-- name: SoftDeleteUser :exec
+
 UPDATE users
 SET deleted_at = CURRENT_TIMESTAMP
 WHERE id = $1
 `
 
+// ========================================
+// DELETE & RESTORE OPERATIONS
+// ========================================
 func (q *Queries) SoftDeleteUser(ctx context.Context, id int32) error {
 	_, err := q.db.Exec(ctx, softDeleteUser, id)
 	return err
@@ -817,23 +697,65 @@ func (q *Queries) SoftDeleteUser(ctx context.Context, id int32) error {
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET 
-    email = $2,
-    phone_number = $3,
-    password = $4,
-    status = $5,
-    role = $6,
+    email = COALESCE($2, email),
+    phone_number = COALESCE($3, phone_number),
+    hashed_password = COALESCE($4, hashed_password),
+    role = COALESCE($5, role),
+    status = COALESCE($6, status),
+    name = COALESCE($7, name),
+    gender = COALESCE($8, gender),
+    photo_url = COALESCE($9, photo_url),
+    bio = COALESCE($10, bio),
+    date_of_birth = COALESCE($11, date_of_birth),
+    oauth_provider = COALESCE($12, oauth_provider),
+    oauth_provider_id = COALESCE($13, oauth_provider_id),
+    oauth_access_token = COALESCE($14, oauth_access_token),
+    oauth_refresh_token = COALESCE($15, oauth_refresh_token),
+    oauth_token_expiry = COALESCE($16, oauth_token_expiry),
+    email_verified = COALESCE($17, email_verified),
+    two_fa_method = COALESCE($18, two_fa_method),
+    two_fa_secret = COALESCE($19, two_fa_secret),
+    two_fa_enabled = COALESCE($20, two_fa_enabled),
+    two_fa_enabled_at = COALESCE($21, two_fa_enabled_at),
+    two_fa_backup_codes = COALESCE($22, two_fa_backup_codes),
+    two_fa_backup_codes_generated_at = COALESCE($23, two_fa_backup_codes_generated_at),
+    last_2fa_code_used_at = COALESCE($24, last_2fa_code_used_at),
+    last_login = COALESCE($25, last_login),
+    login_attempts = COALESCE($26, login_attempts),
+    locked_until = COALESCE($27, locked_until),
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, email, phone_number, password, status, role, last_login, created_at, updated_at, deleted_at
+RETURNING id, email, phone_number, hashed_password, role, status, name, gender, photo_url, bio, date_of_birth, oauth_provider, oauth_provider_id, oauth_access_token, oauth_refresh_token, oauth_token_expiry, email_verified, two_fa_method, two_fa_secret, two_fa_enabled, two_fa_enabled_at, two_fa_backup_codes, two_fa_backup_codes_generated_at, last_2fa_code_used_at, last_login, login_attempts, locked_until, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
-	ID          int32
-	Email       pgtype.Text
-	PhoneNumber pgtype.Text
-	Password    pgtype.Text
-	Status      models.UserStatus
-	Role        models.UserRole
+	ID                          int32
+	Email                       pgtype.Text
+	PhoneNumber                 pgtype.Text
+	HashedPassword              pgtype.Text
+	Role                        string
+	Status                      string
+	Name                        string
+	Gender                      pgtype.Text
+	PhotoUrl                    pgtype.Text
+	Bio                         pgtype.Text
+	DateOfBirth                 pgtype.Date
+	OauthProvider               string
+	OauthProviderID             pgtype.Text
+	OauthAccessToken            pgtype.Text
+	OauthRefreshToken           pgtype.Text
+	OauthTokenExpiry            pgtype.Timestamptz
+	EmailVerified               pgtype.Bool
+	TwoFaMethod                 string
+	TwoFaSecret                 pgtype.Text
+	TwoFaEnabled                pgtype.Bool
+	TwoFaEnabledAt              pgtype.Timestamptz
+	TwoFaBackupCodes            []string
+	TwoFaBackupCodesGeneratedAt pgtype.Timestamptz
+	Last2faCodeUsedAt           pgtype.Timestamptz
+	LastLogin                   pgtype.Timestamptz
+	LoginAttempts               pgtype.Int4
+	LockedUntil                 pgtype.Timestamptz
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -841,70 +763,63 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.ID,
 		arg.Email,
 		arg.PhoneNumber,
-		arg.Password,
-		arg.Status,
+		arg.HashedPassword,
 		arg.Role,
+		arg.Status,
+		arg.Name,
+		arg.Gender,
+		arg.PhotoUrl,
+		arg.Bio,
+		arg.DateOfBirth,
+		arg.OauthProvider,
+		arg.OauthProviderID,
+		arg.OauthAccessToken,
+		arg.OauthRefreshToken,
+		arg.OauthTokenExpiry,
+		arg.EmailVerified,
+		arg.TwoFaMethod,
+		arg.TwoFaSecret,
+		arg.TwoFaEnabled,
+		arg.TwoFaEnabledAt,
+		arg.TwoFaBackupCodes,
+		arg.TwoFaBackupCodesGeneratedAt,
+		arg.Last2faCodeUsedAt,
+		arg.LastLogin,
+		arg.LoginAttempts,
+		arg.LockedUntil,
 	)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.PhoneNumber,
-		&i.Password,
-		&i.Status,
+		&i.HashedPassword,
 		&i.Role,
+		&i.Status,
+		&i.Name,
+		&i.Gender,
+		&i.PhotoUrl,
+		&i.Bio,
+		&i.DateOfBirth,
+		&i.OauthProvider,
+		&i.OauthProviderID,
+		&i.OauthAccessToken,
+		&i.OauthRefreshToken,
+		&i.OauthTokenExpiry,
+		&i.EmailVerified,
+		&i.TwoFaMethod,
+		&i.TwoFaSecret,
+		&i.TwoFaEnabled,
+		&i.TwoFaEnabledAt,
+		&i.TwoFaBackupCodes,
+		&i.TwoFaBackupCodesGeneratedAt,
+		&i.Last2faCodeUsedAt,
 		&i.LastLogin,
+		&i.LoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
 	)
 	return i, err
-}
-
-const updateUserLastLogin = `-- name: UpdateUserLastLogin :exec
-UPDATE users
-SET last_login = CURRENT_TIMESTAMP
-WHERE id = $1
-`
-
-func (q *Queries) UpdateUserLastLogin(ctx context.Context, id int32) error {
-	_, err := q.db.Exec(ctx, updateUserLastLogin, id)
-	return err
-}
-
-const updateUserPassword = `-- name: UpdateUserPassword :exec
-UPDATE users
-SET 
-    password = $2,
-    updated_at = CURRENT_TIMESTAMP,
-    password_changed_at = CURRENT_TIMESTAMP
-WHERE id = $1
-`
-
-type UpdateUserPasswordParams struct {
-	ID       int32
-	Password pgtype.Text
-}
-
-func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
-	_, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.Password)
-	return err
-}
-
-const updateUserStatus = `-- name: UpdateUserStatus :exec
-UPDATE users
-SET 
-    status = $2,
-    updated_at = CURRENT_TIMESTAMP
-WHERE id = $1
-`
-
-type UpdateUserStatusParams struct {
-	ID     int32
-	Status models.UserStatus
-}
-
-func (q *Queries) UpdateUserStatus(ctx context.Context, arg UpdateUserStatusParams) error {
-	_, err := q.db.Exec(ctx, updateUserStatus, arg.ID, arg.Status)
-	return err
 }

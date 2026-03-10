@@ -15,17 +15,9 @@ import (
 // Type Definitions
 // ============================================================================
 
-// UserID is the unique identifier for a user
-type UserID struct{ shared.BaseID }
-
-// NewUserID creates a new UserID
-func NewUserID(value uint) UserID {
-	return UserID{shared.BaseID{Value: value}}
-}
-
 // User represents a user in the system
 type User struct {
-	shared.Entity[UserID]
+	shared.Entity[shared.UserID]
 	Email          Email
 	PhoneNumber    PhoneNumber
 	HashedPassword string
@@ -36,6 +28,23 @@ type User struct {
 	EmployeeID     *employees.EmployeeID
 	CustomerID     *customers.CustomerID
 	Profile        Profile
+
+	// OAuth2 fields
+	OAuthProvider   string
+	OAuthProviderID *string
+	OAuthToken      *OAuthToken
+	EmailVerified   bool
+
+	// Security fields
+	LoginAttempts int
+	LockedUntil   *time.Time
+}
+
+// OAuthToken holds OAuth2 access and refresh tokens
+type OAuthToken struct {
+	AccessToken  string
+	RefreshToken string
+	ExpiresAt    *time.Time
 }
 
 // Profile represents user profile information
@@ -45,6 +54,30 @@ type Profile struct {
 	PhotoURL    string
 	Bio         string
 	DateOfBirth *time.Time
+}
+
+func (p Profile) Validate(ctx context.Context) error {
+	if p.Name == "" {
+		return InvalidProfileError(ctx, "Name is required")
+	}
+
+	if !p.Gender.IsValid() {
+		return InvalidProfileError(ctx, "Invalid gender value")
+	}
+
+	if p.DateOfBirth != nil && p.DateOfBirth.After(time.Now()) {
+		return InvalidProfileError(ctx, "Date of birth cannot be in the future")
+	}
+
+	if p.PhotoURL == "" {
+		return InvalidProfileError(ctx, "Photo URL is required")
+	}
+
+	if len(p.Bio) > 500 {
+		return InvalidProfileError(ctx, "Bio cannot exceed 500 characters")
+	}
+
+	return nil
 }
 
 // ============================================================================
@@ -72,6 +105,38 @@ func (u *User) UpdatePhoneNumber(newPhone PhoneNumber) error {
 func (u *User) UpdatePassword(newPasswordHash string) error {
 	u.HashedPassword = newPasswordHash
 	u.IncrementVersion()
+	return nil
+}
+
+func (u *User) UpdateProfile(profile Profile) error {
+	hasChanges := false
+	if u.Profile.Name != "" || u.Profile.Name != profile.Name {
+		u.Profile.Name = profile.Name
+		hasChanges = true
+	}
+
+	if u.Profile.Gender != profile.Gender {
+		u.Profile.Gender = profile.Gender
+		hasChanges = true
+	}
+
+	if u.Profile.PhotoURL != profile.PhotoURL {
+		u.Profile.PhotoURL = profile.PhotoURL
+		hasChanges = true
+	}
+	if u.Profile.Bio != profile.Bio {
+		u.Profile.Bio = profile.Bio
+		hasChanges = true
+	}
+	if u.Profile.DateOfBirth != profile.DateOfBirth {
+		u.Profile.DateOfBirth = profile.DateOfBirth
+		hasChanges = true
+	}
+
+	if hasChanges {
+		u.IncrementVersion()
+	}
+
 	return nil
 }
 

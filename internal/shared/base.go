@@ -51,13 +51,6 @@ func (e *Entity[T]) SetID(id T) {
 // PersonGender represents the gender of a person
 type PersonGender string
 
-type (
-	// EmployeeID is a unique identifier for an employee user
-	EmployeeID struct{ BaseID }
-	// UserID is a unique identifier for a user
-	UserID struct{ BaseID }
-)
-
 const (
 	GenderMale         PersonGender = "male"
 	GenderFemale       PersonGender = "female"

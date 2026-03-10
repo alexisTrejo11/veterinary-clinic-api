@@ -1,9 +1,12 @@
-package appointments
+package repository
 
 import (
+	"clinic-vet-api/db/models"
 	"clinic-vet-api/internal/core/appointments"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/employees"
+	"clinic-vet-api/internal/core/pets"
+	customErr "clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/mapper"
 	p "clinic-vet-api/internal/shared/page"
 	"clinic-vet-api/sqlc"
@@ -73,7 +76,7 @@ func (r *SqlcAppointmentRepository) Find(
 		Column9: sqlcParams.Column9, // ScheduledDate
 	}
 
-	appt := specRowsToEntities(rows)
+	appt := r.specRowsToEntities(rows)
 
 	total, err := r.queries.CountAppointmentsBySpec(ctx, countParams)
 	if err != nil {
@@ -98,10 +101,10 @@ func (r *SqlcAppointmentRepository) FindByID(
 		if errors.Is(err, sql.ErrNoRows) {
 			return appointments.Appointment{}, r.notFoundError("id", id.String())
 		}
-		return appointments.Appointment{}, r.dbError("select", "failed to get appointment by ID", err)
+		return appointments.Appointment{}, r.dbError(OpSelect, ErrMsgFindAppointmentByID, err)
 	}
 
-	return rowToEntity(sqlRow), nil
+	return r.rowToEntity(sqlRow), nil
 }
 
 func (r *SqlcAppointmentRepository) FindByIDAndCustomerID(
@@ -119,10 +122,10 @@ func (r *SqlcAppointmentRepository) FindByIDAndCustomerID(
 		if errors.Is(err, sql.ErrNoRows) {
 			return appointments.Appointment{}, r.notFoundError("id and customer_id", fmt.Sprintf("%s and %s", id.String(), customerID.String()))
 		}
-		return appointments.Appointment{}, r.dbError("select", "failed to get appointment by ID and CustomerID", err)
+		return appointments.Appointment{}, r.dbError(OpSelect, ErrMsgFindAppointmentByID, err)
 	}
 
-	return rowToEntity(sqlRow), nil
+	return r.rowToEntity(sqlRow), nil
 }
 
 func (r *SqlcAppointmentRepository) FindByIDAndEmployeeID(
@@ -140,9 +143,9 @@ func (r *SqlcAppointmentRepository) FindByIDAndEmployeeID(
 		if errors.Is(err, sql.ErrNoRows) {
 			return appointments.Appointment{}, r.notFoundError("id and employee_id", fmt.Sprintf("%s and %s", id.String(), employeeID.String()))
 		}
-		return appointments.Appointment{}, r.dbError("select", "failed to get appointment by ID and EmployeeID", err)
+		return appointments.Appointment{}, r.dbError(OpSelect, ErrMsgFindAppointmentByID, err)
 	}
-	return rowToEntity(sqlRow), nil
+	return r.rowToEntity(sqlRow), nil
 }
 
 func (r *SqlcAppointmentRepository) ExistsByID(
@@ -151,7 +154,7 @@ func (r *SqlcAppointmentRepository) ExistsByID(
 ) (bool, error) {
 	exists, err := r.queries.ExistsAppointmentID(ctx, id.Int32())
 	if err != nil {
-		return false, r.dbError("select", "failed to check appointment existence by ID", err)
+		return false, r.dbError(OpSelect, ErrMsgCheckAppointmentExists, err)
 	}
 	return exists, nil
 }
@@ -179,7 +182,7 @@ func (r *SqlcAppointmentRepository) DeleteByID(
 
 func (r *SqlcAppointmentRepository) RestoreByID(ctx context.Context, id appointments.AppointmentID) error {
 	if err := r.queries.RestoreAppointment(ctx, id.Int32()); err != nil {
-		return r.dbError("update", "failed to restore appointment", err)
+		return r.dbError(OpUpdate, ErrMsgRestoreAppointment, err)
 	}
 	return nil
 }
@@ -207,28 +210,28 @@ func (r *SqlcAppointmentRepository) Count(ctx context.Context, spec *appointment
 	}
 	total, err := r.queries.CountAppointmentsBySpec(ctx, sqlcParams)
 	if err != nil {
-		return 0, r.dbError("count", "failed to count appointments", err)
+		return 0, r.dbError(OpCount, ErrMsgCountAppointments, err)
 	}
 	return total, nil
 }
 
 func (r *SqlcAppointmentRepository) create(ctx context.Context, appointment *appointments.Appointment) error {
-	params := toCreateParams(appointment)
+	params := r.toCreateParams(appointment)
 
 	_, err := r.queries.CreateAppointment(ctx, params)
 	if err != nil {
-		return r.dbError("insert", "failed to create appointment", err)
+		return r.dbError(OpInsert, ErrMsgCreateAppointment, err)
 	}
 
 	return nil
 }
 
 func (r *SqlcAppointmentRepository) update(ctx context.Context, appointment *appointments.Appointment) error {
-	params := toUpdateParams(appointment)
+	params := r.toUpdateParams(appointment)
 
 	_, err := r.queries.UpdateAppointment(ctx, params)
 	if err != nil {
-		return r.dbError("update", fmt.Sprintf("failed to update appointment with ID %d", appointment.ID.Value), err)
+		return r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateAppointment, appointment.ID.Value), err)
 	}
 
 	return nil
@@ -236,14 +239,137 @@ func (r *SqlcAppointmentRepository) update(ctx context.Context, appointment *app
 
 func (r *SqlcAppointmentRepository) softDeleteByID(ctx context.Context, id appointments.AppointmentID) error {
 	if err := r.queries.SoftDeleteAppointment(ctx, id.Int32()); err != nil {
-		return r.dbError("update", "failed to soft delete appointment", err)
+		return r.dbError(OpUpdate, ErrMsgSoftDeleteAppointment, err)
 	}
 	return nil
 }
 
 func (r *SqlcAppointmentRepository) hardDeleteByID(ctx context.Context, id appointments.AppointmentID) error {
 	if err := r.queries.HardDeleteAppointment(ctx, id.Int32()); err != nil {
-		return r.dbError("delete", "failed to hard delete appointment", err)
+		return r.dbError(OpDelete, ErrMsgHardDeleteAppointment, err)
 	}
 	return nil
+}
+
+// ============================================================================
+// Error handling helpers
+// ============================================================================
+
+// dbError creates a standardized database operation error
+func (r *SqlcAppointmentRepository) dbError(operation, message string, err error) error {
+	return customErr.DatabaseError(operation, TableAppts, DriverSQL, fmt.Errorf("%s: %v", message, err))
+}
+
+// notFoundError creates a standardized entity not found error
+func (r *SqlcAppointmentRepository) notFoundError(parameterName, parameterValue string) error {
+	return customErr.DBNotFoundError(parameterName, parameterValue, OpSelect, TableAppts, DriverSQL)
+}
+
+// wrapConversionError wraps appointment conversion errors
+func (r *SqlcAppointmentRepository) wrapConversionError(err error) error {
+	return customErr.WrapError(context.Background(), err, OpSelect, TableAppts, DriverSQL, ErrMsgConvertToAppointment)
+}
+
+// ============================================================================
+// Mapping helpers
+// ============================================================================
+
+func (r *SqlcAppointmentRepository) rowToEntity(row sqlc.Appointment) appointments.Appointment {
+	var employeeID *employees.EmployeeID
+	if row.EmployeeID.Valid {
+		employeeIDValue := employees.NewEmployeeID(uint(row.EmployeeID.Int32))
+		employeeID = &employeeIDValue
+	}
+
+	var notes *string
+	if row.Notes.Valid {
+		notes = &row.Notes.String
+	}
+
+	appointment := appointments.Appointment{
+		CustomerID:    customers.NewCustomerID(uint(row.CustomerID)),
+		EmployeeID:    employeeID,
+		PetID:         pets.NewPetID(uint(row.PetID)),
+		ScheduledDate: row.ScheduledDate.Time,
+		Status:        appointments.AppointmentStatus(row.Status),
+		Service:       appointments.ClinicService(row.ClinicService),
+		Notes:         notes,
+	}
+	appointment.SetID(appointments.NewAppointmentID(uint(row.ID)))
+	appointment.SetTimeStamps(row.CreatedAt.Time, row.UpdatedAt.Time)
+
+	return appointment
+}
+
+func (r *SqlcAppointmentRepository) specRowsToEntities(rows []sqlc.FindAppointmentsBySpecRow) []appointments.Appointment {
+	// TODO: Improve mapping
+
+	appts := make([]appointments.Appointment, len(rows))
+	for i, row := range rows {
+		appts[i] = appointments.Appointment{
+			CustomerID: customers.NewCustomerID(uint(row.CustomerID)),
+			EmployeeID: func() *employees.EmployeeID {
+				if row.EmployeeID.Valid {
+					id := employees.NewEmployeeID(uint(row.EmployeeID.Int32))
+					return &id
+				} else {
+					return nil
+				}
+			}(),
+			PetID:         pets.NewPetID(uint(row.PetID)),
+			ScheduledDate: row.ScheduledDate.Time,
+			Status:        appointments.AppointmentStatus(row.Status),
+			Service:       appointments.ClinicService(row.ClinicService),
+			Notes: func() *string {
+				if row.Notes.Valid {
+					return &row.Notes.String
+				} else {
+					return nil
+				}
+			}(),
+		}
+	}
+	return appts
+}
+
+func (r *SqlcAppointmentRepository) toCreateParams(appt *appointments.Appointment) sqlc.CreateAppointmentParams {
+	params := sqlc.CreateAppointmentParams{
+		CustomerID:    int32(appt.CustomerID.Value),
+		PetID:         int32(appt.PetID.Value),
+		ScheduledDate: pgtype.Timestamptz{Time: appt.ScheduledDate, Valid: true},
+		Status:        models.AppointmentStatus(string(appt.Status)),
+		ClinicService: models.ClinicService(string(appt.Service.String())),
+	}
+
+	if appt.EmployeeID != nil {
+		params.EmployeeID = pgtype.Int4{
+			Int32: int32(appt.EmployeeID.Value),
+			Valid: true,
+		}
+	} else {
+		params.EmployeeID = pgtype.Int4{Valid: false}
+	}
+
+	if appt.Notes != nil {
+		params.Notes = pgtype.Text{
+			String: *appt.Notes,
+			Valid:  true,
+		}
+	} else {
+		params.Notes = pgtype.Text{Valid: false}
+	}
+
+	return params
+}
+
+func (r *SqlcAppointmentRepository) toUpdateParams(appt *appointments.Appointment) sqlc.UpdateAppointmentParams {
+	return sqlc.UpdateAppointmentParams{
+		ID:            int32(appt.ID.Value),
+		CustomerID:    int32(appt.CustomerID.Value),
+		EmployeeID:    pgtype.Int4{Int32: int32(appt.EmployeeID.Value), Valid: appt.EmployeeID != nil},
+		PetID:         int32(appt.PetID.Value),
+		ScheduledDate: pgtype.Timestamptz{Time: appt.ScheduledDate, Valid: true},
+		Notes:         pgtype.Text{String: *appt.Notes, Valid: appt.Notes != nil},
+		Status:        models.AppointmentStatus(string(appt.Status)),
+	}
 }

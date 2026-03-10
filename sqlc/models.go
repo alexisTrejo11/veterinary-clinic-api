@@ -188,14 +188,34 @@ type PetVaccination struct {
 }
 
 type User struct {
-	ID          int32
-	Email       pgtype.Text
-	PhoneNumber pgtype.Text
-	Password    pgtype.Text
-	Status      models.UserStatus
-	Role        models.UserRole
-	LastLogin   pgtype.Timestamptz
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	DeletedAt   pgtype.Timestamp
+	ID                          int32
+	Email                       pgtype.Text
+	PhoneNumber                 pgtype.Text
+	HashedPassword              pgtype.Text
+	Role                        string
+	Status                      string
+	Name                        string
+	Gender                      pgtype.Text
+	PhotoUrl                    pgtype.Text
+	Bio                         pgtype.Text
+	DateOfBirth                 pgtype.Date
+	OauthProvider               string
+	OauthProviderID             pgtype.Text
+	OauthAccessToken            pgtype.Text
+	OauthRefreshToken           pgtype.Text
+	OauthTokenExpiry            pgtype.Timestamptz
+	EmailVerified               pgtype.Bool
+	TwoFaMethod                 string
+	TwoFaSecret                 pgtype.Text
+	TwoFaEnabled                pgtype.Bool
+	TwoFaEnabledAt              pgtype.Timestamptz
+	TwoFaBackupCodes            []string
+	TwoFaBackupCodesGeneratedAt pgtype.Timestamptz
+	Last2faCodeUsedAt           pgtype.Timestamptz
+	LastLogin                   pgtype.Timestamptz
+	LoginAttempts               pgtype.Int4
+	LockedUntil                 pgtype.Timestamptz
+	CreatedAt                   pgtype.Timestamptz
+	UpdatedAt                   pgtype.Timestamptz
+	DeletedAt                   pgtype.Timestamptz
 }

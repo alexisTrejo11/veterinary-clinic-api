@@ -2,13 +2,14 @@ package users
 
 import (
 	"clinic-vet-api/internal/core/auth"
+	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/page"
 	"strings"
 	"time"
 )
 
 type UserSpecification struct {
-	IDs             []UserID
+	IDs             []shared.UserID
 	Emails          []Email
 	Roles           []UserRole
 	Statuses        []UserStatus
@@ -24,7 +25,7 @@ type UserSpecification struct {
 
 func (s *UserSpecification) IsSatisfiedBy(entity any) bool {
 	user, ok := entity.(interface {
-		ID() UserID
+		ID() shared.UserID
 		Email() Email
 		Role() UserRole
 		Status() UserStatus
@@ -223,7 +224,7 @@ func (s *UserSpecification) ToSQL() (string, []any) {
 	return where, args
 }
 
-func (s *UserSpecification) WithIDs(ids ...UserID) *UserSpecification {
+func (s *UserSpecification) WithIDs(ids ...shared.UserID) *UserSpecification {
 	s.IDs = ids
 	return s
 }

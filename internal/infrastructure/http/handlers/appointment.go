@@ -346,7 +346,7 @@ func (ctrl *BaseAppointmentController) CancelAppointment(c *gin.Context, employe
 }
 
 // ==========================================================================
-// Base Controller
+// Manager Controller
 // ==========================================================================
 
 type AppointmentManagerHandler struct {

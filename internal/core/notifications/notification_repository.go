@@ -1,7 +1,7 @@
 package notifications
 
 import (
-	"clinic-vet-api/internal/core/users"
+	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/page"
 	"context"
 )
@@ -12,7 +12,7 @@ import (
 type NotificationRepository interface {
 	Create(ctx context.Context, notification *Notification) error
 	GetByID(ctx context.Context, id string) (Notification, error)
-	ListByUser(ctx context.Context, userID users.UserID, pagination page.Pagination) (page.Page[Notification], error)
+	ListByUser(ctx context.Context, userID shared.UserID, pagination page.Pagination) (page.Page[Notification], error)
 	ListBySpecies(ctx context.Context, notificationType string, pagination page.Pagination) (page.Page[Notification], error)
 	ListByChannel(ctx context.Context, channel string, pagination page.Pagination) (page.Page[Notification], error)
 }

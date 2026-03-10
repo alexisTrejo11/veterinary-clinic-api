@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/errors"
 )
 
@@ -27,6 +28,10 @@ const (
 // =========================================================================
 // User business rule errors
 // =========================================================================
+
+func InvalidProfileError(ctx context.Context, message string) error {
+	return errors.BusinessRuleError(ctx, "invalid_profile", EntityName, message, "Profile validation")
+}
 
 // CannotActivateBannedUserError creates an error when trying to activate a banned user
 func CannotActivateBannedUserError(ctx context.Context, operation string) error {
@@ -148,8 +153,28 @@ func InvalidUserRoleError(ctx context.Context, role, operation string) error {
 }
 
 // InvalidUserStatusError creates an error for invalid user status
-func InvalidUserStatusError(ctx context.Context, status, operation string) error {
+func InvalidUserStatusError(ctx context.Context, status string, operation string) error {
 	return errors.ValidationError(ctx, EntityName, FieldStatus,
 		fmt.Sprintf("invalid user status: %s", status),
 		operation)
+}
+
+// =========================================================================
+// Service errors
+// =========================================================================
+
+func PasswordMismatchError(ctx context.Context, operation string) error {
+	return errors.ValidationError(ctx, EntityName, FieldPassword, "current password is incorrect", operation)
+}
+
+func UserNotDeletedError(ctx context.Context, id shared.UserID, operation string) error {
+	return errors.BusinessRuleError(ctx, "user_not_deleted", EntityName, fmt.Sprintf("user with ID %s is not deleted", id), operation)
+}
+
+func EmailAlreadyExistsError(ctx context.Context, email Email, operation string) error {
+	return errors.BusinessRuleError(ctx, "email_already_exists", EntityName, fmt.Sprintf("email %s is already in use", email), operation)
+}
+
+func PhoneAlreadyExistsError(ctx context.Context, phone PhoneNumber, operation string) error {
+	return errors.BusinessRuleError(ctx, "phone_already_exists", EntityName, fmt.Sprintf("phone number %s is already in use", phone), operation)
 }

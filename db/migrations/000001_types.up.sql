@@ -19,15 +19,6 @@ BEGIN
         );
     END IF;
 
-    -- User status and role
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_status') THEN
-        CREATE TYPE user_status AS ENUM('active', 'inactive', 'pending', 'banned', 'deleted');
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-        CREATE TYPE user_role AS ENUM('veterinarian', 'receptionist', 'manager' ,'customer', 'admin', 'superadmin');
-    END IF;
-
     -- Currency and payments
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'currency') THEN
         CREATE TYPE currency AS ENUM('USD', 'MXN', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD');
