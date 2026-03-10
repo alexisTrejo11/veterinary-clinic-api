@@ -94,9 +94,18 @@ UPDATE appointments SET
 WHERE id = $1
 RETURNING *;
 
--- name: DeleteAppointment :exec
+-- name: SoftDeleteAppointment :exec
 UPDATE appointments SET
     deleted_at = CURRENT_TIMESTAMP
+WHERE id = $1;
+
+
+-- name: HardDeleteAppointment :exec
+DELETE FROM appointments WHERE id = $1;
+
+-- name: RestoreAppointment :exec
+UPDATE appointments SET
+    deleted_at = NULL
 WHERE id = $1;
 
 -- name: ExistsAppointmentID :one

@@ -1,28 +1,15 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
-	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	"clinic-vet-api/app/config"
-	"clinic-vet-api/app/middleware"
-	notiAPI "clinic-vet-api/app/modules/notification/presentation"
-	"clinic-vet-api/app/shared/log"
+	"clinic-vet-api/internal/config"
 	"clinic-vet-api/sqlc"
 
 	_ "clinic-vet-api/docs"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	swaggerfiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // Application holds all application dependencies
@@ -34,6 +21,7 @@ type Application struct {
 	Queries   *sqlc.Queries
 }
 
+/*
 // @title API Clínica Veterinaria
 // @version 1.0
 // @description Esta es la documentación para la API de la clínica veterinaria.
@@ -335,3 +323,4 @@ func getEnvWithDefault(key, defaultValue string) string {
 	}
 	return defaultValue
 }
+*/
