@@ -1,6 +1,10 @@
 package dtos
 
-import "time"
+import (
+	"time"
+
+	"clinic-vet-api/internal/shared/page"
+)
 
 // =======================================================================
 // Request DTOs
@@ -155,4 +159,56 @@ type UserResponse struct {
 	// Last update timestamp
 	// Example: 2024-03-10T15:30:00Z
 	UpdatedAt time.Time `json:"updated_at" example:"2024-03-10T15:30:00Z"`
+}
+
+// UserSearchRequest represents query parameters for searching and filtering users.
+// It is bound from the request query string using Gin's ShouldBindQuery (form binding).
+//
+// @Description Query parameters for searching and filtering users (used in GET /users)
+type UserSearchRequest struct {
+	page.PaginationRequest
+
+	// IDs filters by user IDs (comma-separated, e.g. "1,2,3")
+	// @Param ids query string false "Comma-separated user IDs"
+	IDs string `form:"ids" example:"1,2,3"`
+
+	// Emails filters by email addresses (comma-separated)
+	// @Param emails query string false "Comma-separated emails"
+	Emails string `form:"emails" example:"user@example.com"`
+
+	// Roles filters by roles: admin, veterinarian, customer, receptionist (comma-separated)
+	// @Param roles query string false "Comma-separated roles (admin,veterinarian,customer,receptionist)"
+	Roles string `form:"roles" example:"admin,customer"`
+
+	// Statuses filters by statuses: active, inactive, banned, pending (comma-separated)
+	// @Param statuses query string false "Comma-separated statuses (active,inactive,banned,pending)"
+	Statuses string `form:"statuses" example:"active,pending"`
+
+	// IsActive filters by active flag: "true" or "false"
+	// @Param is_active query string false "Filter by active (true/false)"
+	IsActive string `form:"is_active" example:"true"`
+
+	// CreatedAfter filters users created on or after this date (RFC3339 or 2006-01-02)
+	// @Param created_after query string false "Created after date (2006-01-02)"
+	CreatedAfter string `form:"created_after" example:"2024-01-01"`
+
+	// CreatedBefore filters users created on or before this date
+	// @Param created_before query string false "Created before date (2006-01-02)"
+	CreatedBefore string `form:"created_before" example:"2024-12-31"`
+
+	// LastLoginAfter filters by last login on or after this date
+	// @Param last_login_after query string false "Last login after date (2006-01-02)"
+	LastLoginAfter string `form:"last_login_after" example:"2024-01-01"`
+
+	// LastLoginBefore filters by last login on or before this date
+	// @Param last_login_before query string false "Last login before date (2006-01-02)"
+	LastLoginBefore string `form:"last_login_before" example:"2024-12-31"`
+
+	// SearchTerm searches in email, first name and last name (partial, case-insensitive)
+	// @Param search query string false "Search term for email/name"
+	SearchTerm string `form:"search" example:"john"`
+
+	// HasTwoFactor filters by two-factor auth enabled: "true" or "false"
+	// @Param has_two_factor query string false "Filter by 2FA enabled (true/false)"
+	HasTwoFactor string `form:"has_two_factor" example:"false"`
 }

@@ -1,127 +1,120 @@
 package pets
 
 import (
-	"clinic-vet-api/internal/shared/errors"
 	"context"
 	"fmt"
+
+	"clinic-vet-api/internal/shared/errors"
 )
 
-func InvalidEnumParserError(enumName, enumValue string) error {
-	return errors.InvalidEnumValue(context.Background(), enumValue, enumValue, fmt.Sprintf("invalid %s value: %s", enumName, enumValue), "enum parse")
-
-}
-
-type PetErrorCode string
+// Entity and field names for error reporting
+const (
+	EntityName = "pet"
+)
 
 const (
-	PetNameRequired        PetErrorCode = "PET_NAME_REQUIRED"
-	PetNameTooLong         PetErrorCode = "PET_NAME_TOO_LONG"
-	PetSpeciesRequired     PetErrorCode = "PET_SPECIES_REQUIRED"
-	PetSpeciesTooLong      PetErrorCode = "PET_SPECIES_TOO_LONG"
-	PetAgeInvalid          PetErrorCode = "PET_AGE_INVALID"
-	PetAgeUnrealistic      PetErrorCode = "PET_AGE_UNREALISTIC"
-	PetWeightInvalid       PetErrorCode = "PET_WEIGHT_INVALID"
-	PetWeightUnrealistic   PetErrorCode = "PET_WEIGHT_UNREALISTIC"
-	PetGenderInvalid       PetErrorCode = "PET_GENDER_INVALID"
-	PetBreedTooLong        PetErrorCode = "PET_BREED_TOO_LONG"
-	PetMicrochipTooLong    PetErrorCode = "PET_MICROCHIP_TOO_LONG"
-	PetColorTooLong        PetErrorCode = "PET_COLOR_TOO_LONG"
-	PetPhotoURLTooLong     PetErrorCode = "PET_PHOTO_URL_TOO_LONG"
-	PetMedicationsTooLong  PetErrorCode = "PET_MEDICATIONS_TOO_LONG"
-	PetAllergiesTooLong    PetErrorCode = "PET_ALLERGIES_TOO_LONG"
-	PetSpecialNeedsTooLong PetErrorCode = "PET_SPECIAL_NEEDS_TOO_LONG"
-	PetCustomerIDRequired  PetErrorCode = "PET_CUSTOMER_ID_REQUIRED"
+	FieldName       = "name"
+	FieldSpecies    = "species"
+	FieldGender     = "gender"
+	FieldAge        = "age"
+	FieldBreed      = "breed"
+	FieldMicrochip  = "microchip"
+	FieldColor      = "color"
+	FieldPhoto      = "photo"
+	FieldCustomerID = "customer_id"
 )
 
-// petValidationError crea un error de validación específico para pet
-func petValidationError(ctx context.Context, code PetErrorCode, field, message, operation string) error {
-	return errors.ValidationError(ctx, "pet", field,
-		fmt.Sprintf("Pet %s: %s", field, message), operation)
+// Validation limits (must match domain rules)
+const (
+	MaxNameLen      = 255
+	MaxBreedLen     = 100
+	MaxMicrochipLen = 50
+	MaxColorLen     = 50
+	MaxPhotoURLLen  = 2048
+	MaxPetAgeYears  = 50
+)
+
+// =========================================================================
+// Enum / parse errors
+// =========================================================================
+
+// InvalidSpeciesError returns an error for invalid pet species
+func InvalidSpeciesError(ctx context.Context, value, operation string) error {
+	return errors.InvalidEnumValue(ctx, FieldSpecies, value,
+		fmt.Sprintf("allowed values: %v", ValidPetSpeciess), operation)
 }
 
-// Errores específicos de pet
+// InvalidGenderError returns an error for invalid pet gender
+func InvalidGenderError(ctx context.Context, value, operation string) error {
+	return errors.InvalidEnumValue(ctx, FieldGender, value,
+		fmt.Sprintf("allowed values: %v", ValidPetGenders), operation)
+}
+
+// =========================================================================
+// Validation errors (required, length, range)
+// =========================================================================
+
+// NameRequiredError returns an error when pet name is empty
 func NameRequiredError(ctx context.Context, operation string) error {
-	return petValidationError(ctx, PetNameRequired, "name",
+	return errors.ValidationError(ctx, EntityName, FieldName,
 		"name is required", operation)
 }
 
+// NameTooLongError returns an error when pet name exceeds max length
 func NameTooLongError(ctx context.Context, length int, operation string) error {
-	return petValidationError(ctx, PetNameTooLong, "name",
-		fmt.Sprintf("name too long (%d characters, max 100)", length), operation)
+	return errors.ValidationError(ctx, EntityName, FieldName,
+		fmt.Sprintf("name too long (%d characters, max %d)", length, MaxNameLen), operation)
 }
 
+// SpeciesRequiredError returns an error when species is not set
 func SpeciesRequiredError(ctx context.Context, operation string) error {
-	return petValidationError(ctx, PetSpeciesRequired, "species",
+	return errors.ValidationError(ctx, EntityName, FieldSpecies,
 		"species is required", operation)
 }
 
-func InvalidSpeciesError(ctx context.Context, enumvalue string) error {
-	allowedValues := ValidPetSpeciess
-	return petValidationError(ctx, PetSpeciesTooLong, "species",
-		fmt.Sprintf("invalid species: %s. Allowed values are: %v", enumvalue, allowedValues), "Creating/Updating Pet")
-}
-
+// AgeInvalidError returns an error when age is negative
 func AgeInvalidError(ctx context.Context, age int, operation string) error {
-	return petValidationError(ctx, PetAgeInvalid, "age",
+	return errors.ValidationError(ctx, EntityName, FieldAge,
 		fmt.Sprintf("age cannot be negative, got: %d", age), operation)
 }
 
+// AgeUnrealisticError returns an error when age exceeds reasonable max
 func AgeUnrealisticError(ctx context.Context, age int, operation string) error {
-	return petValidationError(ctx, PetAgeUnrealistic, "age",
-		fmt.Sprintf("age seems unrealistic (%d years)", age), operation)
+	return errors.ValidationError(ctx, EntityName, FieldAge,
+		fmt.Sprintf("age seems unrealistic (%d years, max %d)", age, MaxPetAgeYears), operation)
 }
 
-func WeightInvalidError(ctx context.Context, weight float64, operation string) error {
-	return petValidationError(ctx, PetWeightInvalid, "weight",
-		fmt.Sprintf("weight must be positive, got: %.2f", weight), operation)
-}
-
-func WeightUnrealisticError(ctx context.Context, weight float64, operation string) error {
-	return petValidationError(ctx, PetWeightUnrealistic, "weight",
-		fmt.Sprintf("weight seems unrealistic (%.2f kg)", weight), operation)
-}
-
-func GenderInvalidError(ctx context.Context, gender PetGender, operation string) error {
-	return petValidationError(ctx, PetGenderInvalid, "gender",
-		fmt.Sprintf("invalid gender: %s", gender.String()), operation)
-}
-
+// BreedTooLongError returns an error when breed string is too long
 func BreedTooLongError(ctx context.Context, length int, operation string) error {
-	return petValidationError(ctx, PetBreedTooLong, "breed",
-		fmt.Sprintf("breed too long (%d characters, max 50)", length), operation)
+	return errors.ValidationError(ctx, EntityName, FieldBreed,
+		fmt.Sprintf("breed too long (%d characters, max %d)", length, MaxBreedLen), operation)
 }
 
+// MicrochipTooLongError returns an error when microchip string is too long
 func MicrochipTooLongError(ctx context.Context, length int, operation string) error {
-	return petValidationError(ctx, PetMicrochipTooLong, "microchip",
-		fmt.Sprintf("microchip too long (%d characters, max 50)", length), operation)
+	return errors.ValidationError(ctx, EntityName, FieldMicrochip,
+		fmt.Sprintf("microchip too long (%d characters, max %d)", length, MaxMicrochipLen), operation)
 }
 
+// ColorTooLongError returns an error when color string is too long
 func ColorTooLongError(ctx context.Context, length int, operation string) error {
-	return petValidationError(ctx, PetColorTooLong, "color",
-		fmt.Sprintf("color too long (%d characters, max 30)", length), operation)
+	return errors.ValidationError(ctx, EntityName, FieldColor,
+		fmt.Sprintf("color too long (%d characters, max %d)", length, MaxColorLen), operation)
 }
 
+// PhotoURLTooLongError returns an error when photo URL is too long
 func PhotoURLTooLongError(ctx context.Context, length int, operation string) error {
-	return petValidationError(ctx, PetPhotoURLTooLong, "photo",
-		fmt.Sprintf("photo URL too long (%d characters, max 500)", length), operation)
+	return errors.ValidationError(ctx, EntityName, FieldPhoto,
+		fmt.Sprintf("photo URL too long (%d characters, max %d)", length, MaxPhotoURLLen), operation)
 }
 
-func MedicationsTooLongError(ctx context.Context, length int, operation string) error {
-	return petValidationError(ctx, PetMedicationsTooLong, "medications",
-		fmt.Sprintf("medications too long (%d characters, max 500)", length), operation)
-}
-
-func AllergiesTooLongError(ctx context.Context, length int, operation string) error {
-	return petValidationError(ctx, PetAllergiesTooLong, "allergies",
-		fmt.Sprintf("allergies too long (%d characters, max 500)", length), operation)
-}
-
-func SpecialNeedsTooLongError(ctx context.Context, length int, operation string) error {
-	return petValidationError(ctx, PetSpecialNeedsTooLong, "special_needs",
-		fmt.Sprintf("special needs too long (%d characters, max 500)", length), operation)
-}
-
+// CustomerIDRequiredError returns an error when customer_id is missing
 func CustomerIDRequiredError(ctx context.Context, operation string) error {
-	return petValidationError(ctx, PetCustomerIDRequired, "customer_id",
+	return errors.ValidationError(ctx, EntityName, FieldCustomerID,
 		"customer ID is required", operation)
+}
+
+func CustomerNotActiveError(ctx context.Context, customerID uint, operation string) error {
+	return errors.BusinessRuleError(ctx, "Customer must be active to ad pets", "Customer",
+		"", operation)
 }

@@ -3,6 +3,25 @@ package repository
 const (
 	TableUsers = "users"
 	TableAppts = "appointments"
+	TablePets  = "pets"
+
+	// Pet error messages
+	ErrMsgConvertPetToDomain       = "failed to convert pet to domain entity"
+	ErrMsgFindPetByIDAndCustomerID = "failed to find pet by ID and customer ID"
+	ErrMsgFindPetsByCustomerID     = "failed to find pets by customer ID"
+	ErrMsgFindPetsBySpecies        = "failed to find pets by species"
+	ErrMsgFindPetsBySpecification  = "failed to find pets by specification"
+	ErrMsgCreatePet                = "failed to create pet"
+	ErrMsgUpdatePet                = "failed to update pet"
+	ErrMsgSoftDeletePet            = "failed to soft delete pet"
+	ErrMsgHardDeletePet            = "failed to hard delete pet"
+	ErrMsgRestorePet               = "failed to restore pet"
+	ErrMsgCountPetsByCustomerID    = "failed to count pets by customer ID"
+	ErrMsgCountPetsBySpecies       = "failed to count pets by species"
+	ErrMsgCheckPetExists           = "failed to check pet existence by ID"
+	ErrMsgCountPets                = "failed to count pets"
+	ErrMsgConvertToPet             = "failed to convert to pet entity"
+	ErrMsgFindPetByID              = "failed to find pet by ID"
 
 	// User error messages
 	ErrMsgFindUser            = "failed to find user"

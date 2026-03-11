@@ -7,7 +7,6 @@ import (
 	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/http"
-	"clinic-vet-api/internal/shared/page"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -43,7 +42,7 @@ func (ctrl *UserBaseController) GetUserByID(c *gin.Context) {
 	}
 
 	userID := shared.NewUserID(userIDUInt)
-	user, err := ctrl.queryService.GetUserByID(c.Request.Context(), userID)
+	user, err := ctrl.queryService.GetByID(c.Request.Context(), userID)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
@@ -64,9 +63,9 @@ func (ctrl *UserBaseController) GetUserByEmail(c *gin.Context) {
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
-	} 
+	}
 
-	user, err := ctrl.queryService.GetByEmail(c.Request.Context(), query)
+	user, err := ctrl.queryService.GetByEmail(c.Request.Context(), email)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
@@ -77,14 +76,19 @@ func (ctrl *UserBaseController) GetUserByEmail(c *gin.Context) {
 }
 
 func (ctrl *UserBaseController) GetUserByPhone(ctx *gin.Context) {
-	phone := ctx.Query("phone")
-	if phone == "" {
-		err := fmt.Errorf("phone is required")
-		http.BadRequest(ctx, errors.RequestURLParamError(err, "phone", ""))
+	phoneStr := ctx.Query("phone")
+	if phoneStr == "" {
+		http.BadRequest(ctx, errors.RequestURLParamError(fmt.Errorf("phone is required"), "phone", ""))
 		return
 	}
 
-	user, err := c.commandService.GetUserByPhone(ctx.Request.Context(), query)
+	phone, err := users.NewPhoneNumber(phoneStr)
+	if err != nil {
+		http.ApplicationError(ctx, err)
+		return
+	}
+
+	user, err := ctrl.queryService.GetByPhone(ctx.Request.Context(), phone)
 	if err != nil {
 		http.ApplicationError(ctx, err)
 		return
@@ -95,27 +99,26 @@ func (ctrl *UserBaseController) GetUserByPhone(ctx *gin.Context) {
 }
 
 func (ctrl *UserBaseController) SearchUsers(ctx *gin.Context) {
-	role := ctx.Param("role")
-	if role == "" {
-		http.BadRequest(ctx, errors.RequestURLParamError(errors.New("role is required"), "role", ""))
+	var req dtos.UserSearchRequest
+	if err := http.ShouldBindAndValidateQuery(ctx, &req, ctrl.validator); err != nil {
+		http.BadRequest(ctx, err)
 		return
 	}
 
-	var pagination page.PaginationRequest
-	if err := http.ShouldBindPageParams(&pagination, ctx, ctrl.validator); err != nil {
-		http.BadRequest(ctx, errors.RequestURLQueryError(err, ctx.Request.URL.RawQuery))
-		return
-	}
-
-	query := query.NewGetUsersByRoleQuery(role, pagination)
-	users, err := ctrl.commandService.GetUsersByRole(ctx.Request.Context(), query)
+	spec, err := ctrl.mapper.UserSearchRequestToSpecification(req)
 	if err != nil {
 		http.ApplicationError(ctx, err)
 		return
 	}
 
-	userResponses := dtos.usersToResponses(users.Items)
-	http.SuccessWithPagination(ctx, userResponses, "Users retrieved successfully", users.Metadata)
+	users, err := ctrl.queryService.GetSpecification(ctx.Request.Context(), *spec)
+	if err != nil {
+		http.ApplicationError(ctx, err)
+		return
+	}
+
+	userResponses := ctrl.mapper.ToResponsePage(users)
+	http.Paginated(ctx, &userResponses, "Users")
 }
 
 // TODO: Move to Auth

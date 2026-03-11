@@ -241,3 +241,11 @@ type Pagination struct {
 	OrderBy string
 	SortDir string // "ASC" or "DESC"
 }
+
+func (p Pagination) Limit() int32 {
+	return int32(p.Size)
+}
+
+func (p Pagination) Offset() int32 {
+	return int32(p.Number-1) * int32(p.Size)
+}

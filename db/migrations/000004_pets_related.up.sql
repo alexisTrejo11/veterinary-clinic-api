@@ -11,7 +11,6 @@ CREATE TABLE IF NOT EXISTS pets (
     gender VARCHAR(20) CHECK (gender IN ('male', 'female', 'unknown', 'other')),
     color VARCHAR(50),
     microchip VARCHAR(50) UNIQUE,
-    tattoo VARCHAR(50),
     blood_type VARCHAR(10),
     is_neutered BOOLEAN DEFAULT FALSE,
     customer_id INTEGER NOT NULL,

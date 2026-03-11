@@ -1,6 +1,15 @@
 package addresses
 
+import (
+	"clinic-vet-api/internal/shared"
+	"clinic-vet-api/internal/shared/page"
+	"context"
+	"fmt"
+)
+
 type Address struct {
+	shared.Entity[AddressID]
+	CustomerID          uint
 	Street              string
 	City                string
 	State               string
@@ -9,12 +18,26 @@ type Address struct {
 	BuildingType        BuildingType
 	BuildingOuterNumber string
 	BuildingInnerNumber *string
+	IsDefault           bool
+}
+
+func (a *Address) SetAsDefault() {
+	a.IsDefault = true
+}
+
+func (a *Address) SetAsNotDefault() {
+	a.IsDefault = false
 }
 
 type (
 	BuildingType string
 	Country      string
+	AddressID    struct{ shared.BaseID }
 )
+
+func NewAddressID(id uint) AddressID {
+	return AddressID{shared.BaseID{Value: id}}
+}
 
 const (
 	USA    Country = "USA"
@@ -30,9 +53,103 @@ func (c Country) IsValid() bool {
 	return false
 }
 
+func ParseCountry(country string) (Country, error) {
+	switch country {
+	case "USA":
+		return USA, nil
+	}
+	return Country(""), fmt.Errorf("invalid country")
+}
+
+func (c Country) DisplayName() string {
+	switch c {
+	case USA:
+		return "United States"
+	case Mexico:
+		return "Mexico"
+	case Canada:
+		return "Canada"
+	}
+
+	return "Unknown Country"
+}
+
 const (
 	BuildingTypeHouse     BuildingType = "house"
 	BuildingTypeApartment BuildingType = "apartment"
 	BuildingTypeOffice    BuildingType = "office"
 	BuildingTypeOther     BuildingType = "other"
 )
+
+func ParseBuildingType(buildingType string) (BuildingType, error) {
+	switch buildingType {
+	case "house":
+		return BuildingTypeHouse, nil
+	case "apartment":
+		return BuildingTypeApartment, nil
+	case "office":
+		return BuildingTypeOffice, nil
+	case "other":
+		return BuildingTypeOther, nil
+	}
+	return BuildingType(""), fmt.Errorf("invalid building type")
+}
+
+func (bt BuildingType) DisplayName() string {
+	switch bt {
+	case BuildingTypeHouse:
+		return "House"
+	case BuildingTypeApartment:
+		return "Apartment"
+	}
+	return "Unknown Building Type"
+}
+
+func (a Address) Validate(ctx context.Context) error {
+	const op = "Address.Validate"
+	if a.Street == "" {
+		return StreetRequiredError(ctx, op)
+	}
+	if a.City == "" {
+		return CityRequiredError(ctx, op)
+	}
+
+	if a.State == "" {
+		return StateRequiredError(ctx, op)
+	}
+	if a.ZipCode == "" {
+		return ZipRequiredError(ctx, op)
+	}
+	if a.Country == "" {
+		return CountryRequiredError(ctx, op)
+	}
+	if !a.Country.IsValid() {
+		return InvalidCountryError(ctx, a.Country, op)
+	}
+
+	switch a.BuildingType {
+	case "", BuildingTypeHouse, BuildingTypeApartment, BuildingTypeOffice, BuildingTypeOther:
+		// ok
+	default:
+		return InvalidBuildingTypeError(ctx, a.BuildingType, op)
+	}
+
+	return nil
+}
+
+type AddressRepository interface {
+	GetByID(ctx context.Context, id AddressID) (Address, error)
+	RestoreByID(ctx context.Context, id AddressID) error
+	Save(ctx context.Context, address Address) (Address, error)
+	BulkUpdate(ctx context.Context, addresses []Address) error
+	Delete(ctx context.Context, id AddressID) error
+	ExistsByID(ctx context.Context, id AddressID) (bool, error)
+	GetBySpecification(ctx context.Context, spec AddressSpecification) (page.Page[Address], error)
+	CountByCustomerID(ctx context.Context, customerID uint) (int64, error)
+	GetAllByCustomerID(ctx context.Context, customerID uint) ([]Address, error)
+	GetByIDAndCustomerID(ctx context.Context, id AddressID, customerID uint) (Address, error)
+}
+
+type AddressSpecification struct {
+	page.Pagination
+}

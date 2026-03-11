@@ -38,16 +38,16 @@ INSERT INTO employees (first_name, last_name, gender, date_of_birth, photo, lice
 '{"monday": {"start": "14:00", "end": "22:00"}, "tuesday": {"start": "14:00", "end": "22:00"}, "wednesday": {"start": "14:00", "end": "22:00"}, "thursday": {"start": "14:00", "end": "22:00"}, "friday": {"start": "14:00", "end": "22:00"}, "saturday": {"start": "10:00", "end": "18:00"}, "sunday": {"start": "10:00", "end": "18:00"}}');
 
 -- Insert demo pets
-INSERT INTO pets (name, photo, species, breed, age, gender, color, microchip, tattoo, blood_type, is_neutered, customer_id, is_active, allergies, current_medications, special_needs, feeding_instructions, behavioral_notes, veterinary_contact, emergency_contact_name, emergency_contact_phone) VALUES
+INSERT INTO pets (name, photo, species, breed, age, gender, color, microchip, blood_type, is_neutered, customer_id, is_active, allergies, current_medications, special_needs, feeding_instructions, behavioral_notes, veterinary_contact, emergency_contact_name, emergency_contact_phone) VALUES
 -- Pets for Juan Carlos López
-('Max', 'https://example.com/photos/max.jpg', 'Dog', 'Golden Retriever', 5, 'male', 'Golden', '982000123456789', NULL, 'A+', TRUE, 1, TRUE,
+('Max', 'https://example.com/photos/max.jpg', 'Dog', 'Golden Retriever', 5, 'male', 'Golden', '982000123456789', 'A+', TRUE, 1, TRUE,
 'Ninguna conocida', NULL, NULL,
 '2 tazas de alimento seco dos veces al día',
 'Muy amigable, le gusta jugar con otros perros',
 'Dr. Martínez - Clínica Veterinaria Central',
 'Juan Carlos López', '+52-555-1001'),
 
-('Luna', 'https://example.com/photos/luna.jpg', 'Cat', 'Siamese', 3, 'female', 'Seal Point', '982000123456790', NULL, 'B+', TRUE, 1, TRUE,
+('Luna', 'https://example.com/photos/luna.jpg', 'Cat', 'Siamese', 3, 'female', 'Seal Point', '982000123456790', 'B+', TRUE, 1, TRUE,
 'Alergia al pollo', 'Antihistamínicos según necesidad', NULL,
 'Alimento húmedo sin pollo, 3 veces al día',
 'Tímida con extraños, prefiere lugares altos',
@@ -55,7 +55,7 @@ INSERT INTO pets (name, photo, species, breed, age, gender, color, microchip, ta
 'Juan Carlos López', '+52-555-1001'),
 
 -- Pets for María Elena González
-('Bobby', 'https://example.com/photos/bobby.jpg', 'Dog', 'Bulldog Francés', 2, 'male', 'Brindle', '982000123456791', NULL, 'A+', FALSE, 2, TRUE,
+('Bobby', 'https://example.com/photos/bobby.jpg', 'Dog', 'Bulldog Francés', 2, 'male', 'Brindle', '982000123456791', 'A+', FALSE, 2, TRUE,
 'Sensibilidad alimentaria', 'Dieta hipoalergénica', 'Problemas respiratorios leves',
 'Alimento hipoalergénico 3 veces al día, porciones pequeñas',
 'Energético pero se cansa fácilmente debido a su respiración',
@@ -63,14 +63,14 @@ INSERT INTO pets (name, photo, species, breed, age, gender, color, microchip, ta
 'María Elena González', '+52-555-1002'),
 
 -- Pets for Carlos Alberto Hernández
-('Mila', 'https://example.com/photos/mila.jpg', 'Cat', 'Persian', 4, 'female', 'White', '982000123456792', NULL, 'AB+', TRUE, 3, TRUE,
+('Mila', 'https://example.com/photos/mila.jpg', 'Cat', 'Persian', 4, 'female', 'White', '982000123456792', 'AB+', TRUE, 3, TRUE,
 'Ninguna conocida', NULL, 'Requiere cepillado diario',
 'Alimento premium para gatos persas, 2 veces al día',
 'Muy tranquila, disfruta ser cepillada',
 'Dr. Rodríguez - Clínica Veterinaria Central',
 'Carlos Alberto Hernández', '+52-555-1003'),
 
-('Rex', 'https://example.com/photos/rex.jpg', 'Dog', 'Pastor Alemán', 7, 'male', 'Black and Tan', '982000123456793', NULL, 'A+', TRUE, 3, TRUE,
+('Rex', 'https://example.com/photos/rex.jpg', 'Dog', 'Pastor Alemán', 7, 'male', 'Black and Tan', '982000123456793', 'A+', TRUE, 3, TRUE,
 'Ninguna conocida', 'Suplemento para articulaciones', 'Displasia de cadera leve',
 '3 tazas de alimento senior divididas en 2 comidas',
 'Protector, muy leal, entrenado como perro guardián',
@@ -78,7 +78,7 @@ INSERT INTO pets (name, photo, species, breed, age, gender, color, microchip, ta
 'Carlos Alberto Hernández', '+52-555-1003'),
 
 -- Pets for Ana Patricia Flores
-('Coco', 'https://example.com/photos/coco.jpg', 'Bird', 'Cockatiel', 2, 'unknown', 'Gray', NULL, NULL, NULL, FALSE, 4, TRUE,
+('Coco', 'https://example.com/photos/coco.jpg', 'Bird', 'Cockatiel', 2, 'unknown', 'Gray', NULL, 'A+', FALSE, 4, TRUE,
 'Ninguna conocida', NULL, 'Ave sensible al humo y aerosoles',
 'Semillas premium para cacatúas y frutas frescas diariamente',
 'Muy social, imita sonidos, disfruta de la música',
@@ -86,7 +86,7 @@ INSERT INTO pets (name, photo, species, breed, age, gender, color, microchip, ta
 'Ana Patricia Flores', '+52-555-1004'),
 
 -- Pets for Pedro Antonio Silva
-('Simba', 'https://example.com/photos/simba.jpg', 'Cat', 'Maine Coon', 6, 'male', 'Brown Tabby', '982000123456794', NULL, 'A+', TRUE, 5, TRUE,
+('Simba', 'https://example.com/photos/simba.jpg', 'Cat', 'Maine Coon', 6, 'male', 'Brown Tabby', '982000123456794', 'A+', TRUE, 5, TRUE,
 'Ninguna conocida', NULL, NULL,
 'Alimento seco de alta calidad, 2 veces al día, gran cantidad por su tamaño',
 'Muy grande y gentil, le gusta el agua',

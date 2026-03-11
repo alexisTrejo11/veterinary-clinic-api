@@ -2,23 +2,32 @@ package pets
 
 import (
 	"clinic-vet-api/internal/shared"
+	"context"
 	"strings"
 )
 
 type Pet struct {
 	shared.Entity[PetID]
-	Name        string
-	Photo       *string
-	Species     PetSpecies
-	Breed       *string
-	Age         *int
-	Gender      *PetGender
-	Color       *string
-	MicrochipID *string
-	BloodType   *string
-	IsNeutered  *bool
-	CustomerID  uint
-	IsActive    bool
+	Name                  string
+	Species               PetSpecies
+	Gender                PetGender
+	CustomerID            uint
+	IsActive              bool
+	Breed                 *string
+	Age                   *int
+	Photo                 *string
+	Color                 *string
+	MicrochipID           *string
+	BloodType             *string
+	IsNeutered            *bool
+	Allergies             *string
+	CurrentMedications    *string
+	SpecialNeeds          *string
+	FeedingInstructions   *string
+	BehavioralNotes       *string
+	VeterinaryContact     *string
+	EmergencyContactName  *string
+	EmergencyContactPhone *string
 }
 
 type PetID struct{ shared.BaseID }
@@ -77,6 +86,49 @@ func (p *Pet) LifeStage() string {
 	}
 }
 
+func (p *Pet) Validate(ctx context.Context) error {
+	operation := "pet validate"
+	if p.Name == "" {
+		return NameRequiredError(ctx, operation)
+	}
+	if len(p.Name) > MaxNameLen {
+		return NameTooLongError(ctx, len(p.Name), operation)
+	}
+	if !p.Species.IsValid() {
+		if p.Species == "" {
+			return SpeciesRequiredError(ctx, operation)
+		}
+		return InvalidSpeciesError(ctx, p.Species.String(), operation)
+	}
+	if !p.Gender.IsValid() {
+		return InvalidGenderError(ctx, p.Gender.String(), operation)
+	}
+	if p.CustomerID == 0 {
+		return CustomerIDRequiredError(ctx, operation)
+	}
+	if p.Age != nil {
+		if *p.Age < 0 {
+			return AgeInvalidError(ctx, *p.Age, operation)
+		}
+		if *p.Age > MaxPetAgeYears {
+			return AgeUnrealisticError(ctx, *p.Age, operation)
+		}
+	}
+	if p.Breed != nil && len(*p.Breed) > MaxBreedLen {
+		return BreedTooLongError(ctx, len(*p.Breed), operation)
+	}
+	if p.MicrochipID != nil && len(*p.MicrochipID) > MaxMicrochipLen {
+		return MicrochipTooLongError(ctx, len(*p.MicrochipID), operation)
+	}
+	if p.Color != nil && len(*p.Color) > MaxColorLen {
+		return ColorTooLongError(ctx, len(*p.Color), operation)
+	}
+	if p.Photo != nil && len(*p.Photo) > MaxPhotoURLLen {
+		return PhotoURLTooLongError(ctx, len(*p.Photo), operation)
+	}
+	return nil
+}
+
 // ============================================================================
 // Type Definitions
 // ============================================================================
@@ -110,12 +162,10 @@ const (
 )
 
 const (
-	PetGenderMale         PetGender = "male"
-	PetGenderFemale       PetGender = "female"
-	PetGenderNeutered     PetGender = "neutered"
-	PetGenderSpayed       PetGender = "spayed"
-	PetGenderUnknown      PetGender = "unknown"
-	PetGenderNotSpecified PetGender = "not_specified"
+	PetGenderMale    PetGender = "male"
+	PetGenderFemale  PetGender = "female"
+	PetGenderUnknown PetGender = "unknown"
+	PetGenderOther   PetGender = "other"
 )
 
 // ============================================================================
@@ -248,41 +298,28 @@ var (
 	ValidPetGenders = []PetGender{
 		PetGenderMale,
 		PetGenderFemale,
-		PetGenderNeutered,
-		PetGenderSpayed,
 		PetGenderUnknown,
-		PetGenderNotSpecified,
+		PetGenderOther,
 	}
 
 	petGenderMap = map[string]PetGender{
-		"male":          PetGenderMale,
-		"m":             PetGenderMale,
-		"boy":           PetGenderMale,
-		"female":        PetGenderFemale,
-		"f":             PetGenderFemale,
-		"girl":          PetGenderFemale,
-		"neutered":      PetGenderNeutered,
-		"neutered_male": PetGenderNeutered,
-		"neutered male": PetGenderNeutered,
-		"castrated":     PetGenderNeutered,
-		"spayed":        PetGenderSpayed,
-		"spayed_female": PetGenderSpayed,
-		"spayed female": PetGenderSpayed,
-		"unknown":       PetGenderUnknown,
-		"unk":           PetGenderUnknown,
-		"not_specified": PetGenderNotSpecified,
-		"not specified": PetGenderNotSpecified,
-		"unspecified":   PetGenderNotSpecified,
-		"":              PetGenderNotSpecified,
+		"male":    PetGenderMale,
+		"m":       PetGenderMale,
+		"boy":     PetGenderMale,
+		"female":  PetGenderFemale,
+		"f":       PetGenderFemale,
+		"girl":    PetGenderFemale,
+		"unknown": PetGenderUnknown,
+		"unk":     PetGenderUnknown,
+		"other":   PetGenderOther,
+		"":        PetGenderUnknown,
 	}
 
 	petGenderDisplayNames = map[PetGender]string{
-		PetGenderMale:         "Male",
-		PetGenderFemale:       "Female",
-		PetGenderNeutered:     "Neutered Male",
-		PetGenderSpayed:       "Spayed Female",
-		PetGenderUnknown:      "Unknown",
-		PetGenderNotSpecified: "Not Specified",
+		PetGenderMale:    "Male",
+		PetGenderFemale:  "Female",
+		PetGenderUnknown: "Unknown",
+		PetGenderOther:   "Other",
 	}
 )
 
@@ -299,17 +336,16 @@ func (pt PetSpecies) IsValid() bool {
 	return false
 }
 
-func ParsePetSpecies(PetSpecies string) (PetSpecies, error) {
-	normalized := normalizePetSpeciesInput(PetSpecies)
+func ParsePetSpecies(species string) (PetSpecies, error) {
+	normalized := normalizePetSpeciesInput(species)
 	if val, exists := PetSpeciesMap[normalized]; exists {
 		return val, nil
 	}
-
-	return "", InvalidEnumParserError("PetSpecies", PetSpecies)
+	return "", InvalidSpeciesError(context.Background(), species, "parse species")
 }
 
-func MustParsePetSpecies(PetSpecies string) PetSpecies {
-	parsed, err := ParsePetSpecies(PetSpecies)
+func MustParsePetSpecies(species string) PetSpecies {
+	parsed, err := ParsePetSpecies(species)
 	if err != nil {
 		panic(err)
 	}
@@ -345,7 +381,7 @@ func ParsePetGender(gender string) (PetGender, error) {
 	if val, exists := petGenderMap[normalized]; exists {
 		return val, nil
 	}
-	return "", InvalidEnumParserError("PetGender", gender)
+	return "", InvalidGenderError(context.Background(), gender, "parse gender")
 }
 
 func MustParsePetGender(gender string) PetGender {
@@ -444,9 +480,9 @@ func SuggestPetSpeciesFromDescription(description string) PetSpecies {
 		"pony":     PetSpeciesHorse,
 	}
 
-	for keyword, PetSpecies := range typeKeywords {
+	for keyword, species := range typeKeywords {
 		if strings.Contains(description, keyword) {
-			return PetSpecies
+			return species
 		}
 	}
 
