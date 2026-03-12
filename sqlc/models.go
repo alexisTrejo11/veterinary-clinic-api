@@ -99,6 +99,19 @@ type MedicalSession struct {
 	DeletedAt       pgtype.Timestamptz
 }
 
+type Notification struct {
+	ID               int32
+	UserID           int32
+	Title            string
+	Subject          string
+	Message          string
+	Token            string
+	NotificationType string
+	Channel          string
+	CreatedAt        pgtype.Timestamptz
+	UpdatedAt        pgtype.Timestamptz
+}
+
 type Payment struct {
 	ID               int32
 	Amount           pgtype.Numeric

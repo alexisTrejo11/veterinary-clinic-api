@@ -11,8 +11,8 @@ import (
 
 type NotificationRepository interface {
 	Create(ctx context.Context, notification *Notification) error
-	GetByID(ctx context.Context, id string) (Notification, error)
-	ListByUser(ctx context.Context, userID shared.UserID, pagination page.Pagination) (page.Page[Notification], error)
-	ListBySpecies(ctx context.Context, notificationType string, pagination page.Pagination) (page.Page[Notification], error)
-	ListByChannel(ctx context.Context, channel string, pagination page.Pagination) (page.Page[Notification], error)
+	FindByID(ctx context.Context, id string) (Notification, error)
+	FindByUser(ctx context.Context, userID shared.UserID, pagination page.Pagination) (page.Page[Notification], error)
+	FindBySpecies(ctx context.Context, notificationType string, pagination page.Pagination) (page.Page[Notification], error)
+	FindByChannel(ctx context.Context, channel string, pagination page.Pagination) (page.Page[Notification], error)
 }

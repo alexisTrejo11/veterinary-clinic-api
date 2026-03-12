@@ -1,12 +1,18 @@
 package repository
 
 const (
-	TableUsers      = "users"
-	TableAppts      = "appointments"
-	TablePets       = "pets"
-	TableAddresses  = "addresses"
-	TableCustomers  = "customers"
-	TableEmployees  = "employees"
+	TableUsers       = "users"
+	TableAppts       = "appointments"
+	TablePets        = "pets"
+	TableAddresses   = "addresses"
+	TableCustomers   = "customers"
+	TableEmployees   = "employees"
+	TableNotifications = "notifications"
+
+	// Notification error messages
+	ErrMsgFindNotificationByID   = "failed to find notification by ID"
+	ErrMsgFindNotificationsByUser = "failed to find notifications by user"
+	ErrMsgCreateNotification     = "failed to create notification"
 
 	// Address error messages
 	ErrMsgFindAddressByID       = "failed to find address by ID"
