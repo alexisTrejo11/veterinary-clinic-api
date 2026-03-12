@@ -16,7 +16,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"clinic-vet-api/internal/core/auth"
 	"clinic-vet-api/internal/shared"
 	customErr "clinic-vet-api/internal/shared/errors"
 )
@@ -358,12 +357,12 @@ func (r *SqlcUserRepository) ToEntity(sqlRow sqlc.User) users.User {
 	}
 
 	// Build 2FA
-	twoFAMethod := auth.TwoFactorMethod(sqlRow.TwoFaMethod)
+	twoFAMethod := shared.TwoFactorMethod(sqlRow.TwoFaMethod)
 	if sqlRow.TwoFaMethod == "none" || !sqlRow.TwoFaEnabled.Bool {
-		twoFAMethod = auth.TwoFactorMethodUnknown
+		twoFAMethod = shared.TwoFactorMethodUnknown
 	}
 
-	twoFA := auth.NewTwoFactorAuth(
+	twoFA := shared.NewTwoFactorAuth(
 		sqlRow.TwoFaEnabled.Bool,
 		twoFAMethod,
 		r.pgMap.PgText.ToString(sqlRow.TwoFaSecret),

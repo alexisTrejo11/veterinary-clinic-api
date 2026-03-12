@@ -51,6 +51,26 @@ func (q *Queries) CountAllCustomers(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countCustomersBySpec = `-- name: CountCustomersBySpec :one
+SELECT COUNT(*)
+FROM customers
+WHERE deleted_at IS NULL
+  AND ($1::int = 0 OR user_id = $1)
+  AND ($2::int = -1 OR ($2 = 1 AND is_active = true) OR ($2 = 0 AND is_active = false))
+`
+
+type CountCustomersBySpecParams struct {
+	Column1 int32
+	Column2 int32
+}
+
+func (q *Queries) CountCustomersBySpec(ctx context.Context, arg CountCustomersBySpecParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countCustomersBySpec, arg.Column1, arg.Column2)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createCustomer = `-- name: CreateCustomer :one
 INSERT INTO customers (
     photo, first_name, last_name, gender, 
@@ -169,6 +189,60 @@ func (q *Queries) FindActiveCustomers(ctx context.Context, arg FindActiveCustome
 	return items, nil
 }
 
+const findCustomersBySpec = `-- name: FindCustomersBySpec :many
+SELECT id, first_name, last_name, photo, date_of_birth, gender, user_id, is_active, created_at, updated_at, deleted_at
+FROM customers
+WHERE deleted_at IS NULL
+  AND ($1::int = 0 OR user_id = $1)
+  AND ($2::int = -1 OR ($2 = 1 AND is_active = true) OR ($2 = 0 AND is_active = false))
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4
+`
+
+type FindCustomersBySpecParams struct {
+	Column1 int32
+	Column2 int32
+	Limit   int32
+	Offset  int32
+}
+
+func (q *Queries) FindCustomersBySpec(ctx context.Context, arg FindCustomersBySpecParams) ([]Customer, error) {
+	rows, err := q.db.Query(ctx, findCustomersBySpec,
+		arg.Column1,
+		arg.Column2,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Customer
+	for rows.Next() {
+		var i Customer
+		if err := rows.Scan(
+			&i.ID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Photo,
+			&i.DateOfBirth,
+			&i.Gender,
+			&i.UserID,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getCustomerByID = `-- name: GetCustomerByID :one
 SELECT id, first_name, last_name, photo, date_of_birth, gender, user_id, is_active, created_at, updated_at, deleted_at
 FROM customers
@@ -226,6 +300,19 @@ DELETE FROM customers WHERE id = $1
 func (q *Queries) HardDeleteCustomer(ctx context.Context, id int32) error {
 	_, err := q.db.Exec(ctx, hardDeleteCustomer, id)
 	return err
+}
+
+const isDeletedCustomerByID = `-- name: IsDeletedCustomerByID :one
+SELECT (deleted_at IS NOT NULL) AS is_deleted
+FROM customers
+WHERE id = $1
+`
+
+func (q *Queries) IsDeletedCustomerByID(ctx context.Context, id int32) (interface{}, error) {
+	row := q.db.QueryRow(ctx, isDeletedCustomerByID, id)
+	var is_deleted interface{}
+	err := row.Scan(&is_deleted)
+	return is_deleted, err
 }
 
 const softDeleteCustomer = `-- name: SoftDeleteCustomer :exec

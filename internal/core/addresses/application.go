@@ -10,7 +10,7 @@ var (
 )
 
 type CreateAddressCommand struct {
-	CustomerID          uint
+	UserID              uint
 	Street              string
 	City                string
 	State               string
@@ -40,10 +40,10 @@ type AddressService interface {
 	UpdateAddress(ctx context.Context, cmd UpdateAddressCommand) error
 	RestoreAddress(ctx context.Context, id AddressID) error
 	DeleteAddress(ctx context.Context, id AddressID) error
-	GetAddressByIDAndCustomerID(ctx context.Context, id AddressID, customerID uint) (Address, error)
-	GetAddressesByCustomerID(ctx context.Context, customerID uint) ([]Address, error)
+	GetAddressByIDAndUserID(ctx context.Context, id AddressID, UserID uint) (Address, error)
+	GetAddressesByUserID(ctx context.Context, UserID uint) ([]Address, error)
 	GetAddressesBySpecification(ctx context.Context, spec AddressSpecification) (page.Page[Address], error)
-	GetAddressesByIDAndCustomerID(ctx context.Context, id AddressID, customerID uint) (Address, error)
+	GetAddressesByIDAndUserID(ctx context.Context, id AddressID, UserID uint) (Address, error)
 }
 
 type addressService struct {
@@ -56,16 +56,16 @@ func NewAddressService(repository AddressRepository) AddressService {
 
 func (s *addressService) CreateAddress(ctx context.Context, cmd CreateAddressCommand) (Address, error) {
 	const op = "CreateAddress"
-	count, err := s.repository.CountByCustomerID(ctx, cmd.CustomerID)
+	count, err := s.repository.CountByUserID(ctx, cmd.UserID)
 	if err != nil {
 		return Address{}, err
 	}
 	if count >= int64(MAX_ADDRESS_PER_CUSTOMER) {
-		return Address{}, MaxAddressesPerCustomerError(ctx, cmd.CustomerID, MAX_ADDRESS_PER_CUSTOMER, op)
+		return Address{}, MaxAddressesPerCustomerError(ctx, cmd.UserID, MAX_ADDRESS_PER_CUSTOMER, op)
 	}
 
 	address := Address{
-		CustomerID:          cmd.CustomerID,
+		UserID:              cmd.UserID,
 		Street:              cmd.Street,
 		City:                cmd.City,
 		State:               cmd.State,
@@ -88,7 +88,7 @@ func (s *addressService) CreateAddress(ctx context.Context, cmd CreateAddressCom
 
 	// If this address should be default, clear default from others.
 	if created.IsDefault {
-		addresses, err := s.repository.GetAllByCustomerID(ctx, created.CustomerID)
+		addresses, err := s.repository.GetAllByUserID(ctx, created.UserID)
 		if err != nil {
 			return Address{}, err
 		}
@@ -156,7 +156,7 @@ func (s *addressService) UpdateAddress(ctx context.Context, cmd UpdateAddressCom
 
 	// If this address became default, clear default from others for this customer.
 	if cmd.IsDefault != nil && *cmd.IsDefault {
-		addresses, err := s.repository.GetAllByCustomerID(ctx, updated.CustomerID)
+		addresses, err := s.repository.GetAllByUserID(ctx, updated.UserID)
 		if err != nil {
 			return err
 		}
@@ -174,7 +174,7 @@ func (s *addressService) UpdateAddress(ctx context.Context, cmd UpdateAddressCom
 
 	// Optional: prevent removing the last default address.
 	if cmd.IsDefault != nil && !*cmd.IsDefault && originalWasDefault {
-		addresses, err := s.repository.GetAllByCustomerID(ctx, updated.CustomerID)
+		addresses, err := s.repository.GetAllByUserID(ctx, updated.UserID)
 		if err != nil {
 			return err
 		}
@@ -186,7 +186,7 @@ func (s *addressService) UpdateAddress(ctx context.Context, cmd UpdateAddressCom
 			}
 		}
 		if !hasDefault && len(addresses) > 0 {
-			return DefaultAddressRequiredError(ctx, updated.CustomerID, op)
+			return DefaultAddressRequiredError(ctx, updated.UserID, op)
 		}
 	}
 
@@ -202,18 +202,18 @@ func (s *addressService) DeleteAddress(ctx context.Context, id AddressID) error 
 	return err
 }
 
-func (s *addressService) GetAddressByIDAndCustomerID(ctx context.Context, id AddressID, customerID uint) (Address, error) {
-	return s.repository.GetByIDAndCustomerID(ctx, id, customerID)
+func (s *addressService) GetAddressByIDAndUserID(ctx context.Context, id AddressID, UserID uint) (Address, error) {
+	return s.repository.GetByIDAndUserID(ctx, id, UserID)
 }
 
-func (s *addressService) GetAddressesByCustomerID(ctx context.Context, customerID uint) ([]Address, error) {
-	return s.repository.GetAllByCustomerID(ctx, customerID)
+func (s *addressService) GetAddressesByUserID(ctx context.Context, UserID uint) ([]Address, error) {
+	return s.repository.GetAllByUserID(ctx, UserID)
 }
 
 func (s *addressService) GetAddressesBySpecification(ctx context.Context, spec AddressSpecification) (page.Page[Address], error) {
 	return s.repository.GetBySpecification(ctx, spec)
 }
 
-func (s *addressService) GetAddressesByIDAndCustomerID(ctx context.Context, id AddressID, customerID uint) (Address, error) {
-	return s.repository.GetByIDAndCustomerID(ctx, id, customerID)
+func (s *addressService) GetAddressesByIDAndUserID(ctx context.Context, id AddressID, UserID uint) (Address, error) {
+	return s.repository.GetByIDAndUserID(ctx, id, UserID)
 }

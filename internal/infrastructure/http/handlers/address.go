@@ -44,14 +44,14 @@ func (s *BaseAddressHandler) SearchAddresses(c *gin.Context) {
 	http.Paginated(c, &responsePage, "Addresses")
 }
 
-func (s *BaseAddressHandler) GetAddressesByCustomerID(c *gin.Context) {
-	customerIDUInt, err := http.ParseParamToUInt(c, "customer_id")
+func (s *BaseAddressHandler) GetAddressesByUserID(c *gin.Context) {
+	userIDUInt, err := http.ParseParamToUInt(c, "user_id")
 	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "customer_id", c.Param("customer_id")))
+		http.BadRequest(c, errors.RequestURLParamError(err, "user_id", c.Param("user_id")))
 		return
 	}
 
-	addresses, err := s.service.GetAddressesByCustomerID(c.Request.Context(), customerIDUInt)
+	addresses, err := s.service.GetAddressesByUserID(c.Request.Context(), userIDUInt)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
@@ -128,14 +128,14 @@ func (s *BaseAddressHandler) GetAddressByID(c *gin.Context) {
 		return
 	}
 
-	customerIDUInt, err := http.ParseParamToUInt(c, "customer_id")
+	userIDUInt, err := http.ParseParamToUInt(c, "user_id")
 	if err != nil {
 		http.BadRequest(c, err)
 		return
 	}
 
 	addressID := addresses.NewAddressID(entityID)
-	address, err := s.service.GetAddressByIDAndCustomerID(c.Request.Context(), addressID, customerIDUInt)
+	address, err := s.service.GetAddressByIDAndUserID(c.Request.Context(), addressID, userIDUInt)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return

@@ -1,226 +1,240 @@
-// Package middleware contains middleware for authentication and user context management
+// Package middleware contains middleware for authentication and user context management.
+// Auth is stateless: credentials in Gin context come only from JWT claims (no repository calls).
 package middleware
 
 import (
-	"clinic-vet-api/internal/modules/account/auth/token/service"
-	repositoryimpl "clinic-vet-api/internal/modules/account/user/infrastructure/repository"
-	"clinic-vet-api/internal/modules/core/domain/entity/user"
-	"clinic-vet-api/internal/modules/core/domain/valueobject"
-	"clinic-vet-api/internal/modules/core/repository"
-	s "clinic-vet-api/internal/modules/core/service"
-
-	"clinic-vet-api/internal/shared/http"
-	"clinic-vet-api/internal/shared/mapper"
-	"clinic-vet-api/sqlc"
 	"context"
 	"strconv"
+	"strings"
 
-	autherror "clinic-vet-api/internal/shared/error/auth"
+	"clinic-vet-api/internal/core/auth"
+	"clinic-vet-api/internal/shared"
+	"clinic-vet-api/internal/shared/errors"
+	sharedhttp "clinic-vet-api/internal/shared/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
+const bearerPrefix = "Bearer "
+
+// UserContext holds claims put on context from the JWT (stateless, no DB).
 type UserContext struct {
-	UserID      uint
-	Email       string
-	PhoneNumber string
-	Role        string
-	CustomerID  uint
-	EmployeeID  uint
+	UserID uint
+	Email  string
+	Role   string
 }
 
-func UserToUserContext(user user.User) *UserContext {
-	userCTX := &UserContext{
-		UserID:      user.ID().Value(),
-		Email:       user.Email().String(),
-		PhoneNumber: user.PhoneNumber().String(),
-		Role:        string(user.Role()),
-	}
-
-	if user.IsEmployee() {
-		userCTX.EmployeeID = user.EmployeeID().Value()
-	} else if user.IsCustomer() {
-		userCTX.CustomerID = user.CustomerID().Value()
-	}
-
-	return userCTX
-}
-
+// AuthMiddleware parses JWT and sets user claims on context. No repository.
 type AuthMiddleware struct {
-	jwtService s.JWTService
-	userRepo   repository.UserRepository
+	jwtKey []byte
 }
 
-func NewAuthMiddleware(jwtSecret string, queries *sqlc.Queries) *AuthMiddleware {
-	jwtService := service.NewJWTService(jwtSecret)
-	userRepo := repositoryimpl.NewSqlcUserRepository(queries, mapper.NewSqlcFieldMapper())
-	return &AuthMiddleware{
-		jwtService: jwtService,
-		userRepo:   userRepo,
+// NewAuthMiddleware creates middleware that validates JWT and sets claims on context.
+// jwtSecret must match the secret used by the token service to sign access tokens.
+func NewAuthMiddleware(jwtSecret string) *AuthMiddleware {
+	return &AuthMiddleware{jwtKey: []byte(jwtSecret)}
+}
+
+// Authenticate requires a valid Bearer JWT. Sets userID, userEmail, userRole and user (UserContext) from token claims.
+func (am *AuthMiddleware) Authenticate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		raw := c.GetHeader("Authorization")
+		if raw == "" {
+			sharedhttp.Unauthorized(c, errors.UnauthorizedError(context.Background(), "Authenticate", "auth token required"))
+			c.Abort()
+			return
+		}
+
+		tokenStr := strings.TrimPrefix(raw, bearerPrefix)
+		if tokenStr == raw {
+			sharedhttp.Unauthorized(c, errors.UnauthorizedError(context.Background(), "Authenticate", "invalid authorization header"))
+			c.Abort()
+			return
+		}
+
+		claims, err := am.parseAccessToken(tokenStr)
+		if err != nil {
+			sharedhttp.Unauthorized(c, errors.UnauthorizedError(context.Background(), "Authenticate", err.Error()))
+			c.Abort()
+			return
+		}
+
+		userID, email, role := claims[auth.ClaimUserID], claims[auth.ClaimEmail], claims[auth.ClaimRole]
+		userIDStr, _ := userID.(string)
+		emailStr, _ := email.(string)
+		roleStr, _ := role.(string)
+
+		if userIDStr == "" {
+			sharedhttp.Unauthorized(c, errors.UnauthorizedError(context.Background(), "Authenticate", "invalid token claims"))
+			c.Abort()
+			return
+		}
+
+		idUint, err := strconv.ParseUint(userIDStr, 10, 0)
+		if err != nil {
+			sharedhttp.Unauthorized(c, errors.UnauthorizedError(context.Background(), "Authenticate", "invalid user id in token"))
+			c.Abort()
+			return
+		}
+
+		uc := &UserContext{
+			UserID: uint(idUint),
+			Email:  emailStr,
+			Role:   roleStr,
+		}
+
+		c.Set("jwtToken", tokenStr)
+		c.Set("user", uc)
+		c.Set("userID", uint(idUint))
+		c.Set("userEmail", emailStr)
+		c.Set("userRole", roleStr)
+		c.Next()
 	}
 }
 
-func (am *AuthMiddleware) Authenticate() gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			http.Unauthorized(c, autherror.UnauthorizedError("auth token required"))
-			c.Abort()
-			return
-		}
-
-		token, err := am.jwtService.ExtractToken(authHeader)
-		if err != nil {
-			http.Unauthorized(c, autherror.UnauthorizedError(err.Error()))
-			c.Abort()
-			return
-		}
-
-		c.Set("jwtToken", token)
-
-		claim, err := am.jwtService.ValidateToken(token)
-		if err != nil {
-			http.Unauthorized(c, autherror.UnauthorizedError(err.Error()))
-			c.Abort()
-			return
-		}
-
-		idSTR := claim.UserID
-		idUInt, err := strconv.ParseUint(idSTR, 10, 0)
-		if err != nil {
-			http.ServerError(c, err)
-			c.Abort()
-			return
-		}
-
-		user, err := am.userRepo.FindByID(c.Request.Context(), valueobject.NewUserID(uint(idUInt)))
-		if err != nil {
-			http.ApplicationError(c, err)
-			return
-		}
-
-		c.Set("user", UserToUserContext(user))
-		c.Set("userID", user.ID().Value())
-		c.Set("userEmail", user.Email().String())
-		c.Set("userRole", user.Role().String())
-
-		c.Next()
-	})
-}
-
+// OptionalAuth parses JWT if present and sets claims on context; does not abort if missing.
 func (am *AuthMiddleware) OptionalAuth() gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
+	return func(c *gin.Context) {
+		raw := c.GetHeader("Authorization")
+		if raw == "" {
 			c.Next()
 			return
 		}
 
-		token, err := am.jwtService.ExtractToken(authHeader)
+		tokenStr := strings.TrimPrefix(raw, bearerPrefix)
+		if tokenStr == raw {
+			c.Next()
+			return
+		}
+
+		claims, err := am.parseAccessToken(tokenStr)
 		if err != nil {
 			c.Next()
 			return
 		}
 
-		c.Set("jwtToken", token)
+		userID, email, role := claims[auth.ClaimUserID], claims[auth.ClaimEmail], claims[auth.ClaimRole]
+		userIDStr, _ := userID.(string)
+		emailStr, _ := email.(string)
+		roleStr, _ := role.(string)
 
-		claims, err := am.jwtService.ValidateToken(token)
+		if userIDStr == "" {
+			c.Next()
+			return
+		}
+
+		idUint, err := strconv.ParseUint(userIDStr, 10, 0)
 		if err != nil {
 			c.Next()
 			return
 		}
 
-		idUInt, err := strconv.ParseUint(claims.UserID, 10, 0)
-		if err != nil {
-			http.ServerError(c, err)
-			c.Abort()
-			return
+		uc := &UserContext{
+			UserID: uint(idUint),
+			Email:  emailStr,
+			Role:   roleStr,
 		}
 
-		user, err := am.userRepo.FindByID(context.Background(), valueobject.NewUserID(uint(idUInt)))
-		if err != nil {
-			http.ApplicationError(c, err)
-			return
-		}
-
-		c.Set("user", UserToUserContext(user))
-		c.Set("userID", user.ID().Value())
-		c.Set("userEmail", user.Email().String())
-		c.Set("userRole", user.Role().String())
-
+		c.Set("jwtToken", tokenStr)
+		c.Set("user", uc)
+		c.Set("userID", uint(idUint))
+		c.Set("userEmail", emailStr)
+		c.Set("userRole", roleStr)
 		c.Next()
-	})
+	}
 }
 
-// GetUserFromContext obtiene el contexto completo del usuario
+// parseAccessToken parses and validates the JWT, returns map claims or error.
+func (am *AuthMiddleware) parseAccessToken(tokenStr string) (map[string]interface{}, error) {
+	tok, err := jwt.Parse(tokenStr, func(*jwt.Token) (interface{}, error) {
+		return am.jwtKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !tok.Valid {
+		return nil, jwt.ErrTokenInvalidClaims
+	}
+	claims, ok := tok.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, jwt.ErrTokenInvalidClaims
+	}
+	out := make(map[string]interface{})
+	for k, v := range claims {
+		out[k] = v
+	}
+	return out, nil
+}
+
+// GetUserFromContext returns the user context set by Authenticate/OptionalAuth (from JWT claims).
 func GetUserFromContext(c *gin.Context) (*UserContext, bool) {
 	user, exists := c.Get("user")
 	if !exists {
 		return nil, false
 	}
-	return user.(*UserContext), true
+	uc, ok := user.(*UserContext)
+	return uc, ok
 }
 
-// GetUserIDFromContext obtiene solo el ID del usuario
-func GetUserIDFromContext(c *gin.Context) (valueobject.UserID, bool) {
+// GetUserIDFromContext returns the user ID from context (set from JWT claims).
+func GetUserIDFromContext(c *gin.Context) (shared.UserID, error) {
 	userID, exists := c.Get("userID")
 	if !exists {
-		return valueobject.UserID{}, false
+		return shared.UserID{}, errors.UnauthorizedError(context.Background(), "GetUserIDFromContext", "user ID not found in context")
 	}
-
-	idUint := userID.(uint)
-	return valueobject.NewUserID(idUint), true
+	idUint, ok := userID.(uint)
+	if !ok {
+		return shared.UserID{}, errors.UnauthorizedError(context.Background(), "GetUserIDFromContext", "invalid user ID type in context")
+	}
+	return shared.NewUserID(idUint), nil
 }
 
-// GetUserEmailFromContext obtiene solo el email del usuario
+// GetUserEmailFromContext returns the email from context (from JWT claims).
 func GetUserEmailFromContext(c *gin.Context) (string, bool) {
 	email, exists := c.Get("userEmail")
 	if !exists {
 		return "", false
 	}
-	return email.(string), true
+	s, ok := email.(string)
+	return s, ok
 }
 
-// GetUserRolesFromContext obtiene solo los roles del usuario
-func GetUserRolesFromContext(c *gin.Context) (string, bool) {
-	roles, exists := c.Get("userRole")
+// GetUserRoleFromContext returns the role from context (from JWT claims).
+func GetUserRoleFromContext(c *gin.Context) (string, bool) {
+	role, exists := c.Get("userRole")
 	if !exists {
 		return "", false
 	}
-	return roles.(string), true
+	s, ok := role.(string)
+	return s, ok
 }
 
-// HasRole verifica si el usuario tiene un rol específico
+// HasRole returns true if the context user has the given role.
 func HasRole(c *gin.Context, role string) bool {
-	userRole, exists := GetUserRolesFromContext(c)
-	if !exists {
-		return false
-	}
-
-	if userRole == role {
-		return true
-	}
-
-	return false
+	r, ok := GetUserRoleFromContext(c)
+	return ok && r == role
 }
 
+// RequireAnyRole aborts with 403 if the context user's role is not in the given list.
+// Must be used after Authenticate().
 func (am *AuthMiddleware) RequireAnyRole(roles ...string) gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
-		userRole, exists := GetUserRolesFromContext(c)
+	return func(c *gin.Context) {
+		userRole, exists := GetUserRoleFromContext(c)
 		if !exists {
-			http.Unauthorized(c, autherror.UnauthorizedError("user role not found in context"))
+			sharedhttp.Unauthorized(c, errors.UnauthorizedError(context.Background(), "RequireAnyRole", "user role not found in context"))
 			c.Abort()
 			return
 		}
 
-		for _, role := range roles {
-			if userRole == role {
+		for _, r := range roles {
+			if userRole == r {
 				c.Next()
 				return
 			}
 		}
 
-		http.Forbidden(c, autherror.ForbiddenError("insufficient permissions", userRole))
+		sharedhttp.Forbidden(c, errors.ForbiddenError(context.Background(), "RequireAnyRole", "access", "insufficient permissions: role "+userRole))
 		c.Abort()
-	})
+	}
 }

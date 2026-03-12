@@ -1,7 +1,6 @@
 package users
 
 import (
-	"clinic-vet-api/internal/core/auth"
 	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/page"
 	"strings"
@@ -32,7 +31,7 @@ func (s *UserSpecification) IsSatisfiedBy(entity any) bool {
 		IsActive() bool
 		CreatedAt() time.Time
 		LastLoginAt() *time.Time
-		TwoFactorAuth() auth.TwoFactorAuth
+		TwoFactorAuth() shared.TwoFactorAuth
 	})
 	if !ok {
 		return false

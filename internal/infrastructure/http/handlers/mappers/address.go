@@ -29,7 +29,7 @@ func (m *AddressMapper) RequestToCreateCommand(r dtos.AddressCreateRequest) (add
 		return addresses.CreateAddressCommand{}, err
 	}
 	return addresses.CreateAddressCommand{
-		CustomerID:          r.CustomerID,
+		UserID:              r.UserID,
 		Street:              r.Street,
 		City:                r.City,
 		State:               r.State,

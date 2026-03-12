@@ -12,6 +12,11 @@ import (
 )
 
 type MedSessionID struct{ shared.BaseID }
+type DewormID struct{ shared.BaseID }
+
+func NewDewormID(value uint) DewormID {
+	return DewormID{shared.BaseID{Value: value}}
+}
 
 type MedicalSession struct {
 	shared.Entity[MedSessionID]
@@ -21,10 +26,10 @@ type MedicalSession struct {
 	VisitDate   time.Time
 	Notes       *string
 	EmployeeID  employees.EmployeeID
-	PetSessionSummary
+	SessionSummary
 }
 
-type PetSessionSummary struct {
+type SessionSummary struct {
 	PetID           pets.PetID
 	Weight          *shared.Decimal
 	HeartRate       *int

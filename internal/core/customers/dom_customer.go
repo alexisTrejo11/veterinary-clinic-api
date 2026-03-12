@@ -11,7 +11,7 @@ import (
 type Customer struct {
 	shared.Entity[CustomerID]
 	shared.Person
-	Photo    string
+	PhotoURL string
 	UserID   uint
 	IsActive bool
 	Pets     []pets.Pet
@@ -31,7 +31,7 @@ func (o *Customer) UpdatePhoto(ctx context.Context, newPhoto string) error {
 		return PhotoURLLongError(ctx, len(newPhoto), operation)
 	}
 
-	o.Photo = newPhoto
+	o.PhotoURL = newPhoto
 	o.IncrementVersion()
 	return nil
 }

@@ -1,9 +1,35 @@
 package repository
 
 const (
-	TableUsers = "users"
-	TableAppts = "appointments"
-	TablePets  = "pets"
+	TableUsers      = "users"
+	TableAppts      = "appointments"
+	TablePets       = "pets"
+	TableAddresses  = "addresses"
+	TableCustomers  = "customers"
+	TableEmployees  = "employees"
+
+	// Address error messages
+	ErrMsgFindAddressByID       = "failed to find address by ID"
+	ErrMsgFindAddressByUserID   = "failed to find address by user ID"
+	ErrMsgCreateAddress         = "failed to create address"
+	ErrMsgUpdateAddress         = "failed to update address"
+	ErrMsgSoftDeleteAddress     = "failed to soft delete address"
+	ErrMsgRestoreAddress        = "failed to restore address"
+	ErrMsgConvertAddressToDomain = "failed to convert address to domain entity"
+
+	// Customer error messages
+	ErrMsgFindCustomerByID     = "failed to find customer by ID"
+	ErrMsgFindCustomersBySpec  = "failed to find customers by specification"
+	ErrMsgCreateCustomer       = "failed to create customer"
+	ErrMsgUpdateCustomer       = "failed to update customer"
+	ErrMsgConvertCustomerToDomain = "failed to convert customer to domain entity"
+
+	// Employee error messages
+	ErrMsgFindEmployeeByID     = "failed to find employee by ID"
+	ErrMsgFindEmployeesBySpec  = "failed to find employees by specification"
+	ErrMsgCreateEmployee       = "failed to create employee"
+	ErrMsgUpdateEmployee       = "failed to update employee"
+	ErrMsgConvertEmployeeToDomain = "failed to convert employee to domain entity"
 
 	// Pet error messages
 	ErrMsgConvertPetToDomain       = "failed to convert pet to domain entity"

@@ -57,3 +57,9 @@ type ResetPasswordCommand struct {
 	Token       string
 	NewPassword string
 }
+
+// ResetPasswordByCodeCommand is used when password is reset via verification code (no current password).
+type ResetPasswordByCodeCommand struct {
+	ID          shared.UserID
+	NewPassword string
+}

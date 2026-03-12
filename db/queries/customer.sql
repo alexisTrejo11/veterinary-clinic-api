@@ -63,6 +63,27 @@ WHERE is_active = TRUE AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
 
+-- name: FindCustomersBySpec :many
+SELECT id, first_name, last_name, photo, date_of_birth, gender, user_id, is_active, created_at, updated_at, deleted_at
+FROM customers
+WHERE deleted_at IS NULL
+  AND ($1::int = 0 OR user_id = $1)
+  AND ($2::int = -1 OR ($2 = 1 AND is_active = true) OR ($2 = 0 AND is_active = false))
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4;
+
+-- name: CountCustomersBySpec :one
+SELECT COUNT(*)
+FROM customers
+WHERE deleted_at IS NULL
+  AND ($1::int = 0 OR user_id = $1)
+  AND ($2::int = -1 OR ($2 = 1 AND is_active = true) OR ($2 = 0 AND is_active = false));
+
+-- name: IsDeletedCustomerByID :one
+SELECT (deleted_at IS NOT NULL) AS is_deleted
+FROM customers
+WHERE id = $1;
+
 -- name: DeactivateCustomer :exec
 UPDATE customers
 SET 

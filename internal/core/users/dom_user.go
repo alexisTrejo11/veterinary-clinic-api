@@ -5,7 +5,6 @@ import (
 	"context"
 	"time"
 
-	"clinic-vet-api/internal/core/auth"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/employees"
 	"clinic-vet-api/internal/shared"
@@ -24,7 +23,7 @@ type User struct {
 	Role           UserRole
 	Status         UserStatus
 	LastLoginAt    *time.Time
-	TwoFactorAuth  auth.TwoFactorAuth
+	TwoFactorAuth  shared.TwoFactorAuth
 	EmployeeID     *employees.EmployeeID
 	CustomerID     *customers.CustomerID
 	Profile        Profile
@@ -178,9 +177,9 @@ func (u *User) RecordLogin() error {
 // EnableTwoFactorAuth enables two-factor authentication for the user
 func (u *User) EnableTwoFactorAuth(method, secret string, backupCodes []string) error {
 	now := time.Now()
-	twoFAMethod := auth.TwoFactorMethod(secret)
+	twoFAMethod := shared.TwoFactorMethod(secret)
 
-	twoFA := auth.NewTwoFactorAuth(
+	twoFA := shared.NewTwoFactorAuth(
 		true,
 		twoFAMethod,
 		secret,
@@ -195,7 +194,7 @@ func (u *User) EnableTwoFactorAuth(method, secret string, backupCodes []string) 
 
 // DisableTwoFactorAuth disables two-factor authentication for the user
 func (u *User) DisableTwoFactorAuth() error {
-	u.TwoFactorAuth = auth.NewDisabledTwoFactorAuth()
+	u.TwoFactorAuth = shared.NewDisabledTwoFactorAuth()
 	u.IncrementVersion()
 	return nil
 }

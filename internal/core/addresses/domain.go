@@ -9,7 +9,7 @@ import (
 
 type Address struct {
 	shared.Entity[AddressID]
-	CustomerID          uint
+	UserID              uint
 	Street              string
 	City                string
 	State               string
@@ -145,11 +145,13 @@ type AddressRepository interface {
 	Delete(ctx context.Context, id AddressID) error
 	ExistsByID(ctx context.Context, id AddressID) (bool, error)
 	GetBySpecification(ctx context.Context, spec AddressSpecification) (page.Page[Address], error)
-	CountByCustomerID(ctx context.Context, customerID uint) (int64, error)
-	GetAllByCustomerID(ctx context.Context, customerID uint) ([]Address, error)
-	GetByIDAndCustomerID(ctx context.Context, id AddressID, customerID uint) (Address, error)
+	CountByUserID(ctx context.Context, userID uint) (int64, error)
+	GetAllByUserID(ctx context.Context, userID uint) ([]Address, error)
+	GetByIDAndUserID(ctx context.Context, id AddressID, userID uint) (Address, error)
 }
 
 type AddressSpecification struct {
 	page.Pagination
+	// UserID when set filters addresses by user; nil means no filter (e.g. admin listing).
+	UserID *uint
 }

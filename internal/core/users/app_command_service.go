@@ -1,7 +1,6 @@
 package users
 
 import (
-	"clinic-vet-api/internal/core/auth"
 	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/password"
 	"context"
@@ -10,6 +9,7 @@ import (
 type CommandService interface {
 	CreateUser(ctx context.Context, cmd CreateUserCommand) (User, error)
 	UpdatePassword(ctx context.Context, cmd UpdatePasswordCommand) error
+	ResetPasswordByCode(ctx context.Context, cmd ResetPasswordByCodeCommand) error
 	UpdateUserStatus(ctx context.Context, cmd UpdateUserStatusCommand) error
 	UpdateProfileData(ctx context.Context, cmd UpdateProfileCommand) error
 	RestoreUser(ctx context.Context, id shared.UserID) error
@@ -67,7 +67,7 @@ func (s *commandService) UpdatePassword(ctx context.Context, cmd UpdatePasswordC
 		return PasswordMismatchError(ctx, "UpdatePassword")
 	}
 
-	if err := auth.ValidatePasswordStrength(cmd.NewPassword); err != nil {
+	if err := shared.ValidatePasswordStrength(cmd.NewPassword); err != nil {
 		return err
 	}
 
@@ -77,6 +77,22 @@ func (s *commandService) UpdatePassword(ctx context.Context, cmd UpdatePasswordC
 
 	}
 
+	user.UpdatePassword(hashedPassword)
+	return s.repository.Save(ctx, &user)
+}
+
+func (s *commandService) ResetPasswordByCode(ctx context.Context, cmd ResetPasswordByCodeCommand) error {
+	user, err := s.repository.FindByID(ctx, cmd.ID)
+	if err != nil {
+		return err
+	}
+	if err := shared.ValidatePasswordStrength(cmd.NewPassword); err != nil {
+		return err
+	}
+	hashedPassword, err := s.passwordEncoder.HashPassword(cmd.NewPassword)
+	if err != nil {
+		return err
+	}
 	user.UpdatePassword(hashedPassword)
 	return s.repository.Save(ctx, &user)
 }
@@ -185,7 +201,7 @@ func (s *commandService) validateUniquePhone(ctx context.Context, phone PhoneNum
 // hashPasswordWithValidation validates password strength and returns hashed password
 func (s *commandService) hashPasswordWithValidation(ctx context.Context, plainPassword string) (string, error) {
 	// Validate password strength
-	if err := auth.ValidatePasswordStrength(plainPassword); err != nil {
+	if err := shared.ValidatePasswordStrength(plainPassword); err != nil {
 		return "", err
 	}
 
@@ -233,7 +249,7 @@ func (s *commandService) createUserEntity(cmd CreateUserCommand, hashedPassword 
 		HashedPassword: hashedPassword,
 		Role:           cmd.Role,
 		Status:         cmd.Status,
-		TwoFactorAuth:  auth.NewDisabledTwoFactorAuth(),
+		TwoFactorAuth:  shared.NewDisabledTwoFactorAuth(),
 		Profile:        Profile{},
 		EmailVerified:  false,
 		LoginAttempts:  0,

@@ -9,6 +9,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Address struct {
+	ID                  int32
+	UserID              int32
+	Street              string
+	City                string
+	State               string
+	ZipCode             string
+	Country             string
+	BuildingType        string
+	BuildingOuterNumber string
+	BuildingInnerNumber string
+	IsDefault           bool
+	CreatedAt           pgtype.Timestamptz
+	UpdatedAt           pgtype.Timestamptz
+	DeletedAt           pgtype.Timestamptz
+	Version             int32
+}
+
 type Appointment struct {
 	ID            int32
 	ClinicService models.ClinicService

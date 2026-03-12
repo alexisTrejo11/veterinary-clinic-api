@@ -1,6 +1,7 @@
 package mapper
 
 import (
+	"clinic-vet-api/internal/core/addresses"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/employees"
 	"clinic-vet-api/internal/core/medical"
@@ -16,7 +17,6 @@ import (
 
 type SqlcFieldMapper struct {
 	Primitive     PrimitiveMapper
-	ValueObject   ValueObjectMapper
 	PgText        PgTextMapper
 	PgInt2        PgInt2Mapper
 	PgBool        PgBoolMapper
@@ -40,7 +40,6 @@ func NewSqlcFieldMapper() *SqlcFieldMapper {
 		PgDate:        PgDateMapper{},
 		PgTimestamptz: PgTimestamptzMapper{},
 		PgNumeric:     NumericMapper{},
-		ValueObject:   ValueObjectMapper{},
 		PgInt2:        PgInt2Mapper{},
 		PgBool:        PgBoolMapper{},
 	}
@@ -178,15 +177,15 @@ func (m *PgInt4Mapper) FromInt32(i int32) pgtype.Int4 {
 	return pgtype.Int4{Valid: false}
 }
 
-func (m *PgInt4Mapper) ToUserIDPtr(pgType pgtype.Int4) *users.UserID {
+func (m *PgInt4Mapper) ToUserIDPtr(pgType pgtype.Int4) *shared.UserID {
 	if pgType.Valid {
-		id := users.NewUserID(uint(pgType.Int32))
+		id := shared.NewUserID(uint(pgType.Int32))
 		return &id
 	}
 	return nil
 }
 
-func (m *PgInt4Mapper) FromUserIDPtr(id *users.UserID) pgtype.Int4 {
+func (m *PgInt4Mapper) FromUserIDPtr(id *shared.UserID) pgtype.Int4 {
 	if id != nil {
 		return pgtype.Int4{Int32: int32(id.Value), Valid: true}
 	}
@@ -199,6 +198,20 @@ func (m *PgInt4Mapper) ToCustomerIDPtr(pgType pgtype.Int4) *customers.CustomerID
 		return &id
 	}
 	return nil
+}
+
+func (m *PgInt4Mapper) ToAddressID(pgType pgtype.Int4) addresses.AddressID {
+	if pgType.Valid {
+		return addresses.NewAddressID(uint(pgType.Int32))
+	}
+	return addresses.AddressID{}
+}
+
+func (m *PgInt4Mapper) FromAddressID(id addresses.AddressID) pgtype.Int4 {
+	if !id.IsZero() {
+		return pgtype.Int4{Int32: int32(id.Value), Valid: true}
+	}
+	return pgtype.Int4{Valid: false}
 }
 
 func (m *PgInt4Mapper) ToEmployeeIDPtr(pgType pgtype.Int4) *employees.EmployeeID {
@@ -329,7 +342,7 @@ func (m *SqlcFieldMapper) UintToPgInt4(i uint) pgtype.Int4 {
 	return pgtype.Int4{Valid: false}
 }
 
-func (m *SqlcFieldMapper) PetIDPtrToInt32(id *valueobject.PetID) int32 {
+func (m *SqlcFieldMapper) PetIDPtrToInt32(id *pets.PetID) int32 {
 	if id != nil {
 		return int32(id.Value)
 	}
@@ -347,7 +360,7 @@ func (m *SqlcFieldMapper) DewormIDToInt32(id medical.DewormID) int32 {
 	return int32(id.Value)
 }
 
-func (m *SqlcFieldMapper) UserIDPtrToInt32(id *users.UserID) pgtype.Int4 {
+func (m *SqlcFieldMapper) UserIDPtrToInt32(id *shared.UserID) pgtype.Int4 {
 	if id != nil {
 		return pgtype.Int4{Int32: int32(id.Value), Valid: true}
 	}
@@ -361,9 +374,9 @@ func (m *SqlcFieldMapper) StringPtrToString(s *string) string {
 	return ""
 }
 
-func (m *SqlcFieldMapper) Int32ToUserIDPtr(i int32) *users.UserID {
+func (m *SqlcFieldMapper) Int32ToUserIDPtr(i int32) *shared.UserID {
 	if i != 0 {
-		id := users.NewUserID(uint(i))
+		id := shared.NewUserID(uint(i))
 		return &id
 	}
 	return nil

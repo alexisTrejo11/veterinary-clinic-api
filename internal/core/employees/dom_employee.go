@@ -47,6 +47,52 @@ func (v *Employee) SetTimeStamps(createdAt, updatedAt time.Time) {
 	v.Entity.SetTimeStamps(createdAt, updatedAt)
 }
 
+// Validate performs domain validation on the Employee aggregate.
+func (v *Employee) Validate(ctx context.Context, operation string) error {
+	// Validate embedded person (name, DOB, gender, adult, etc)
+	if err := v.Person.Validate(ctx, operation); err != nil {
+		return err
+	}
+
+	// License number is required
+	if v.LicenseNumber == "" {
+		return LicenseNumberRequiredError(ctx, operation)
+	}
+
+	// Years of experience must be non-negative and reasonably bounded
+	if v.YearsExperience < 0 {
+		return YearsExperienceNegativeError(ctx, v.YearsExperience, operation)
+	}
+	if v.YearsExperience > 60 {
+		return YearsExperienceUnrealisticError(ctx, v.YearsExperience, operation)
+	}
+
+	// Specialty must be valid
+	if !v.Specialty.IsValid() {
+		return InvalidSpecialtyError(ctx, v.Specialty.String(), operation)
+	}
+
+	// Optional photo URL length check
+	if v.Photo != "" && len(v.Photo) > 500 {
+		return PhotoURLTooLongError(ctx, len(v.Photo), operation)
+	}
+
+	// Consultation fee, if present, must not be negative
+	if v.ConsultationFee != nil && v.ConsultationFee.IsNegative() {
+		return errors.InvalidFieldValue(ctx, "consultation_fee", v.ConsultationFee.Amount().String(),
+			"consultation fee cannot be negative", operation)
+	}
+
+	// Validate schedule business rules if present
+	if v.Schedule != nil {
+		if err := v.Schedule.ValidateBusinessLogic(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type EmployeeSchedule struct {
 	WorkDays []WorkDaySchedule `json:"work_days"`
 }
@@ -82,12 +128,10 @@ func (s *EmployeeSchedule) validateHoursWorked() error {
 }
 
 func (s *EmployeeSchedule) isValidWorkDay(workDay WorkDaySchedule) error {
-	// Validar horario laboral principal
 	if err := s.isHoursWithinServiceSchedule(workDay.StartHour, workDay.EndHour); err != nil {
 		return err
 	}
 
-	// Validar descansos
 	if err := s.isValidBreak(workDay.Breaks, workDay); err != nil {
 		return err
 	}
@@ -95,13 +139,13 @@ func (s *EmployeeSchedule) isValidWorkDay(workDay WorkDaySchedule) error {
 	return nil
 }
 
-func (s *EmployeeSchedule) ValidateBuissnessLogic(ctx context.Context) error {
+func (s *EmployeeSchedule) ValidateBusinessLogic(ctx context.Context) error {
 	if err := s.validateDaysWorked(); err != nil {
-		return errors.BusinessRuleError(ctx, "Invalid schedule (Days Worked): "+err.Error(), "Schedule", "WorkDays", "Schedule ValidateBuissnessLogic")
+		return errors.BusinessRuleError(ctx, "Invalid schedule (Days Worked): "+err.Error(), "Schedule", "work_days", "Schedule.ValidateBusinessLogic")
 	}
 
 	if err := s.validateHoursWorked(); err != nil {
-		return errors.BusinessRuleError(ctx, "Invalid schedule (Hours Worked): "+err.Error(), "Schedule", "WorkDays", "Schedule ValidateBuissnessLogic")
+		return errors.BusinessRuleError(ctx, "Invalid schedule (Hours Worked): "+err.Error(), "Schedule", "work_days", "Schedule.ValidateBusinessLogic")
 	}
 
 	return nil
