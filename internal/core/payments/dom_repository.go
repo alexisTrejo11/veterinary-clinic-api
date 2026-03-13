@@ -9,11 +9,13 @@ import (
 )
 
 type PaymentRepository interface {
-	//FindBySpecification(ctx context.Context, specification specification.PaymentSpecification) (page.Page[Payment], error)
-	FindByID(ctx context.Context, id PaymentID) (Payment, error)
-	FindByTransactionID(ctx context.Context, transactionID string) (Payment, error)
-	FindByIDAndCustomerID(ctx context.Context, id PaymentID, customerID customers.CustomerID) (Payment, error)
+	GetByID(ctx context.Context, id PaymentID) (Payment, error)
+	GetByTransactionID(ctx context.Context, transactionID string) (Payment, error)
+	GetByIDAndCustomerID(ctx context.Context, id PaymentID, customerID customers.CustomerID) (Payment, error)
 
+	GetBySpecification(ctx context.Context, spec PaymentSpecification) (page.Page[Payment], error)
+
+	/* Spec should include this methods
 	FindByCustomerID(ctx context.Context, customerID customers.CustomerID, pageInput page.Pagination) (page.Page[Payment], error)
 	FindByStatus(ctx context.Context, status PaymentStatus, pageInput page.Pagination) (page.Page[Payment], error)
 	FindOverdue(ctx context.Context, pageInput page.Pagination) (page.Page[Payment], error)
@@ -22,7 +24,7 @@ type PaymentRepository interface {
 	FindRecentByCustomerID(ctx context.Context, customerID customers.CustomerID, limit int) ([]Payment, error)
 	FindPendingPayments(ctx context.Context, pageInput page.Pagination) (page.Page[Payment], error)
 	FindSuccessfulPayments(ctx context.Context, pageInput page.Pagination) (page.Page[Payment], error)
-
+	*/
 	ExistsByID(ctx context.Context, id PaymentID) (bool, error)
 	ExistsByTransactionID(ctx context.Context, transactionID string) (bool, error)
 	ExistsPendingByCustomerID(ctx context.Context, customerID customers.CustomerID) (bool, error)

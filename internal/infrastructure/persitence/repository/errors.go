@@ -1,40 +1,41 @@
 package repository
 
 const (
-	TableUsers       = "users"
-	TableAppts       = "appointments"
-	TablePets        = "pets"
-	TableAddresses   = "addresses"
-	TableCustomers   = "customers"
-	TableEmployees   = "employees"
+	TableUsers         = "users"
+	TableAppts         = "appointments"
+	TablePets          = "pets"
+	TableAddresses     = "addresses"
+	TableCustomers     = "customers"
+	TableEmployees     = "employees"
 	TableNotifications = "notifications"
+	TablePayments      = "payments"
 
 	// Notification error messages
-	ErrMsgFindNotificationByID   = "failed to find notification by ID"
+	ErrMsgFindNotificationByID    = "failed to find notification by ID"
 	ErrMsgFindNotificationsByUser = "failed to find notifications by user"
-	ErrMsgCreateNotification     = "failed to create notification"
+	ErrMsgCreateNotification      = "failed to create notification"
 
 	// Address error messages
-	ErrMsgFindAddressByID       = "failed to find address by ID"
-	ErrMsgFindAddressByUserID   = "failed to find address by user ID"
-	ErrMsgCreateAddress         = "failed to create address"
-	ErrMsgUpdateAddress         = "failed to update address"
-	ErrMsgSoftDeleteAddress     = "failed to soft delete address"
-	ErrMsgRestoreAddress        = "failed to restore address"
+	ErrMsgFindAddressByID        = "failed to find address by ID"
+	ErrMsgFindAddressByUserID    = "failed to find address by user ID"
+	ErrMsgCreateAddress          = "failed to create address"
+	ErrMsgUpdateAddress          = "failed to update address"
+	ErrMsgSoftDeleteAddress      = "failed to soft delete address"
+	ErrMsgRestoreAddress         = "failed to restore address"
 	ErrMsgConvertAddressToDomain = "failed to convert address to domain entity"
 
 	// Customer error messages
-	ErrMsgFindCustomerByID     = "failed to find customer by ID"
-	ErrMsgFindCustomersBySpec  = "failed to find customers by specification"
-	ErrMsgCreateCustomer       = "failed to create customer"
-	ErrMsgUpdateCustomer       = "failed to update customer"
+	ErrMsgFindCustomerByID        = "failed to find customer by ID"
+	ErrMsgFindCustomersBySpec     = "failed to find customers by specification"
+	ErrMsgCreateCustomer          = "failed to create customer"
+	ErrMsgUpdateCustomer          = "failed to update customer"
 	ErrMsgConvertCustomerToDomain = "failed to convert customer to domain entity"
 
 	// Employee error messages
-	ErrMsgFindEmployeeByID     = "failed to find employee by ID"
-	ErrMsgFindEmployeesBySpec  = "failed to find employees by specification"
-	ErrMsgCreateEmployee       = "failed to create employee"
-	ErrMsgUpdateEmployee       = "failed to update employee"
+	ErrMsgFindEmployeeByID        = "failed to find employee by ID"
+	ErrMsgFindEmployeesBySpec     = "failed to find employees by specification"
+	ErrMsgCreateEmployee          = "failed to create employee"
+	ErrMsgUpdateEmployee          = "failed to update employee"
 	ErrMsgConvertEmployeeToDomain = "failed to convert employee to domain entity"
 
 	// Pet error messages
@@ -81,6 +82,19 @@ const (
 	ErrMsgCheckAppointmentExists = "failed to check appointment existence by ID"
 	ErrMsgCountAppointments      = "failed to count appointments"
 	ErrMsgConvertToAppointment   = "failed to convert to appointment entity"
+
+	// Payment error messages
+	ErrMsgFindPaymentByID              = "failed to find payment by ID"
+	ErrMsgFindPaymentByTransactionID   = "failed to find payment by transaction ID"
+	ErrMsgFindPaymentByIDAndCustomerID = "failed to find payment by ID and customer ID"
+	ErrMsgFindPaymentsBySpecification  = "failed to find payments by specification"
+	ErrMsgCheckPaymentExists           = "failed to check payment existence by ID"
+	ErrMsgCountPaymentsByStatus        = "failed to count payments by status"
+	ErrMsgCountPaymentsByCustomerID    = "failed to count payments by customer ID"
+	ErrMsgCountOverduePayments         = "failed to count overdue payments"
+	ErrMsgTotalRevenueByDateRange      = "failed to total revenue by date range"
+	ErrMsgCreatePayment                = "failed to create payment"
+	ErrMsgUpdatePayment                = "failed to update payment"
 
 	// SQL operations
 	DriverSQL = "SQLC"

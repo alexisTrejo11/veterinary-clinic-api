@@ -51,6 +51,10 @@ type PaymentID struct {
 	shared.BaseID
 }
 
+func NewPaymentID(id uint) PaymentID {
+	return PaymentID{shared.BaseID{Value: id}}
+}
+
 func (p *Payment) MarkAsPaid(ctx context.Context, transactionID string, paidAt time.Time) error {
 	operation := "MarkAsPaid"
 

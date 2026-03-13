@@ -15,8 +15,8 @@ import (
 const countOverduePayments = `-- name: CountOverduePayments :one
 SELECT COUNT(*) FROM payments
 WHERE due_date < CURRENT_TIMESTAMP 
-AND status NOT IN ('paid', 'refunded', 'cancelled') 
-AND deleted_at IS NULL
+  AND status NOT IN ('paid', 'refunded', 'cancelled') 
+  AND deleted_at IS NULL
 `
 
 func (q *Queries) CountOverduePayments(ctx context.Context) (int64, error) {
@@ -38,18 +38,35 @@ func (q *Queries) CountPaymentsByCustomerID(ctx context.Context, paidByCustomerI
 	return count, err
 }
 
-const countPaymentsByDateRange = `-- name: CountPaymentsByDateRange :one
+const countPaymentsBySpecification = `-- name: CountPaymentsBySpecification :one
 SELECT COUNT(*) FROM payments
-WHERE created_at BETWEEN $1 AND $2 AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+  AND ($1::int IS NULL OR paid_by_customer_id = $1)
+  AND ($2::payment_status IS NULL OR status = $2)
+  AND ($3::payment_method IS NULL OR method = $3)
+  AND ($4::timestamptz IS NULL OR created_at >= $4)
+  AND ($5::timestamptz IS NULL OR created_at <= $5)
+  AND (NOT $6::boolean OR (due_date < CURRENT_TIMESTAMP AND status NOT IN ('paid','refunded','cancelled')))
 `
 
-type CountPaymentsByDateRangeParams struct {
-	CreatedAt   pgtype.Timestamptz
-	CreatedAt_2 pgtype.Timestamptz
+type CountPaymentsBySpecificationParams struct {
+	Column1 int32
+	Column2 models.PaymentStatus
+	Column3 models.PaymentMethod
+	Column4 pgtype.Timestamptz
+	Column5 pgtype.Timestamptz
+	Column6 bool
 }
 
-func (q *Queries) CountPaymentsByDateRange(ctx context.Context, arg CountPaymentsByDateRangeParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countPaymentsByDateRange, arg.CreatedAt, arg.CreatedAt_2)
+func (q *Queries) CountPaymentsBySpecification(ctx context.Context, arg CountPaymentsBySpecificationParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countPaymentsBySpecification,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+		arg.Column5,
+		arg.Column6,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -73,8 +90,13 @@ INSERT INTO payments (
     due_date, paid_at, refunded_at, paid_by_customer_id,
     med_session_id, invoice_id, refund_amount, failure_reason
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
-) RETURNING id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    $11, $12, $13, $14
+)
+RETURNING id, amount, currency, status, method, med_session_id, transaction_id,
+          description, due_date, paid_at, refunded_at, is_active, created_at,
+          updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
+          failure_reason
 `
 
 type CreatePaymentParams struct {
@@ -163,8 +185,8 @@ func (q *Queries) ExistsPaymentByTransactionID(ctx context.Context, transactionI
 const existsPendingPaymentByCustomerID = `-- name: ExistsPendingPaymentByCustomerID :one
 SELECT COUNT(*) > 0 FROM payments
 WHERE paid_by_customer_id = $1 
-AND status = 'pending' 
-AND deleted_at IS NULL
+  AND status = 'pending' 
+  AND deleted_at IS NULL
 `
 
 func (q *Queries) ExistsPendingPaymentByCustomerID(ctx context.Context, paidByCustomerID pgtype.Int4) (bool, error) {
@@ -174,62 +196,12 @@ func (q *Queries) ExistsPendingPaymentByCustomerID(ctx context.Context, paidByCu
 	return column_1, err
 }
 
-const findOverduePayments = `-- name: FindOverduePayments :many
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
-WHERE due_date < CURRENT_TIMESTAMP 
-AND status NOT IN ('paid', 'refunded', 'cancelled') 
-AND deleted_at IS NULL
-ORDER BY due_date ASC
-LIMIT $1 OFFSET $2
-`
-
-type FindOverduePaymentsParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) FindOverduePayments(ctx context.Context, arg FindOverduePaymentsParams) ([]Payment, error) {
-	rows, err := q.db.Query(ctx, findOverduePayments, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Payment
-	for rows.Next() {
-		var i Payment
-		if err := rows.Scan(
-			&i.ID,
-			&i.Amount,
-			&i.Currency,
-			&i.Status,
-			&i.Method,
-			&i.MedSessionID,
-			&i.TransactionID,
-			&i.Description,
-			&i.DueDate,
-			&i.PaidAt,
-			&i.RefundedAt,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.PaidByCustomerID,
-			&i.InvoiceID,
-			&i.RefundAmount,
-			&i.FailureReason,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const findPaymentByID = `-- name: FindPaymentByID :one
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
+SELECT id, amount, currency, status, method, med_session_id, transaction_id,
+       description, due_date, paid_at, refunded_at, is_active, created_at,
+       updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
+       failure_reason
+FROM payments
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -261,7 +233,11 @@ func (q *Queries) FindPaymentByID(ctx context.Context, id int32) (Payment, error
 }
 
 const findPaymentByIDAndCustomerID = `-- name: FindPaymentByIDAndCustomerID :one
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
+SELECT id, amount, currency, status, method, med_session_id, transaction_id,
+       description, due_date, paid_at, refunded_at, is_active, created_at,
+       updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
+       failure_reason
+FROM payments
 WHERE id = $1 AND paid_by_customer_id = $2 AND deleted_at IS NULL
 `
 
@@ -298,7 +274,11 @@ func (q *Queries) FindPaymentByIDAndCustomerID(ctx context.Context, arg FindPaym
 }
 
 const findPaymentByTransactionID = `-- name: FindPaymentByTransactionID :one
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
+SELECT id, amount, currency, status, method, med_session_id, transaction_id,
+       description, due_date, paid_at, refunded_at, is_active, created_at,
+       updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
+       failure_reason
+FROM payments
 WHERE transaction_id = $1 AND deleted_at IS NULL
 `
 
@@ -329,353 +309,45 @@ func (q *Queries) FindPaymentByTransactionID(ctx context.Context, transactionID 
 	return i, err
 }
 
-const findPaymentsByAppointmentID = `-- name: FindPaymentsByAppointmentID :one
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
-WHERE med_session_id = $1 AND deleted_at IS NULL
-`
-
-func (q *Queries) FindPaymentsByAppointmentID(ctx context.Context, medSessionID pgtype.Int4) (Payment, error) {
-	row := q.db.QueryRow(ctx, findPaymentsByAppointmentID, medSessionID)
-	var i Payment
-	err := row.Scan(
-		&i.ID,
-		&i.Amount,
-		&i.Currency,
-		&i.Status,
-		&i.Method,
-		&i.MedSessionID,
-		&i.TransactionID,
-		&i.Description,
-		&i.DueDate,
-		&i.PaidAt,
-		&i.RefundedAt,
-		&i.IsActive,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-		&i.PaidByCustomerID,
-		&i.InvoiceID,
-		&i.RefundAmount,
-		&i.FailureReason,
-	)
-	return i, err
-}
-
-const findPaymentsByCustomerID = `-- name: FindPaymentsByCustomerID :many
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
-WHERE paid_by_customer_id = $1 AND deleted_at IS NULL
+const findPaymentsBySpecification = `-- name: FindPaymentsBySpecification :many
+SELECT id, amount, currency, status, method, med_session_id, transaction_id,
+       description, due_date, paid_at, refunded_at, is_active, created_at,
+       updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
+       failure_reason
+FROM payments
+WHERE deleted_at IS NULL
+  AND ($1::int IS NULL OR paid_by_customer_id = $1)
+  AND ($2::payment_status IS NULL OR status = $2)
+  AND ($3::payment_method IS NULL OR method = $3)
+  AND ($4::timestamptz IS NULL OR created_at >= $4)
+  AND ($5::timestamptz IS NULL OR created_at <= $5)
+  AND (NOT $6::boolean OR (due_date < CURRENT_TIMESTAMP AND status NOT IN ('paid','refunded','cancelled')))
 ORDER BY created_at DESC
-LIMIT $2 OFFSET $3
+LIMIT $7 OFFSET $8
 `
 
-type FindPaymentsByCustomerIDParams struct {
-	PaidByCustomerID pgtype.Int4
-	Limit            int32
-	Offset           int32
+type FindPaymentsBySpecificationParams struct {
+	Column1 int32
+	Column2 models.PaymentStatus
+	Column3 models.PaymentMethod
+	Column4 pgtype.Timestamptz
+	Column5 pgtype.Timestamptz
+	Column6 bool
+	Limit   int32
+	Offset  int32
 }
 
-func (q *Queries) FindPaymentsByCustomerID(ctx context.Context, arg FindPaymentsByCustomerIDParams) ([]Payment, error) {
-	rows, err := q.db.Query(ctx, findPaymentsByCustomerID, arg.PaidByCustomerID, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Payment
-	for rows.Next() {
-		var i Payment
-		if err := rows.Scan(
-			&i.ID,
-			&i.Amount,
-			&i.Currency,
-			&i.Status,
-			&i.Method,
-			&i.MedSessionID,
-			&i.TransactionID,
-			&i.Description,
-			&i.DueDate,
-			&i.PaidAt,
-			&i.RefundedAt,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.PaidByCustomerID,
-			&i.InvoiceID,
-			&i.RefundAmount,
-			&i.FailureReason,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findPaymentsByDateRange = `-- name: FindPaymentsByDateRange :many
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
-WHERE created_at BETWEEN $1 AND $2 AND deleted_at IS NULL
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4
-`
-
-type FindPaymentsByDateRangeParams struct {
-	CreatedAt   pgtype.Timestamptz
-	CreatedAt_2 pgtype.Timestamptz
-	Limit       int32
-	Offset      int32
-}
-
-func (q *Queries) FindPaymentsByDateRange(ctx context.Context, arg FindPaymentsByDateRangeParams) ([]Payment, error) {
-	rows, err := q.db.Query(ctx, findPaymentsByDateRange,
-		arg.CreatedAt,
-		arg.CreatedAt_2,
+func (q *Queries) FindPaymentsBySpecification(ctx context.Context, arg FindPaymentsBySpecificationParams) ([]Payment, error) {
+	rows, err := q.db.Query(ctx, findPaymentsBySpecification,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+		arg.Column5,
+		arg.Column6,
 		arg.Limit,
 		arg.Offset,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Payment
-	for rows.Next() {
-		var i Payment
-		if err := rows.Scan(
-			&i.ID,
-			&i.Amount,
-			&i.Currency,
-			&i.Status,
-			&i.Method,
-			&i.MedSessionID,
-			&i.TransactionID,
-			&i.Description,
-			&i.DueDate,
-			&i.PaidAt,
-			&i.RefundedAt,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.PaidByCustomerID,
-			&i.InvoiceID,
-			&i.RefundAmount,
-			&i.FailureReason,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findPaymentsByInvoiceID = `-- name: FindPaymentsByInvoiceID :one
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
-WHERE invoice_id = $1 AND deleted_at IS NULL
-`
-
-func (q *Queries) FindPaymentsByInvoiceID(ctx context.Context, invoiceID pgtype.Text) (Payment, error) {
-	row := q.db.QueryRow(ctx, findPaymentsByInvoiceID, invoiceID)
-	var i Payment
-	err := row.Scan(
-		&i.ID,
-		&i.Amount,
-		&i.Currency,
-		&i.Status,
-		&i.Method,
-		&i.MedSessionID,
-		&i.TransactionID,
-		&i.Description,
-		&i.DueDate,
-		&i.PaidAt,
-		&i.RefundedAt,
-		&i.IsActive,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-		&i.PaidByCustomerID,
-		&i.InvoiceID,
-		&i.RefundAmount,
-		&i.FailureReason,
-	)
-	return i, err
-}
-
-const findPaymentsByStatus = `-- name: FindPaymentsByStatus :many
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
-WHERE status = $1 AND deleted_at IS NULL
-ORDER BY created_at DESC
-LIMIT $2 OFFSET $3
-`
-
-type FindPaymentsByStatusParams struct {
-	Status models.PaymentStatus
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) FindPaymentsByStatus(ctx context.Context, arg FindPaymentsByStatusParams) ([]Payment, error) {
-	rows, err := q.db.Query(ctx, findPaymentsByStatus, arg.Status, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Payment
-	for rows.Next() {
-		var i Payment
-		if err := rows.Scan(
-			&i.ID,
-			&i.Amount,
-			&i.Currency,
-			&i.Status,
-			&i.Method,
-			&i.MedSessionID,
-			&i.TransactionID,
-			&i.Description,
-			&i.DueDate,
-			&i.PaidAt,
-			&i.RefundedAt,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.PaidByCustomerID,
-			&i.InvoiceID,
-			&i.RefundAmount,
-			&i.FailureReason,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findPendingPayments = `-- name: FindPendingPayments :many
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
-WHERE status = 'pending' AND deleted_at IS NULL
-ORDER BY due_date ASC
-LIMIT $1 OFFSET $2
-`
-
-type FindPendingPaymentsParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) FindPendingPayments(ctx context.Context, arg FindPendingPaymentsParams) ([]Payment, error) {
-	rows, err := q.db.Query(ctx, findPendingPayments, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Payment
-	for rows.Next() {
-		var i Payment
-		if err := rows.Scan(
-			&i.ID,
-			&i.Amount,
-			&i.Currency,
-			&i.Status,
-			&i.Method,
-			&i.MedSessionID,
-			&i.TransactionID,
-			&i.Description,
-			&i.DueDate,
-			&i.PaidAt,
-			&i.RefundedAt,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.PaidByCustomerID,
-			&i.InvoiceID,
-			&i.RefundAmount,
-			&i.FailureReason,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findRecentPaymentsByCustomerID = `-- name: FindRecentPaymentsByCustomerID :many
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
-WHERE paid_by_customer_id = $1 AND deleted_at IS NULL
-ORDER BY created_at DESC
-LIMIT $2
-`
-
-type FindRecentPaymentsByCustomerIDParams struct {
-	PaidByCustomerID pgtype.Int4
-	Limit            int32
-}
-
-func (q *Queries) FindRecentPaymentsByCustomerID(ctx context.Context, arg FindRecentPaymentsByCustomerIDParams) ([]Payment, error) {
-	rows, err := q.db.Query(ctx, findRecentPaymentsByCustomerID, arg.PaidByCustomerID, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Payment
-	for rows.Next() {
-		var i Payment
-		if err := rows.Scan(
-			&i.ID,
-			&i.Amount,
-			&i.Currency,
-			&i.Status,
-			&i.Method,
-			&i.MedSessionID,
-			&i.TransactionID,
-			&i.Description,
-			&i.DueDate,
-			&i.PaidAt,
-			&i.RefundedAt,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.PaidByCustomerID,
-			&i.InvoiceID,
-			&i.RefundAmount,
-			&i.FailureReason,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findSuccessfulPayments = `-- name: FindSuccessfulPayments :many
-SELECT id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason FROM payments
-WHERE status = 'paid' AND deleted_at IS NULL
-ORDER BY paid_at DESC
-LIMIT $1 OFFSET $2
-`
-
-type FindSuccessfulPaymentsParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) FindSuccessfulPayments(ctx context.Context, arg FindSuccessfulPaymentsParams) ([]Payment, error) {
-	rows, err := q.db.Query(ctx, findSuccessfulPayments, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -739,8 +411,8 @@ func (q *Queries) SoftDeletePayment(ctx context.Context, id int32) error {
 const totalRevenueByDateRange = `-- name: TotalRevenueByDateRange :one
 SELECT COALESCE(SUM(amount), 0) FROM payments
 WHERE status = 'paid'
-AND paid_at BETWEEN $1 AND $2
-AND deleted_at IS NULL
+  AND paid_at BETWEEN $1 AND $2
+  AND deleted_at IS NULL
 `
 
 type TotalRevenueByDateRangeParams struct {
@@ -773,7 +445,10 @@ UPDATE payments SET
     failure_reason = $15,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, amount, currency, status, method, med_session_id, transaction_id, description, due_date, paid_at, refunded_at, is_active, created_at, updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount, failure_reason
+RETURNING id, amount, currency, status, method, med_session_id, transaction_id,
+          description, due_date, paid_at, refunded_at, is_active, created_at,
+          updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
+          failure_reason
 `
 
 type UpdatePaymentParams struct {
@@ -835,23 +510,4 @@ func (q *Queries) UpdatePayment(ctx context.Context, arg UpdatePaymentParams) (P
 		&i.FailureReason,
 	)
 	return i, err
-}
-
-const updatePaymentStatus = `-- name: UpdatePaymentStatus :exec
-UPDATE payments SET
-    status = $2,
-    paid_at = CASE WHEN $2 = 'paid' THEN COALESCE(paid_at, CURRENT_TIMESTAMP) ELSE paid_at END,
-    refunded_at = CASE WHEN $2 = 'refunded' THEN COALESCE(refunded_at, CURRENT_TIMESTAMP) ELSE refunded_at END,
-    updated_at = CURRENT_TIMESTAMP
-WHERE id = $1 AND deleted_at IS NULL
-`
-
-type UpdatePaymentStatusParams struct {
-	ID     int32
-	Status models.PaymentStatus
-}
-
-func (q *Queries) UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) error {
-	_, err := q.db.Exec(ctx, updatePaymentStatus, arg.ID, arg.Status)
-	return err
 }
