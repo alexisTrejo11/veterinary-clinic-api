@@ -38,7 +38,8 @@ func (r *AppointmentsByDateRangeRequest) EndTime() time.Time {
 	return end
 }
 
-// AppointmentRequestByCustomerRequest is the body when a customer requests an appointment (customer_id from auth).
+// AppointmentRequestByCustomerRequest is the body when a customer requests an appointment (customer_id from auth)
+// @Description Pet ID, scheduled date/time, reason, service, optional notes. Customer ID is taken from auth.
 type AppointmentRequestByCustomerRequest struct {
 	PetID          uint      `json:"pet_id" binding:"required"`
 	ScheduledDate  time.Time `json:"scheduled_date" binding:"required"`
@@ -79,6 +80,8 @@ type AppointmentCreateRequest struct {
 	Status *string `json:"status" binding:"required" example:"scheduled"`
 }
 
+// AppointmentUpdateGeneralInfoRequest is the body for updating appointment general info
+// @Description Optional reason, notes, and service. Only provided fields are updated.
 type AppointmentUpdateGeneralInfoRequest struct {
 	// Optional: Reason for updating the appointment
 	Reason *string `json:"reason,omitempty" binding:"omitempty,max=500" example:"Updated reason for appointment"`
@@ -90,6 +93,8 @@ type AppointmentUpdateGeneralInfoRequest struct {
 	Service *string `json:"service,omitempty" binding:"omitempty,max=100" example:"Annual checkup"`
 }
 
+// ReassignAppointmentRequest is the body for reassigning an appointment to another employee
+// @Description New employee ID and optional reason.
 type ReassignAppointmentRequest struct {
 	// ID of the new employee (vet) to assign the appointment to
 	// Required: true
@@ -99,6 +104,8 @@ type ReassignAppointmentRequest struct {
 	Reason *string `json:"reason,omitempty" binding:"omitempty,max=500" example:"Original vet is unavailable"`
 }
 
+// RescheduleAppointmentRequest is the body for rescheduling an appointment
+// @Description New date/time (RFC3339) and optional reason.
 type RescheduleAppointmentRequest struct {
 	// @Required Required: New date and time for the appointment (RFC3339 format)
 	NewDateTime time.Time `json:"datetime" binding:"required" example:"2024-01-15T10:30:00Z"`
@@ -107,6 +114,8 @@ type RescheduleAppointmentRequest struct {
 	Reason *string `json:"reason,omitempty" binding:"omitempty,max=500" example:"Routine checkup"`
 }
 
+// AppointmentSearchRequest carries filters for appointment listing (query params)
+// @Description Optional customer_id, vet_id, pet_id, service, status, reason, start_date, end_date, has_notes, plus pagination.
 type AppointmentSearchRequest struct {
 	CustomerID uint   `form:"customer_id" validate:"omitempty,min=1"`
 	EmployeeID uint   `form:"vet_id" validate:"omitempty,min=1"`
@@ -144,7 +153,8 @@ func (r *AppointmentSearchRequest) processBooleanParams(c *gin.Context) {
 // Response DTOs
 // =======================================================================
 
-// AppointmentResponse represents an appointment response
+// AppointmentResponse represents an appointment in API responses
+// @Description Appointment entity: id, pet_id, customer_id, employee_id, service, datetime, status, reason, notes, timestamps.
 type AppointmentResponse struct {
 	ID            uint    `json:"id"`
 	PetID         uint    `json:"pet_id"`
@@ -161,6 +171,7 @@ type AppointmentResponse struct {
 }
 
 // AppointmentStats represents appointment statistics
+// @Description Totals, counts by status, by service, upcoming and overdue counts.
 type AppointmentStats struct {
 	TotalAppointments     int                                    `json:"total_appointments"`
 	AppointmentsByStatus  map[appointments.AppointmentStatus]int `json:"appointments_by_status"`

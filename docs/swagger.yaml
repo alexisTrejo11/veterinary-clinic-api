@@ -1,14 +1,754 @@
 basePath: /api/v2
 definitions:
-  apiResponse.APIResponse:
+  dtos.ActivateAccountRequest:
+    description: User ID and activation code (e.g. from email link). Supports query
+      params or JSON body.
+    properties:
+      code:
+        maxLength: 32
+        type: string
+      user_id:
+        maxLength: 20
+        type: string
+    required:
+    - code
+    - user_id
+    type: object
+  dtos.AppointmentRequestByCustomerRequest:
+    description: Pet ID, scheduled date/time, reason, service, optional notes. Customer
+      ID is taken from auth.
+    properties:
+      notes:
+        type: string
+      pet_id:
+        type: integer
+      reason:
+        type: string
+      scheduled_date:
+        type: string
+      service:
+        type: string
+    required:
+    - pet_id
+    - reason
+    - scheduled_date
+    - service
+    type: object
+  dtos.AppointmentSearchRequest:
+    description: Optional customer_id, vet_id, pet_id, service, status, reason, start_date,
+      end_date, has_notes, plus pagination.
+    properties:
+      customer_id:
+        minimum: 1
+        type: integer
+      end_date:
+        type: string
+      has_notes:
+        type: boolean
+      order_by:
+        maxLength: 50
+        type: string
+      page:
+        minimum: 1
+        type: integer
+      page_size:
+        maximum: 100
+        minimum: 1
+        type: integer
+      pet_id:
+        minimum: 1
+        type: integer
+      reason:
+        type: string
+      service:
+        type: string
+      sort_direction:
+        allOf:
+        - $ref: '#/definitions/page.SortDirection'
+        enum:
+        - ASC
+        - DESC
+      start_date:
+        type: string
+      status:
+        type: string
+      vet_id:
+        minimum: 1
+        type: integer
+    type: object
+  dtos.CreateUserRequest:
+    description: Request body for creating a new user account
+    properties:
+      email:
+        description: |-
+          Email address of the user
+          Required: true
+          Example: user@example.com``
+        example: user@example.com
+        type: string
+      password:
+        description: |-
+          Plain text password (will be hashed)
+          Required: true
+          Minimum length: 8 characters
+        example: SecurePass123!
+        minLength: 8
+        type: string
+      phone_number:
+        description: |-
+          Phone number of the user
+          Required: false
+          Example: +1234567890
+        example: "+1234567890"
+        minLength: 10
+        type: string
+      profile:
+        allOf:
+        - $ref: '#/definitions/dtos.ProfileInfo'
+        description: User profile information
+      role:
+        description: |-
+          Role of the user (admin, veterinarian, customer, receptionist)
+          Required: true
+          Example: customer
+        enum:
+        - admin
+        - veterinarian
+        - customer
+        - receptionist
+        example: customer
+        type: string
+      status:
+        description: |-
+          Initial status of the user account
+          Required: false (defaults to "pending")
+          Example: active
+        enum:
+        - active
+        - inactive
+        - pending
+        example: active
+        type: string
+    required:
+    - email
+    - password
+    - role
+    type: object
+  dtos.CustomerCreateRequest:
+    description: First name, last name, email, gender, date of birth, optional photo
+      URL, is_active, and optional user_id to link account.
+    properties:
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      gender:
+        enum:
+        - male
+        - female
+        - not_specified
+        - other
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      photo_url:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - date_of_birth
+    - email
+    - first_name
+    - gender
+    - last_name
+    type: object
+  dtos.CustomerResponse:
+    description: 'Customer entity: id, name, gender, date of birth, photo, user_id,
+      is_active, timestamps.'
+    properties:
+      created_at:
+        type: string
+      date_of_birth:
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      photo_url:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  dtos.CustomerSearchRequest:
+    description: Pagination plus optional search text and is_active filter.
+    properties:
+      is_active:
+        description: Optional active filter.
+        type: boolean
+      order_by:
+        maxLength: 50
+        type: string
+      page:
+        minimum: 1
+        type: integer
+      page_size:
+        maximum: 100
+        minimum: 1
+        type: integer
+      search:
+        description: Optional text search over first and last name.
+        type: string
+      sort_direction:
+        allOf:
+        - $ref: '#/definitions/page.SortDirection'
+        enum:
+        - ASC
+        - DESC
+    type: object
+  dtos.CustomerUpdateRequest:
+    description: ID (required) plus optional fields to update. ID can also be taken
+      from URL path.
+    properties:
+      date_of_birth:
+        type: string
+      first_name:
+        type: string
+      gender:
+        enum:
+        - male
+        - female
+        - not_specified
+        - other
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      photo_url:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - id
+    type: object
+  dtos.EmployeeCreateRequest:
+    description: Name, gender, date of birth, photo, license number, years experience,
+      specialty, schedule, optional is_active.
+    properties:
+      date_of_birth:
+        type: string
+      first_name:
+        type: string
+      gender:
+        enum:
+        - male
+        - female
+        - not_specified
+        - other
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      license_number:
+        type: string
+      photo:
+        type: string
+      schedule:
+        $ref: '#/definitions/dtos.EmployeeScheduleRequest'
+      specialty:
+        type: string
+      years_experience:
+        maximum: 60
+        minimum: 0
+        type: integer
+    required:
+    - date_of_birth
+    - first_name
+    - gender
+    - last_name
+    - license_number
+    - schedule
+    - specialty
+    type: object
+  dtos.EmployeeResponse:
+    description: 'Employee entity: id, name, gender, date of birth, photo, license,
+      specialty, years experience, is_active, user_id, timestamps.'
+    properties:
+      created_at:
+        type: string
+      date_of_birth:
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      license_number:
+        type: string
+      photo:
+        type: string
+      specialty:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      years_experience:
+        type: integer
+    type: object
+  dtos.EmployeeScheduleRequest:
+    description: Day of week, entry/departure time (0-23), optional break window.
+    properties:
+      day:
+        description: e.g. "monday"
+        type: string
+      departure_time:
+        maximum: 23
+        minimum: 0
+        type: integer
+      end_break:
+        maximum: 23
+        minimum: 0
+        type: integer
+      entry_time:
+        description: 0-23
+        maximum: 23
+        minimum: 0
+        type: integer
+      start_break:
+        maximum: 23
+        minimum: 0
+        type: integer
+    required:
+    - day
+    - departure_time
+    - entry_time
+    type: object
+  dtos.EmployeeSearchRequest:
+    description: Pagination plus optional specialty and is_active filter.
+    properties:
+      is_active:
+        type: boolean
+      order_by:
+        maxLength: 50
+        type: string
+      page:
+        minimum: 1
+        type: integer
+      page_size:
+        maximum: 100
+        minimum: 1
+        type: integer
+      sort_direction:
+        allOf:
+        - $ref: '#/definitions/page.SortDirection'
+        enum:
+        - ASC
+        - DESC
+      specialty:
+        type: string
+    type: object
+  dtos.EmployeeUpdateRequest:
+    description: ID (required) plus optional fields and optional schedule.
+    properties:
+      date_of_birth:
+        type: string
+      first_name:
+        type: string
+      gender:
+        enum:
+        - male
+        - female
+        - not_specified
+        - other
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      license_number:
+        type: string
+      photo:
+        type: string
+      schedule:
+        $ref: '#/definitions/dtos.EmployeeScheduleRequest'
+      specialty:
+        type: string
+      years_experience:
+        maximum: 60
+        minimum: 0
+        type: integer
+    required:
+    - id
+    type: object
+  dtos.EnableTwoFactorRequest:
+    description: '2FA method: totp, sms, or email.'
+    properties:
+      method:
+        enum:
+        - totp
+        - sms
+        - email
+        type: string
+    required:
+    - method
+    type: object
+  dtos.LoginRequest:
+    description: Email, password, and optional two_factor_code when 2FA is enabled.
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 128
+        type: string
+      two_factor_code:
+        maxLength: 16
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dtos.LogoutRequest:
+    description: Refresh token to revoke for the current session.
+    properties:
+      refresh_token:
+        maxLength: 2000
+        type: string
+    required:
+    - refresh_token
+    type: object
+  dtos.PaymentResponse:
+    description: 'Payment entity: id, amount, currency, status, method, transaction_id,
+      description, due_date, paid_at, customer_id, timestamps, optional refund/delete
+      info.'
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      currency:
+        type: string
+      customer_id:
+        type: integer
+      deleted_at:
+        type: string
+      description:
+        type: string
+      due_date:
+        type: string
+      failure_reason:
+        type: string
+      id:
+        type: integer
+      invoice_id:
+        type: string
+      is_active:
+        type: boolean
+      method:
+        type: string
+      method_display:
+        type: string
+      paid_at:
+        type: string
+      refund_amount:
+        type: number
+      refunded_at:
+        type: string
+      status:
+        type: string
+      status_display:
+        type: string
+      transaction_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dtos.ProfileInfo:
+    description: User profile details
+    properties:
+      bio:
+        description: User biography (max 500 characters)
+        example: Animal lover and pet owner
+        maxLength: 500
+        type: string
+      date_of_birth:
+        description: Date of birth
+        example: "1990-01-15T00:00:00Z"
+        type: string
+      gender:
+        description: Gender of the user
+        example: male
+        type: string
+      name:
+        description: Full name of the user
+        example: John Doe
+        type: string
+      photo_url:
+        description: URL to user's profile photo
+        example: https://example.com/photo.jpg
+        type: string
+    type: object
+  dtos.ProfileResponse:
+    description: 'Authenticated user''s profile: id, email, phone, role, status, name,
+      gender, date of birth, profile picture URL, bio.'
+    properties:
+      bio:
+        type: string
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      gender:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      profile_pic_url:
+        type: string
+      role:
+        type: string
+      status:
+        type: string
+    type: object
+  dtos.RefreshTokenRequest:
+    description: Refresh token string to exchange for new access and refresh tokens.
+    properties:
+      refresh_token:
+        maxLength: 2000
+        type: string
+    required:
+    - refresh_token
+    type: object
+  dtos.RegisterRequest:
+    description: 'Request body for user registration. Role: admin, veterinarian, customer,
+      or receptionist. Admins get immediate access; others may require activation.'
+    properties:
+      bio:
+        maxLength: 500
+        type: string
+      date_of_birth:
+        maxLength: 20
+        type: string
+      email:
+        example: user@example.com
+        maxLength: 255
+        type: string
+      employee_id:
+        type: integer
+      gender:
+        maxLength: 20
+        type: string
+      license_number:
+        maxLength: 100
+        type: string
+      name:
+        maxLength: 200
+        type: string
+      password:
+        example: SecurePass123!
+        maxLength: 128
+        minLength: 8
+        type: string
+      phone_number:
+        maxLength: 30
+        type: string
+      photo_url:
+        maxLength: 500
+        type: string
+      role:
+        enum:
+        - admin
+        - veterinarian
+        - customer
+        - receptionist
+        example: customer
+        type: string
+    required:
+    - email
+    - password
+    - role
+    type: object
+  dtos.RequestResetPasswordRequest:
+    description: Email address to send the password reset link/code to.
+    properties:
+      email:
+        maxLength: 255
+        type: string
+    required:
+    - email
+    type: object
+  dtos.ResetPasswordRequest:
+    description: Email, code received by email, and new password.
+    properties:
+      code:
+        maxLength: 32
+        type: string
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 128
+        minLength: 8
+        type: string
+    required:
+    - code
+    - email
+    - password
+    type: object
+  dtos.UpdateProfileRequest:
+    description: Authenticated user's profile fields to update (name, gender, date
+      of birth, photo URL, bio).
+    properties:
+      bio:
+        maxLength: 500
+        type: string
+      date_of_birth:
+        type: string
+      gender:
+        example: male
+        type: string
+      name:
+        example: John Doe
+        type: string
+      photo_url:
+        type: string
+    required:
+    - gender
+    - name
+    type: object
+  dtos.UserResponse:
+    description: User account information (excluding sensitive data)
+    properties:
+      created_at:
+        description: |-
+          Account creation timestamp
+          Example: 2024-01-01T00:00:00Z
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      customer_id:
+        description: |-
+          ID of the associated customer (for customer users)
+          Example: 789
+        example: 789
+        type: integer
+      email:
+        description: |-
+          Email address of the user
+          Example: user@example.com
+        example: user@example.com
+        type: string
+      email_verified:
+        description: |-
+          Whether the email has been verified
+          Example: true
+        example: true
+        type: boolean
+      employee_id:
+        description: |-
+          ID of the associated employee (for staff users)
+          Example: 456
+        example: 456
+        type: integer
+      id:
+        description: |-
+          Unique identifier for the user
+          Example: 123
+        example: 123
+        type: integer
+      last_login_at:
+        description: |-
+          Last login timestamp
+          Example: 2024-03-10T15:30:00Z
+        example: "2024-03-10T15:30:00Z"
+        type: string
+      oauth_provider:
+        description: |-
+          OAuth provider name (e.g., "google", "facebook")
+          Example: google
+        example: google
+        type: string
+      phone_number:
+        description: |-
+          Phone number of the user
+          Example: +1234567890
+        example: "+1234567890"
+        type: string
+      profile:
+        allOf:
+        - $ref: '#/definitions/dtos.ProfileResponse'
+        description: User profile information
+      role:
+        description: |-
+          Role of the user (admin, veterinarian, customer, receptionist)
+          Example: customer
+        example: customer
+        type: string
+      status:
+        description: |-
+          Status of the user account (active, inactive, banned, pending)
+          Example: active
+        example: active
+        type: string
+      two_factor_enabled:
+        description: |-
+          Whether two-factor authentication is enabled
+          Example: false
+        example: false
+        type: boolean
+      updated_at:
+        description: |-
+          Last update timestamp
+          Example: 2024-03-10T15:30:00Z
+        example: "2024-03-10T15:30:00Z"
+        type: string
+    type: object
+  dtos.VerifyTwoFactorRequest:
+    description: One-time 2FA code (TOTP or backup code).
+    properties:
+      two_factor_code:
+        maxLength: 16
+        type: string
+    required:
+    - two_factor_code
+    type: object
+  http.APIResponse:
     description: Standardized API response structure.
     properties:
       data:
         description: The data payload of the response for successful requests.
       error:
         allOf:
-        - $ref: '#/definitions/apiResponse.ErrorInfo'
+        - $ref: '#/definitions/http.ErrorInfo'
         description: Details of the error if the request was not successful.
+      message:
+        description: A message providing additional context about the response.
+        type: string
       meta:
         description: Additional metadata for the response, such as pagination info.
       request_id:
@@ -21,14 +761,15 @@ definitions:
         description: The timestamp when the response was generated.
         type: string
     type: object
-  apiResponse.ErrorInfo:
+  http.ErrorInfo:
     description: Detailed information about an error.
     properties:
       code:
         description: The error code.
         type: string
       details:
-        additionalProperties: true
+        additionalProperties:
+          type: string
         description: A map of specific error details, often used for validation errors.
         type: object
       message:
@@ -41,1382 +782,530 @@ definitions:
         description: The type of the error.
         type: string
     type: object
-  appointDomain.AppointmentStatus:
+  page.SortDirection:
     enum:
-    - pending
-    - cancelled
-    - completed
-    - rescheduled
-    - confirmed
-    - not_presented
+    - ASC
+    - DESC
     type: string
-    x-enum-varnames:
-    - StatusPending
-    - StatusCancelled
-    - StatusCompleted
-    - StatusRescheduled
-    - StatusConfirmed
-    - StatusNotPresented
-  appointDomain.ClinicService:
-    enum:
-    - general_consultation
-    - vaccination
-    - surgery
-    - dental_care
-    - emergency_care
-    - grooming
-    - nutrition_consult
-    - behavior_consult
-    - wellness_exam
-    - other
-    type: string
-    x-enum-varnames:
-    - ServiceGeneralConsultation
-    - ServiceVaccination
-    - ServiceSurgery
-    - ServiceDentalCare
-    - ServiceEmergencyCare
-    - ServiceGrooming
-    - ServiceNutritionConsult
-    - ServiceBehaviorConsult
-    - ServiceWellnessExam
-    - ServiceOther
-  appointmentCmd.CreateAppointmentCommand:
-    properties:
-      date_time:
-        type: string
-      is_emergency:
-        type: boolean
-      notes:
-        type: string
-      customer_id:
-        type: integer
-      pet_id:
-        type: integer
-      reason:
-        type: string
-      service:
-        $ref: '#/definitions/appointDomain.ClinicService'
-      status:
-        $ref: '#/definitions/appointDomain.AppointmentStatus'
-      vet_id:
-        type: integer
-    required:
-    - date_time
-    - customer_id
-    - pet_id
-    - reason
-    - service
-    type: object
-  appointmentCmd.RescheduleAppointmentCommand:
-    properties:
-      date_time:
-        type: string
-      id:
-        type: integer
-      reason:
-        type: string
-    required:
-    - date_time
-    - id
-    type: object
-  appointmentCmd.UpdateAppointmentCommand:
-    properties:
-      appoinment_id:
-        type: integer
-      is_emergency:
-        type: boolean
-      notes:
-        type: string
-      reason:
-        type: string
-      service:
-        $ref: '#/definitions/appointDomain.ClinicService'
-      status:
-        $ref: '#/definitions/appointDomain.AppointmentStatus'
-      vet_id:
-        type: integer
-    required:
-    - appoinment_id
-    type: object
-  appointmentController.CompleteAppointmentRequest:
-    properties:
-      notes:
-        type: string
-    type: object
-  appointmentController.PaginationMetadata:
-    properties:
-      current_Offset:
-        example: 1
-        type: integer
-      page_size:
-        example: 10
-        type: integer
-      total_pages:
-        example: 5
-        type: integer
-      total_records:
-        example: 42
-        type: integer
-    type: object
-  appointmentQuery.AppointmentResponse:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: integer
-      is_emergency:
-        type: boolean
-      notes:
-        type: string
-      customer_id:
-        type: integer
-      pet_id:
-        type: integer
-      reason:
-        type: string
-      scheduled_date:
-        type: string
-      service:
-        $ref: '#/definitions/appointDomain.ClinicService'
-      status:
-        $ref: '#/definitions/appointDomain.AppointmentStatus'
-      updated_at:
-        type: string
-      vet_id:
-        type: integer
-    type: object
-  petController.PetInsertRequest:
-    description: Represents the request body for creating a new pet.
-    properties:
-      age:
-        description: The age of the pet in years. (optional)
-        type: integer
-      allergies:
-        description: A list of the pet's known allergies. (optional, max 500)
-        maxLength: 500
-        type: string
-      breed:
-        description: The breed of the pet. (optional, min 2, max 50)
-        maxLength: 50
-        minLength: 2
-        type: string
-      color:
-        description: The color of the pet's fur/coat. (optional, min 2, max 50)
-        maxLength: 50
-        minLength: 2
-        type: string
-      current_medications:
-        description: The pet's current medications. (optional, max 500)
-        maxLength: 500
-        type: string
-      gender:
-        description: The gender of the pet. (optional, must be one of "Male", "Female",
-          or "Unknown")
-        enum:
-        - Male
-        - Female
-        - Unknown
-        type: string
-      is_active:
-        description: Indicates if the pet's record is active. (required)
-        type: boolean
-      is_neutered:
-        description: Indicates if the pet is neutered. (optional)
-        type: boolean
-      microchip:
-        description: The pet's microchip number. (optional, must be 15 digits)
-        type: string
-      name:
-        description: The name of the pet. (required, min 2, max 100)
-        maxLength: 100
-        minLength: 2
-        type: string
-      customer_id:
-        description: The unique ID of the pet's customer. (required, greater than 0)
-        type: integer
-      photo:
-        description: The URL of the pet's photo. (optional, must be a valid URL)
-        type: string
-      special_needs:
-        description: Any special needs the pet may have. (optional, max 500)
-        maxLength: 500
-        type: string
-      species:
-        description: The species of the pet. (required, min 2, max 50)
-        maxLength: 50
-        minLength: 2
-        type: string
-      weight:
-        description: The weight of the pet in kilograms. (optional, greater than 0,
-          less than or equal to 1000)
-        maximum: 1000
-        type: number
-    required:
-    - name
-    - customer_id
-    - species
-    type: object
-  petController.PetResponse:
-    description: Represents the response structure for a pet.
-    properties:
-      age:
-        description: The age of the pet in years.
-        type: integer
-      allergies:
-        description: A list of the pet's known allergies.
-        type: string
-      breed:
-        description: The breed of the pet.
-        type: string
-      color:
-        description: The color of the pet's fur/coat.
-        type: string
-      created_at:
-        description: The date and time when the pet's record was created.
-        type: string
-      current_medications:
-        description: The pet's current medications.
-        type: string
-      gender:
-        description: The gender of the pet.
-        type: string
-      id:
-        description: The unique ID of the pet.
-        type: integer
-      is_active:
-        description: Indicates if the pet's record is active.
-        type: boolean
-      is_neutered:
-        description: Indicates if the pet is neutered.
-        type: boolean
-      microchip:
-        description: The pet's microchip number.
-        type: string
-      name:
-        description: The name of the pet.
-        type: string
-      customer_id:
-        description: The unique ID of the pet's customer.
-        type: integer
-      photo:
-        description: The URL of the pet's photo.
-        type: string
-      special_needs:
-        description: Any special needs the pet may have.
-        type: string
-      species:
-        description: The species of the pet.
-        type: string
-      updated_at:
-        description: The date and time when the pet's record was last updated.
-        type: string
-      weight:
-        description: The weight of the pet in kilograms.
-        type: number
-    type: object
-  shared.Money:
-    type: object
-  userDtos.CreateUserRequest:
-    description: Represents the request body for creating a new userDomain.
-    properties:
-      address:
-        description: The user's address. (required)
-        type: string
-      date_of_birth:
-        description: The user's date of birth. (required)
-        type: string
-      email:
-        description: The user's email address. (required, must be a valid email format)
-        type: string
-      gender:
-        description: The user's gender. (required, must be "male", "female", or "other")
-        enum:
-        - male
-        type: string
-      location:
-        description: The user's location. (required)
-        type: string
-      customer_id:
-        description: The unique ID of the customer. (required)
-        type: integer
-      password:
-        description: The user's password. (required, minimum 8 characters)
-        minLength: 8
-        type: string
-      phone_number:
-        description: The user's phone number. (required)
-        type: string
-      role:
-        description: The role of the user (e.g., "customer", "veterinarian", "admin").
-          (required)
-        enum:
-        - customer
-        - veterinarian
-        - admin
-        type: string
-      veterinarian_id:
-        description: The unique ID of the veterinarian. (optional)
-        type: integer
-    required:
-    - address
-    - date_of_birth
-    - email
-    - gender
-    - location
-    - customer_id
-    - password
-    - phone_number
-    - role
-    type: object
-  vetDomain.VetSpecialty:
-    enum:
-    - 0
-    - 1
-    - 2
-    - 3
-    - 4
-    - 5
-    - 6
-    - 7
-    - 8
-    - 9
-    - 10
-    - 11
-    - 12
-    - 13
-    - 14
-    - 15
-    - 16
-    - 17
-    - 18
-    - 19
-    - 20
-    type: integer
     x-enum-comments:
-      AnesthesiologySpecialty: "12"
-      AvianMedicineSpecialty: "17"
-      CardiologySpecialty: "7"
-      DentistrySpecialty: "4"
-      DermatologySpecialty: "5"
-      EmergencyCriticalCareSpecialty: "11"
-      EquineMedicineSpecialty: "16"
-      ExoticAnimalMedicineSpecialty: "15"
-      FoodAnimalMedicineSpecialty: "19"
-      GeneralPracticeSpecialty: "1"
-      InternalMedicineSpecialty: "3"
-      NeurologySpecialty: "8"
-      OncologySpecialty: "6"
-      OphthalmologySpecialty: "9"
-      PathologySpecialty: "13"
-      PreventiveMedicineSpecialty: "14"
-      PublicHealthSpecialty: "20"
-      RadiologySpecialty: "10"
-      SurgerySpecialty: "2"
-      UnknownSpecialty: "0"
-      ZooAnimalMedicineSpecialty: "18"
+      ASC: Ascending order
+      DESC: Descending order
     x-enum-descriptions:
-    - "0"
-    - "1"
-    - "2"
-    - "3"
-    - "4"
-    - "5"
-    - "6"
-    - "7"
-    - "8"
-    - "9"
-    - "10"
-    - "11"
-    - "12"
-    - "13"
-    - "14"
-    - "15"
-    - "16"
-    - "17"
-    - "18"
-    - "19"
-    - "20"
+    - Ascending order
+    - Descending order
     x-enum-varnames:
-    - UnknownSpecialty
-    - GeneralPracticeSpecialty
-    - SurgerySpecialty
-    - InternalMedicineSpecialty
-    - DentistrySpecialty
-    - DermatologySpecialty
-    - OncologySpecialty
-    - CardiologySpecialty
-    - NeurologySpecialty
-    - OphthalmologySpecialty
-    - RadiologySpecialty
-    - EmergencyCriticalCareSpecialty
-    - AnesthesiologySpecialty
-    - PathologySpecialty
-    - PreventiveMedicineSpecialty
-    - ExoticAnimalMedicineSpecialty
-    - EquineMedicineSpecialty
-    - AvianMedicineSpecialty
-    - ZooAnimalMedicineSpecialty
-    - FoodAnimalMedicineSpecialty
-    - PublicHealthSpecialty
-  vetDtos.ScheduleInsert:
-    properties:
-      day:
-        description: The day of the week for the schedule. (e.g., "Monday", "Tuesday")
-        type: string
-      departure_time:
-        description: The departure time of the work day in hours.
-        type: integer
-      end_break:
-        description: The end time of the break in hours.
-        type: integer
-      entry_time:
-        description: The start time of the work day in hours (e.g., 8 for 8:00 AM).
-        type: integer
-      start_break:
-        description: The start time of the break in hours.
-        type: integer
-    type: object
-  vetDtos.VetCreate:
-    properties:
-      consultation_fee:
-        allOf:
-        - $ref: '#/definitions/shared.Money'
-        description: The fee for a consultation.
-      first_name:
-        description: The veterinarian's first name.
-        type: string
-      is_active:
-        description: Indicates if the veterinarian is currently active.
-        type: boolean
-      laboral_schedule:
-        description: The working schedule of the veterinarian.
-        items:
-          $ref: '#/definitions/vetDtos.ScheduleInsert'
-        type: array
-      last_name:
-        description: The veterinarian's last name.
-        type: string
-      license_number:
-        description: The unique license number of the veterinarian.
-        type: string
-      photo:
-        description: URL for the veterinarian's photo.
-        type: string
-      specialty:
-        allOf:
-        - $ref: '#/definitions/vetDomain.VetSpecialty'
-        description: The veterinarian's medical specialty.
-      years_experience:
-        description: The number of years of professional experience.
-        type: integer
-    required:
-    - first_name
-    - last_name
-    - license_number
-    type: object
-  vetDtos.VetResponse:
-    description: Represents the response structure for a veterinarian.
-    properties:
-      consultation_fee:
-        allOf:
-        - $ref: '#/definitions/shared.Money'
-        description: The consultation fee charged by the veterinarian.
-      first_name:
-        description: The first name of the veterinarian.
-        type: string
-      id:
-        description: The unique ID of the veterinarian.
-        type: integer
-      laboral_schedule:
-        description: The working schedule of the veterinarian.
-        items:
-          $ref: '#/definitions/vetDtos.ScheduleInsert'
-        type: array
-      last_name:
-        description: The last name of the veterinarian.
-        type: string
-      license_number:
-        description: The license number of the veterinarian.
-        type: string
-      photo:
-        description: The URL of the veterinarian's photo.
-        type: string
-      specialty:
-        description: The specialty of the veterinarian.
-        type: string
-      years_experience:
-        description: The years of experience of the veterinarian.
-        type: integer
-    type: object
-  vetDtos.VetUpdate:
-    properties:
-      consultation_fee:
-        allOf:
-        - $ref: '#/definitions/shared.Money'
-        description: The fee for a consultation.
-      first_name:
-        description: The veterinarian's first name.
-        type: string
-      is_active:
-        description: Indicates if the veterinarian is currently active.
-        type: boolean
-      laboral_schedule:
-        description: The working schedule of the veterinarian.
-        items:
-          $ref: '#/definitions/vetDtos.ScheduleInsert'
-        type: array
-      last_name:
-        description: The veterinarian's last name.
-        type: string
-      license_number:
-        description: The unique license number of the veterinarian.
-        type: string
-      photo:
-        description: URL for the veterinarian's photo.
-        type: string
-      specialty:
-        allOf:
-        - $ref: '#/definitions/vetDomain.VetSpecialty'
-        description: The veterinarian's medical specialty.
-      years_experience:
-        description: The number of years of professional experience.
-        type: integer
-    type: object
+    - ASC
+    - DESC
 host: localhost:8080
 info:
   contact:
     email: support@swagger.io
     name: Equipo de Soporte API
     url: http://www.swagger.io/support
-  description: Esta es la documentación para la API de la clínica veterinaria.
+  description: 'API REST para la gestión de la clínica veterinaria: autenticación,
+    usuarios, clientes, empleados, mascotas, citas, pagos y notificaciones.'
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: API Clínica Veterinaria
-  version: "1.0"
+  version: "2.0"
 paths:
   /appointments:
     get:
       consumes:
       - application/json
-      description: Retrieves a paginated list of all appointments
+      description: Paginated search of all appointments with filters. Requires admin
+        or manager role.
       parameters:
-      - default: 1
-        description: Page number
-        in: query
-        name: page_number
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: page_size
-        type: integer
+      - description: Search criteria and pagination
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.AppointmentSearchRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: List of appointments
+          description: Paginated appointments
           schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/appointmentQuery.AppointmentResponse'
-                  type: array
-                metadata:
-                  $ref: '#/definitions/appointmentController.PaginationMetadata'
-              type: object
+            $ref: '#/definitions/http.APIResponse'
         "400":
-          description: Invalid pagination parameters
+          description: Validation error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get all appointments
-      tags:
-      - appointments-query
-    post:
-      consumes:
-      - application/json
-      description: Creates a new appointment for a pet with a veterinarian
-      parameters:
-      - description: Appointment details
-        in: body
-        name: appointment
-        required: true
-        schema:
-          $ref: '#/definitions/appointmentCmd.CreateAppointmentCommand'
-      produces:
-      - application/json
-      responses:
-        "400":
-          description: Invalid input data
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Business rule validation failed
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Create a new veterinary appointment
-      tags:
-      - appointments
-  /appointments/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Removes an appointment from the system
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "400":
-          description: Invalid appointment ID
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Cannot delete appointment
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Delete an appointment
-      tags:
-      - appointments
-    get:
-      consumes:
-      - application/json
-      description: Retrieves detailed information about a specific appointment
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Appointment details
-          schema:
-            $ref: '#/definitions/appointmentQuery.AppointmentResponse'
-        "400":
-          description: Invalid appointment ID
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get appointment by ID
-      tags:
-      - appointments-query
-    put:
-      consumes:
-      - application/json
-      description: Updates the details of an existing veterinary appointment
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Updated appointment details
-        in: body
-        name: appointment
-        required: true
-        schema:
-          $ref: '#/definitions/appointmentCmd.UpdateAppointmentCommand'
-      produces:
-      - application/json
-      responses:
-        "400":
-          description: Invalid input data
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Business rule validation failed
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Update an existing appointment
-      tags:
-      - appointments
-  /appointments/{id}/complete:
-    put:
-      consumes:
-      - application/json
-      description: Marks an appointment as completed and adds optional notes
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Completion notes
-        in: body
-        name: notes
-        required: true
-        schema:
-          $ref: '#/definitions/appointmentController.CompleteAppointmentRequest'
-      produces:
-      - application/json
-      responses:
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "401":
-          description: Unauthorized - Veterinarian not authenticated
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "403":
-          description: Forbidden - Not assigned to this appointment
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Cannot complete appointment
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Complete an appointment
+      summary: Search appointments (manager/admin)
       tags:
       - appointments
-  /appointments/{id}/confirm:
-    put:
+  /auth/2fa/disable:
+    post:
       consumes:
       - application/json
-      description: Confirms an appointment by a veterinarian
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
+      description: Disables 2FA for the authenticated user. Requires Bearer auth.
       produces:
       - application/json
       responses:
-        "400":
-          description: Invalid appointment ID
+        "200":
+          description: 2FA disabled
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "401":
-          description: Unauthorized - Veterinarian not authenticated
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "403":
-          description: Forbidden - Not assigned to this appointment
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Cannot confirm appointment
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Confirm an appointment
+      summary: Disable two-factor authentication
       tags:
-      - appointments
-  /appointments/{id}/no-show:
-    put:
-      consumes:
-      - application/json
-      description: Marks an appointment as no-show when the client doesn't attend
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "400":
-          description: Invalid appointment ID
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Cannot mark as no-show
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Mark appointment as no-show
-      tags:
-      - appointments
-  /appointments/{id}/reschedule:
-    put:
-      consumes:
-      - application/json
-      description: Changes the date and time of an existing appointment
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: New appointment time details
-        in: body
-        name: reschedule
-        required: true
-        schema:
-          $ref: '#/definitions/appointmentCmd.RescheduleAppointmentCommand'
-      produces:
-      - application/json
-      responses:
-        "400":
-          description: Invalid input data
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Invalid time slot or scheduling conflict
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Reschedule an appointment
-      tags:
-      - appointments
-  /appointments/date-range:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves appointments within a specified date range
-      parameters:
-      - description: Start date (YYYY-MM-DD)
-        format: date
-        in: query
-        name: start_date
-        required: true
-        type: string
-      - description: End date (YYYY-MM-DD)
-        format: date
-        in: query
-        name: end_date
-        required: true
-        type: string
-      - default: 1
-        description: Page number
-        in: query
-        name: page_number
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: page_size
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of appointments
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/appointmentQuery.AppointmentResponse'
-                  type: array
-                metadata:
-                  $ref: '#/definitions/appointmentController.PaginationMetadata'
-              type: object
-        "400":
-          description: Invalid date range or pagination parameters
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get appointments by date range
-      tags:
-      - appointments-query
-  /appointments/customer/{customerId}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves all appointments for a specific pet customer
-      parameters:
-      - description: customer ID
-        in: path
-        name: customerId
-        required: true
-        type: integer
-      - default: 1
-        description: Page number
-        in: query
-        name: page_number
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: page_size
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of appointments
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/appointmentQuery.AppointmentResponse'
-                  type: array
-                metadata:
-                  $ref: '#/definitions/appointmentController.PaginationMetadata'
-              type: object
-        "400":
-          description: Invalid customer ID or pagination parameters
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: customer not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get appointments by customer
-      tags:
-      - appointments-query
-  /appointments/pet/{petId}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves all appointments for a specific pet
-      parameters:
-      - description: Pet ID
-        in: path
-        name: petId
-        required: true
-        type: integer
-      - default: 1
-        description: Page number
-        in: query
-        name: page_number
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: page_size
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of appointments
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/appointmentQuery.AppointmentResponse'
-                  type: array
-                metadata:
-                  $ref: '#/definitions/appointmentController.PaginationMetadata'
-              type: object
-        "400":
-          description: Invalid pet ID or pagination parameters
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Pet not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get appointments by pet
-      tags:
-      - appointments-query
-  /appointments/stats:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves statistical information about appointments
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Appointment statistics
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get appointment statistics
-      tags:
-      - appointments-query
-  /appointments/vet/{vetId}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves all appointments assigned to a specific veterinarian
-      parameters:
-      - description: Veterinarian ID
-        in: path
-        name: vetId
-        required: true
-        type: integer
-      - default: 1
-        description: Page number
-        in: query
-        name: page_number
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: page_size
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of appointments
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/appointmentQuery.AppointmentResponse'
-                  type: array
-                metadata:
-                  $ref: '#/definitions/appointmentController.PaginationMetadata'
-              type: object
-        "400":
-          description: Invalid veterinarian ID or pagination parameters
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Veterinarian not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get appointments by veterinarian
-      tags:
-      - appointments-query
-  /customer/appointments:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves a list of all appointments for the authenticated customer
-      parameters:
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Get customer's appointments
-      tags:
-      - customer-appointments
+      - auth
+  /auth/2fa/enable:
     post:
       consumes:
       - application/json
-      description: customer creates a new appointment request for their pet
+      description: 'Enables 2FA for the authenticated user (method: totp, sms, or
+        email). Requires Bearer auth.'
       parameters:
-      - description: Appointment details
+      - description: 2FA method
         in: body
-        name: appointment
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/appointmentCmd.CreateAppointmentCommand'
-      produces:
-      - application/json
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Request a new appointment
-      tags:
-      - customer-appointments
-  /customer/appointments/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves details of a specific appointment for the authenticated
-        customer
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Get specific appointment details
-      tags:
-      - customer-appointments
-  /customer/appointments/{id}/cancel:
-    put:
-      consumes:
-      - application/json
-      description: customer cancels their existing appointment
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Cancel an appointment
-      tags:
-      - customer-appointments
-  /customer/appointments/{id}/reschedule:
-    put:
-      consumes:
-      - application/json
-      description: customer reschedules their existing appointment
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: New appointment time
-        in: body
-        name: reschedule
-        required: true
-        schema:
-          $ref: '#/definitions/appointmentCmd.RescheduleAppointmentCommand'
-      produces:
-      - application/json
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Reschedule an appointment
-      tags:
-      - customer-appointments
-  /customer/appointments/pet/{petId}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves all appointments for a specific pet owned by the authenticated
-        customer
-      parameters:
-      - description: Pet ID
-        in: path
-        name: petId
-        required: true
-        type: integer
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Get appointments for a specific pet
-      tags:
-      - customer-appointments
-  /customer/appointments/upcoming:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves upcoming appointments for the authenticated customer within
-        a date range
-      parameters:
-      - description: Start date (YYYY-MM-DD)
-        format: date
-        in: query
-        name: start_date
-        type: string
-      - description: End date (YYYY-MM-DD)
-        format: date
-        in: query
-        name: end_date
-        type: string
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Get upcoming appointments
-      tags:
-      - customer-appointments
-  /pets:
-    get:
-      description: Retrieves a list of all pet records.
+          $ref: '#/definitions/dtos.EnableTwoFactorRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: List of pets
+          description: 2FA enabled
           schema:
-            items:
-              $ref: '#/definitions/petController.PetResponse'
-            type: array
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: List all pets
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Enable two-factor authentication
       tags:
-      - Pet Management
+      - auth
+  /auth/2fa/verify:
     post:
       consumes:
       - application/json
-      description: Creates a new pet record with the provided data.
+      description: Completes login by verifying the two-factor code. Returns new session
+        payload. Requires Bearer auth.
       parameters:
-      - description: Pet creation request
+      - description: 2FA code
         in: body
-        name: pet
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/petController.PetInsertRequest'
+          $ref: '#/definitions/dtos.VerifyTwoFactorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Session with tokens
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid code
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Verify 2FA code
+      tags:
+      - auth
+  /auth/activate:
+    post:
+      consumes:
+      - application/json
+      description: Activates a user account using the user ID and activation code
+        (e.g. from email link). Supports query params or JSON body.
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      - description: Activation code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: 'Alternative: JSON body with user_id and code'
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/dtos.ActivateAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account activated
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid or missing parameters
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      summary: Activate account
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates with email and password. Returns access and refresh
+        tokens. If 2FA is enabled, may return requires_two_factor with user_id.
+      parameters:
+      - description: Email and password; optional two_factor_code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful (session payload with tokens and user)
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid credentials or validation error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      summary: Login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidates the current session (refresh token). Requires Bearer
+        auth.
+      parameters:
+      - description: Refresh token to revoke
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout
+      tags:
+      - auth
+  /auth/logout-all:
+    post:
+      consumes:
+      - application/json
+      description: Invalidates all refresh tokens for the authenticated user. Requires
+        Bearer auth.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out from all devices
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout from all devices
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchanges a valid refresh token for a new access token and refresh
+        token. Requires Bearer auth.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New session payload
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Refresh access token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account (admin, customer, or employee). Admins
+        get immediate access; others may require activation.
+      parameters:
+      - description: Registration data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
-          description: Pet created successfully
+          description: Registration successful
           schema:
-            $ref: '#/definitions/petController.PetResponse'
+            $ref: '#/definitions/http.APIResponse'
         "400":
           description: Invalid request body or validation error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Create a new pet
+            $ref: '#/definitions/http.APIResponse'
+      summary: Register a new user
       tags:
-      - Pet Management
-  /pets/{id}:
-    delete:
-      description: Marks a pet record as inactive without permanently deleting it.
+      - auth
+  /auth/reset-password/request:
+    post:
+      consumes:
+      - application/json
+      description: Sends a password reset link/code to the given email. Requires Bearer
+        auth.
       parameters:
-      - description: Pet ID
-        in: path
-        name: id
+      - description: Email
+        in: body
+        name: body
         required: true
-        type: integer
+        schema:
+          $ref: '#/definitions/dtos.RequestResetPasswordRequest'
+      produces:
+      - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: If email exists, reset link sent
+          schema:
+            $ref: '#/definitions/http.APIResponse'
         "400":
-          description: Invalid URL parameter
+          description: Invalid request
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Pet not found
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Soft delete a pet
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Request password reset
       tags:
-      - Pet Management
-    get:
-      description: Retrieves a single pet record by its unique ID.
+      - auth
+  /auth/reset-password/reset:
+    post:
+      consumes:
+      - application/json
+      description: Resets the user password using email and the code received by email.
+        Requires Bearer auth.
       parameters:
-      - description: Pet ID
+      - description: Email and reset code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid or expired code
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Reset password
+      tags:
+      - auth
+  /customers:
+    get:
+      consumes:
+      - application/json
+      description: Paginated search/filter of customers. Requires admin or manager
+        role.
+      parameters:
+      - description: Search criteria and pagination
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CustomerSearchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of customers
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Search customers
+      tags:
+      - customers
+    post:
+      consumes:
+      - application/json
+      description: Creates a new customer. Requires admin or manager role.
+      parameters:
+      - description: Customer data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CustomerCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Customer created
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create customer
+      tags:
+      - customers
+  /customers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft-deletes a customer by ID. Requires admin or manager role.
+      parameters:
+      - description: Customer ID
         in: path
         name: id
         required: true
@@ -1425,207 +1314,762 @@ paths:
       - application/json
       responses:
         "200":
-          description: Pet found
+          description: Customer deleted
           schema:
-            $ref: '#/definitions/petController.PetResponse'
+            $ref: '#/definitions/http.APIResponse'
         "400":
-          description: Invalid URL parameter
+          description: Invalid ID
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Pet not found
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get a pet by ID
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete customer
       tags:
-      - Pet Management
+      - customers
+    get:
+      consumes:
+      - application/json
+      description: Returns a single customer by ID. Requires admin or manager role.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Customer found
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.CustomerResponse'
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get customer by ID
+      tags:
+      - customers
     put:
       consumes:
       - application/json
-      description: Updates a pet record by its ID with the provided data.
+      description: Updates an existing customer by ID. Requires admin or manager role.
       parameters:
-      - description: Pet ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Pet update request
+      - description: Customer data to update
         in: body
-        name: pet
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/petController.PetInsertRequest'
+          $ref: '#/definitions/dtos.CustomerUpdateRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Pet updated successfully
+          description: Customer updated
           schema:
-            $ref: '#/definitions/petController.PetResponse'
+            $ref: '#/definitions/http.APIResponse'
         "400":
-          description: Invalid URL parameter or request body
+          description: Validation error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Pet not found
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Update an existing pet
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update customer
       tags:
-      - Pet Management
-  /ping:
+      - customers
+  /customers/{id}/restore:
+    post:
+      consumes:
+      - application/json
+      description: Restores a soft-deleted customer. Requires admin or manager role.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Customer restored
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Restore customer
+      tags:
+      - customers
+  /employees:
     get:
       consumes:
       - application/json
-      description: do ping
+      description: Paginated search/filter of employees. Requires admin or manager
+        role.
+      parameters:
+      - description: Search criteria and pagination
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.EmployeeSearchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of employees
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Search employees
+      tags:
+      - employees
+    post:
+      consumes:
+      - application/json
+      description: Creates a new employee. Requires admin or manager role.
+      parameters:
+      - description: Employee data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.EmployeeCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Employee created
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create employee
+      tags:
+      - employees
+  /employees/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft-deletes an employee by ID. Requires admin or manager role.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employee deleted
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete employee
+      tags:
+      - employees
+    get:
+      consumes:
+      - application/json
+      description: Returns a single employee by ID. Requires admin or manager role.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employee found
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.EmployeeResponse'
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "404":
+          description: Employee not found
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get employee by ID
+      tags:
+      - employees
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing employee by ID. Requires admin or manager role.
+      parameters:
+      - description: Employee data to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.EmployeeUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employee updated
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update employee
+      tags:
+      - employees
+  /employees/{id}/restore:
+    post:
+      consumes:
+      - application/json
+      description: Restores a soft-deleted employee. Requires admin or manager role.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employee restored
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Restore employee
+      tags:
+      - employees
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check if the API is running
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            type: string
-      summary: ping example
+            additionalProperties: true
+            type: object
+      summary: Health Check
       tags:
-      - example
-  /v1/admin/users/{id}:
-    delete:
-      description: Soft deletes a user record by marking it as deleted.
+      - health
+  /me/appointments:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated appointments for the authenticated customer.
+        Requires customer role.
       parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
+      - default: 1
+        description: Page number
+        in: query
+        name: page_number
         type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
       responses:
         "200":
-          description: User soft deleted successfully
+          description: Paginated appointments
           schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                data:
-                  type: string
-              type: object
-        "400":
-          description: Invalid URL parameter
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Soft delete a user
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my appointments (customer)
       tags:
-      - admin
-  /v1/admin/users/{id}/ban:
-    post:
-      description: Bans a user by setting their status to 'banned'.
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: User banned successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                data:
-                  type: string
-              type: object
-        "400":
-          description: Invalid URL parameter
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Ban a user
-      tags:
-      - admin
-  /v1/admin/users/{id}/unban:
-    post:
-      description: Unbans a user by setting their status to 'active'.
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: User unbanned successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                data:
-                  type: string
-              type: object
-        "400":
-          description: Invalid URL parameter
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Unban a user
-      tags:
-      - admin
-  /v1/users:
+      - appointments
     post:
       consumes:
       - application/json
-      description: Creates a new user record with the provided data.
+      description: Submits an appointment request as a customer. Requires customer
+        role.
       parameters:
-      - description: User creation request
+      - description: Appointment request
         in: body
-        name: user
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/userDtos.CreateUserRequest'
+          $ref: '#/definitions/dtos.AppointmentRequestByCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request submitted
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Request appointment (customer)
+      tags:
+      - appointments
+  /me/notifications:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated notifications for the authenticated user. Requires
+        any authenticated role.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated notifications
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my notifications
+      tags:
+      - notifications
+  /me/notifications/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a single notification by ID for the authenticated user.
+        Requires any authenticated role.
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notification
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my notification by ID
+      tags:
+      - notifications
+  /payments/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a single payment by ID.
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payment found
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.PaymentResponse'
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "404":
+          description: Payment not found
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get payment by ID
+      tags:
+      - payments
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: Returns the authenticated user's profile. Requires Bearer auth.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.ProfileResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my profile
+      tags:
+      - profile
+    put:
+      consumes:
+      - application/json
+      description: Updates the authenticated user's profile (name, gender, date of
+        birth, photo, bio). Requires Bearer auth.
+      parameters:
+      - description: Profile fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update my profile
+      tags:
+      - profile
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Paginated search and filter of users. Requires admin or manager
+        role.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by email
+        in: query
+        name: email
+        type: string
+      - description: Filter by role
+        in: query
+        name: role
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of users
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid query params
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Search users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user. Requires admin or manager role.
+      parameters:
+      - description: User data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateUserRequest'
       produces:
       - application/json
       responses:
         "201":
-          description: User created successfully
+          description: User created
           schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                id:
-                  type: integer
-                message:
-                  type: string
-              type: object
+            $ref: '#/definitions/http.APIResponse'
         "400":
-          description: Invalid request body or validation error
+          description: Validation error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Create a new user
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create user
       tags:
       - users
-  /v1/users/{id}:
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft-deletes a user by ID. Requires admin or manager role.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User deleted
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - users
     get:
-      description: Retrieves a single user record by their unique ID.
+      consumes:
+      - application/json
+      description: Returns a single user by ID. Requires admin or manager role.
       parameters:
       - description: User ID
         in: path
@@ -1639,415 +2083,39 @@ paths:
           description: User found
           schema:
             allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
+            - $ref: '#/definitions/http.APIResponse'
             - properties:
                 data:
-                  type: object
+                  $ref: '#/definitions/dtos.UserResponse'
               type: object
         "400":
-          description: Invalid URL parameter
+          description: Invalid ID
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get a user by ID
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
       tags:
       - users
-  /vet/appointments:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves all appointments assigned to the authenticated veterinarian
-      parameters:
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: pageSize
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of appointments
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "400":
-          description: Invalid pagination parameters
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "401":
-          description: Unauthorized - Veterinarian not authenticated
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Get veterinarian's appointments
-      tags:
-      - vet-appointments
-  /vet/appointments/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Cancels an appointment by the authenticated veterinarian
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Cancel an appointment
-      tags:
-      - vet-appointments
-  /vet/appointments/{id}/complete:
-    put:
-      consumes:
-      - application/json
-      description: Marks an appointment as completed by the authenticated veterinarian
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Complete an appointment
-      tags:
-      - vet-appointments
-  /vet/appointments/{id}/confirm:
-    put:
-      consumes:
-      - application/json
-      description: Confirms a pending appointment by the authenticated veterinarian
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Appointment confirmed successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Invalid appointment ID
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "401":
-          description: Unauthorized - Veterinarian not authenticated
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "403":
-          description: Forbidden - Not assigned to this appointment
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Cannot confirm appointment
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Confirm an appointment
-      tags:
-      - vet-appointments
-  /vet/appointments/{id}/no-show:
-    put:
-      consumes:
-      - application/json
-      description: Marks an appointment as no-show when the client doesn't attend
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Appointment marked as no-show
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Invalid appointment ID
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "401":
-          description: Unauthorized - Veterinarian not authenticated
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "403":
-          description: Forbidden - Not assigned to this appointment
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Cannot mark as no-show
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Mark appointment as no-show
-      tags:
-      - vet-appointments
-  /vet/appointments/{id}/reschedule:
-    put:
-      consumes:
-      - application/json
-      description: Allows a veterinarian to reschedule their assigned appointment
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: New appointment time details
-        in: body
-        name: reschedule
-        required: true
-        schema:
-          $ref: '#/definitions/appointmentCmd.RescheduleAppointmentCommand'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Appointment rescheduled successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Invalid input data
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "401":
-          description: Unauthorized - Veterinarian not authenticated
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "403":
-          description: Forbidden - Not assigned to this appointment
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "422":
-          description: Invalid time slot or scheduling conflict
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Reschedule an appointment
-      tags:
-      - vet-appointments
-  /vet/appointments/stats:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves statistical information about appointments for the authenticated
-        veterinarian
-      parameters:
-      - description: Start date (YYYY-MM-DD)
-        format: date
-        in: query
-        name: start_date
-        type: string
-      - description: End date (YYYY-MM-DD)
-        format: date
-        in: query
-        name: end_date
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Appointment statistics
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "400":
-          description: Invalid date parameters
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "401":
-          description: Unauthorized - Veterinarian not authenticated
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Get appointment statistics
-      tags:
-      - vet-appointments
-  /vet/appointments/today:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves all appointments scheduled for today for the authenticated
-        veterinarian
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Today's appointments
-          schema:
-            allOf:
-            - $ref: '#/definitions/apiResponse.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/appointmentQuery.AppointmentResponse'
-                  type: array
-              type: object
-        "401":
-          description: Unauthorized - Veterinarian not authenticated
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Get today's appointments
-      tags:
-      - vet-appointments
-  /veterinarians:
-    get:
-      description: Retrieves a list of all veterinarians with optional filtering and
-        pagination.
-      parameters:
-      - description: Page number for pagination
-        in: query
-        name: page
-        type: integer
-      - description: Number of items per page
-        in: query
-        name: limit
-        type: integer
-      - description: Filter by specialty
-        in: query
-        name: specialty
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of veterinarians
-          schema:
-            items:
-              $ref: '#/definitions/vetDtos.VetResponse'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: List all veterinarians
-      tags:
-      - Veterinarians
+  /users/{id}/restore:
     post:
       consumes:
       - application/json
-      description: Creates a new veterinarian with the provided details.
+      description: Restores a soft-deleted user. Requires admin or manager role.
       parameters:
-      - description: Veterinarian data
-        in: body
-        name: vetCreate
-        required: true
-        schema:
-          $ref: '#/definitions/vetDtos.VetCreate'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Veterinarian created
-          schema:
-            $ref: '#/definitions/vetDtos.VetResponse'
-        "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Create a new veterinarian
-      tags:
-      - Veterinarians
-  /veterinarians/{id}:
-    delete:
-      description: Deletes a veterinarian from the system by ID.
-      parameters:
-      - description: Veterinarian ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Invalid ID supplied
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Veterinarian not found
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Delete a veterinarian
-      tags:
-      - Veterinarians
-    get:
-      description: Retrieves a single veterinarian by their unique ID.
-      parameters:
-      - description: Veterinarian ID
+      - description: User ID
         in: path
         name: id
         required: true
@@ -2056,60 +2124,71 @@ paths:
       - application/json
       responses:
         "200":
-          description: Veterinarian details
+          description: User restored
           schema:
-            $ref: '#/definitions/vetDtos.VetResponse'
+            $ref: '#/definitions/http.APIResponse'
         "400":
-          description: Invalid ID supplied
+          description: Invalid ID
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Veterinarian not found
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Get a veterinarian by ID
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Restore user
       tags:
-      - Veterinarians
-    patch:
+      - users
+  /users/{id}/status:
+    post:
       consumes:
       - application/json
-      description: Updates the details of an existing veterinarian by ID.
+      description: Updates the status of a user (e.g. activate/deactivate). Requires
+        admin or manager role.
       parameters:
-      - description: Veterinarian ID
+      - description: User ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Updated veterinarian data
-        in: body
-        name: vetUpdate
+      - description: New status (e.g. active, inactive)
+        in: path
+        name: status
         required: true
-        schema:
-          $ref: '#/definitions/vetDtos.VetUpdate'
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Veterinarian updated
+          description: Status updated
           schema:
-            $ref: '#/definitions/vetDtos.VetResponse'
+            $ref: '#/definitions/http.APIResponse'
         "400":
-          description: Invalid request data or ID
+          description: Invalid ID or status
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-        "404":
-          description: Veterinarian not found
+            $ref: '#/definitions/http.APIResponse'
+        "401":
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/apiResponse.APIResponse'
-      summary: Update an existing veterinarian
+            $ref: '#/definitions/http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user status
       tags:
-      - Veterinarians
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: 'Bearer JWT token. Example: "Bearer &lt;access_token&gt;"'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

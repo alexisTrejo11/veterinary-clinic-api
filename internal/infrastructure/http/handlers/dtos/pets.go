@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// PetCreateRequest is the body for creating a pet
+// @Description Name, species, gender, optional breed/age/color/microchip/medical info, customer_id, optional emergency contact.
 type PetCreateRequest struct {
 	Name                string  `json:"name" binding:"required"`
 	Photo               *string `json:"photo" binding:"omitempty,url"`
@@ -27,6 +29,8 @@ type PetCreateRequest struct {
 	EmergencyPhone      *string `json:"emergency_contact_phone" binding:"omitempty"`
 }
 
+// PetUpdateRequest is the body for updating a pet
+// @Description Optional fields to update; only provided fields are changed. Includes is_active for soft-delete.
 type PetUpdateRequest struct {
 	Name                *string `json:"name" binding:"omitempty"`
 	Photo               *string `json:"photo" binding:"omitempty,url"`
@@ -49,12 +53,14 @@ type PetUpdateRequest struct {
 	EmergencyPhone      *string `json:"emergency_contact_phone" binding:"omitempty"`
 }
 
+// PetSearchRequest carries pagination for pet listing
+// @Description Pagination and optional filters for searching pets.
 type PetSearchRequest struct {
 	page.PaginationRequest
 }
 
-// PetResponse represents the HTTP response DTO for a pet.
-// It mirrors the fields on the Pet aggregate plus basic metadata.
+// PetResponse represents the HTTP response DTO for a pet
+// @Description Pet entity: id, name, species, gender, customer_id, is_active, optional medical/contact fields, timestamps.
 type PetResponse struct {
 	ID                    uint      `json:"id"`
 	Name                  string    `json:"name"`

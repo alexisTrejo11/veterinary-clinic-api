@@ -6,9 +6,8 @@ import (
 	"clinic-vet-api/internal/shared/page"
 )
 
-// PaymentCreateRequest represents the body for creating a new payment record.
-// This is an internal tracker for clinic payments – it does not integrate
-// with external gateways.
+// PaymentCreateRequest represents the body for creating a new payment record
+// @Description Amount, currency (3-letter), method, optional description/due_date/transaction_id/invoice_id, customer_id, optional appointment_id. Internal tracker only (no external gateway).
 type PaymentCreateRequest struct {
 	Amount      float64   `json:"amount" binding:"required,gt=0"`
 	Currency    string    `json:"currency" binding:"required,len=3"`
@@ -25,8 +24,8 @@ type PaymentCreateRequest struct {
 	AppointmentID *uint `json:"appointment_id,omitempty" binding:"omitempty"`
 }
 
-// PaymentUpdateRequest represents the body for updating an existing payment.
-// All fields are optional and will only be updated when provided.
+// PaymentUpdateRequest represents the body for updating an existing payment
+// @Description All fields optional; only provided fields are updated (amount, currency, method, description, due_date, invoice_id).
 type PaymentUpdateRequest struct {
 	Amount      *float64   `json:"amount,omitempty" binding:"omitempty,gt=0"`
 	Currency    *string    `json:"currency,omitempty" binding:"omitempty,len=3"`
@@ -37,7 +36,8 @@ type PaymentUpdateRequest struct {
 	InvoiceID *string `json:"invoice_id,omitempty" binding:"omitempty"`
 }
 
-// PaymentSearchRequest represents filters for listing/searching payments.
+// PaymentSearchRequest represents filters for listing/searching payments
+// @Description Pagination plus optional customer_id, status, method, from/to created, overdue_only.
 type PaymentSearchRequest struct {
 	page.PaginationRequest
 
@@ -49,7 +49,8 @@ type PaymentSearchRequest struct {
 	OverdueOnly  bool       `json:"overdue_only,omitempty"`
 }
 
-// PaymentResponse represents the HTTP response DTO for a payment.
+// PaymentResponse represents the HTTP response DTO for a payment
+// @Description Payment entity: id, amount, currency, status, method, transaction_id, description, due_date, paid_at, customer_id, timestamps, optional refund/delete info.
 type PaymentResponse struct {
 	ID uint `json:"id"`
 

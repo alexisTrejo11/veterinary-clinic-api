@@ -6,7 +6,8 @@ import (
 	"clinic-vet-api/internal/shared/page"
 )
 
-// CustomerResponse represents the customer data returned in HTTP responses.
+// CustomerResponse represents the customer data returned in HTTP responses
+// @Description Customer entity: id, name, gender, date of birth, photo, user_id, is_active, timestamps.
 type CustomerResponse struct {
 	ID          uint      `json:"id"`
 	FirstName   string    `json:"first_name"`
@@ -20,7 +21,8 @@ type CustomerResponse struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// CustomerSearchRequest represents filters for listing/searching customers.
+// CustomerSearchRequest represents filters for listing/searching customers
+// @Description Pagination plus optional search text and is_active filter.
 type CustomerSearchRequest struct {
 	page.PaginationRequest
 
@@ -31,7 +33,8 @@ type CustomerSearchRequest struct {
 	IsActive *bool `json:"is_active,omitempty"`
 }
 
-// CustomerCreateRequest represents the body for creating a new customer.
+// CustomerCreateRequest represents the body for creating a new customer
+// @Description First name, last name, email, gender, date of birth, optional photo URL, is_active, and optional user_id to link account.
 type CustomerCreateRequest struct {
 	FirstName   string  `json:"first_name" binding:"required"`
 	LastName    string  `json:"last_name" binding:"required"`
@@ -43,9 +46,8 @@ type CustomerCreateRequest struct {
 	UserID      *uint   `json:"user_id,omitempty"`
 }
 
-// CustomerUpdateRequest represents the body for updating an existing customer.
-// ID is included here for now to keep the mapper simple; alternatively it can
-// be taken from the URL path.
+// CustomerUpdateRequest represents the body for updating an existing customer
+// @Description ID (required) plus optional fields to update. ID can also be taken from URL path.
 type CustomerUpdateRequest struct {
 	ID          uint     `json:"id" binding:"required"`
 	FirstName   *string  `json:"first_name,omitempty" binding:"omitempty"`

@@ -257,6 +257,19 @@ func (h *AppointmentHandler) GetMyAppointment(c *gin.Context) {
 	http.HandleGetRequest(h.validator, "Appointment", logic)(c)
 }
 
+// GetMyAppointments godoc
+// @Summary      Get my appointments (customer)
+// @Description  Returns paginated appointments for the authenticated customer. Requires customer role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page_number  query  int  false  "Page number"  default(1)
+// @Param        page_size    query  int  false  "Page size"    default(10)
+// @Success      200          {object}  http.APIResponse  "Paginated appointments"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /me/appointments [get]
 func (h *AppointmentHandler) GetMyAppointments(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		var pageParams page.PaginationRequest
@@ -277,6 +290,19 @@ func (h *AppointmentHandler) GetMyAppointments(c *gin.Context) {
 	})(c)
 }
 
+// RequestAppointment godoc
+// @Summary      Request appointment (customer)
+// @Description  Submits an appointment request as a customer. Requires customer role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body   body      dtos.AppointmentRequestByCustomerRequest  true  "Appointment request"
+// @Success      200    {object}  http.APIResponse                          "Request submitted"
+// @Failure      400    {object}  http.APIResponse                          "Validation error"
+// @Failure      401    {object}  http.APIResponse                          "Unauthorized"
+// @Failure      500    {object}  http.APIResponse                          "Internal server error"
+// @Router       /me/appointments [post]
 func (h *AppointmentHandler) RequestAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.AppointmentRequestByCustomerRequest) (any, error) {
 		getCustomerID := func(c *gin.Context) (uint, error) { return h.getMyCustomerID(c) }
@@ -446,6 +472,19 @@ func (h *AppointmentHandler) GetAppointmentByID(c *gin.Context) {
 	http.HandleGetRequest(h.validator, "Appointment", logic)(c)
 }
 
+// SearchAppointments godoc
+// @Summary      Search appointments (manager/admin)
+// @Description  Paginated search of all appointments with filters. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body   body      dtos.AppointmentSearchRequest  true  "Search criteria and pagination"
+// @Success      200    {object}  http.APIResponse               "Paginated appointments"
+// @Failure      400    {object}  http.APIResponse               "Validation error"
+// @Failure      401    {object}  http.APIResponse               "Unauthorized"
+// @Failure      500    {object}  http.APIResponse               "Internal server error"
+// @Router       /appointments [get]
 func (h *AppointmentHandler) SearchAppointments(c *gin.Context) {
 	searchReq, err := dtos.NewApptSearchRequestFromContext(c)
 	if err != nil {

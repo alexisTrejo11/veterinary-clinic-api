@@ -1,6 +1,7 @@
 package dtos
 
-// SendNotificationRequest is the body for manually sending a notification (staff).
+// SendNotificationRequest is the body for manually sending a notification (staff)
+// @Description Channel (email/sms), type, optional user_id, user_email (for email), user_phone (for sms), title, subject, message, optional token (e.g. reset link).
 type SendNotificationRequest struct {
 	Channel   string `json:"channel" binding:"required"`   // email, sms
 	Type      string `json:"type" binding:"required"`      // notification type

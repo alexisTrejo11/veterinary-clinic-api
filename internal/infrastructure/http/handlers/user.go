@@ -34,6 +34,20 @@ func NewUserHandler(
 	}
 }
 
+// GetUserByID godoc
+// @Summary      Get user by ID
+// @Description  Returns a single user by ID. Requires admin or manager role.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  http.APIResponse{data=dtos.UserResponse}  "User found"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      404  {object}  http.APIResponse  "User not found"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /users/{id} [get]
 func (ctrl *UserHandler) GetUserByID(c *gin.Context) {
 	userIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -98,6 +112,23 @@ func (ctrl *UserHandler) GetUserByPhone(ctx *gin.Context) {
 	http.Found(ctx, userResponse, "User")
 }
 
+// SearchUsers godoc
+// @Summary      Search users
+// @Description  Paginated search and filter of users. Requires admin or manager role.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page_number  query     int     false  "Page number"     default(1)
+// @Param        page_size    query     int     false  "Page size"       default(10)
+// @Param        email        query     string  false  "Filter by email"
+// @Param        role         query     string  false  "Filter by role"
+// @Param        status       query     string  false  "Filter by status"
+// @Success      200          {object}  http.APIResponse  "Paginated list of users"
+// @Failure      400          {object}  http.APIResponse  "Invalid query params"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /users [get]
 func (ctrl *UserHandler) SearchUsers(ctx *gin.Context) {
 	var req dtos.UserSearchRequest
 	if err := http.ShouldBindAndValidateQuery(ctx, &req, ctrl.validator); err != nil {
@@ -121,6 +152,19 @@ func (ctrl *UserHandler) SearchUsers(ctx *gin.Context) {
 	http.Paginated(ctx, &userResponses, "Users")
 }
 
+// CreateUser godoc
+// @Summary      Create user
+// @Description  Creates a new user. Requires admin or manager role.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body   body      dtos.CreateUserRequest  true  "User data"
+// @Success      201    {object}  http.APIResponse        "User created"
+// @Failure      400    {object}  http.APIResponse        "Validation error"
+// @Failure      401    {object}  http.APIResponse        "Unauthorized"
+// @Failure      500    {object}  http.APIResponse        "Internal server error"
+// @Router       /users [post]
 func (ctrl *UserHandler) CreateUser(c *gin.Context) {
 	var requestData dtos.CreateUserRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestData, ctrl.validator); err != nil {
@@ -143,6 +187,20 @@ func (ctrl *UserHandler) CreateUser(c *gin.Context) {
 	http.Created(c, user.ID, "User created successfully")
 }
 
+// UpdateUserStatus godoc
+// @Summary      Update user status
+// @Description  Updates the status of a user (e.g. activate/deactivate). Requires admin or manager role.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id       path      int     true   "User ID"
+// @Param        status   path      string  true   "New status (e.g. active, inactive)"
+// @Success      200      {object}  http.APIResponse  "Status updated"
+// @Failure      400      {object}  http.APIResponse  "Invalid ID or status"
+// @Failure      401      {object}  http.APIResponse  "Unauthorized"
+// @Failure      500      {object}  http.APIResponse  "Internal server error"
+// @Router       /users/{id}/status [post]
 func (ctrl *UserHandler) UpdateUserStatus(c *gin.Context) {
 	userID, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -176,6 +234,19 @@ func (ctrl *UserHandler) UpdateUserStatus(c *gin.Context) {
 	http.Success(c, nil, "User Succesfully Unbaned")
 }
 
+// DeleteUser godoc
+// @Summary      Delete user
+// @Description  Soft-deletes a user by ID. Requires admin or manager role.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  http.APIResponse  "User deleted"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /users/{id} [delete]
 func (ctrl *UserHandler) DeleteUser(c *gin.Context) {
 	userIDUint, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -198,6 +269,19 @@ func (ctrl *UserHandler) DeleteUser(c *gin.Context) {
 	http.Success(c, nil, "User Succesfully Deleted")
 }
 
+// RestoreUser godoc
+// @Summary      Restore user
+// @Description  Restores a soft-deleted user. Requires admin or manager role.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  http.APIResponse  "User restored"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /users/{id}/restore [post]
 func (ctrl *UserHandler) RestoreUser(c *gin.Context) {
 	userIDUint, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -228,6 +312,17 @@ func NewProfileHandler(queryService users.QueryService, commandService users.Com
 	return &ProfileHandler{queryService: queryService, commandService: commandService}
 }
 
+// GetProfile godoc
+// @Summary      Get my profile
+// @Description  Returns the authenticated user's profile. Requires Bearer auth.
+// @Tags         profile
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  http.APIResponse{data=dtos.ProfileResponse}  "Profile"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /profile [get]
 func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	userIDStr := c.GetString("userID")
 
@@ -259,6 +354,19 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	http.Success(c, profile, "Profile retrieved successfully")
 }
 
+// UpdateProfile godoc
+// @Summary      Update my profile
+// @Description  Updates the authenticated user's profile (name, gender, date of birth, photo, bio). Requires Bearer auth.
+// @Tags         profile
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body   body      dtos.UpdateProfileRequest  true  "Profile fields to update"
+// @Success      200    {object}  http.APIResponse           "Profile updated"
+// @Failure      400    {object}  http.APIResponse           "Validation error"
+// @Failure      401    {object}  http.APIResponse           "Unauthorized"
+// @Failure      500    {object}  http.APIResponse           "Internal server error"
+// @Router       /profile [put]
 func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 	userIDStr := c.GetString("userID")
 

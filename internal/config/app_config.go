@@ -220,7 +220,7 @@ func (s *AppSettings) GetServerAddr() string {
 }
 
 func BootstrapAPIModules(
-	routerGroup *gin.RouterGroup,
+	routerGroup *gin.Engine,
 	queries *sqlc.Queries,
 	validator *validator.Validate,
 	redis *redis.Client,

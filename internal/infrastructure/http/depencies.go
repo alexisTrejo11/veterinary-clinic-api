@@ -30,7 +30,7 @@ import (
 // ─── Config ─────────────────────────────────────────────────────────────────
 
 type APIConfig struct {
-	Router         *gin.RouterGroup
+	Router         *gin.Engine
 	Queries        *sqlc.Queries
 	Validator      *validator.Validate
 	AuthMiddleware *middleware.AuthMiddleware
@@ -60,7 +60,7 @@ func (c *APIConfig) Validate() error {
 // Bootstrap wires all repositories, services, and handlers then registers routes.
 // Redis and JWTSecret are optional; if provided, auth (login/refresh) is fully wired.
 func Bootstrap(
-	routerGroup *gin.RouterGroup,
+	engine *gin.Engine,
 	queries *sqlc.Queries,
 	validator *validator.Validate,
 	authMiddleware *middleware.AuthMiddleware,
@@ -68,7 +68,7 @@ func Bootstrap(
 	jwtSecret string,
 ) error {
 	config := &APIConfig{
-		Router:         routerGroup,
+		Router:         engine,
 		Queries:        queries,
 		Validator:      validator,
 		AuthMiddleware: authMiddleware,

@@ -33,6 +33,20 @@ func NewPaymentHandler(
 	}
 }
 
+// GetPaymentByID godoc
+// @Summary      Get payment by ID
+// @Description  Returns a single payment by ID.
+// @Tags         payments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Payment ID"
+// @Success      200  {object}  http.APIResponse{data=dtos.PaymentResponse}  "Payment found"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      404  {object}  http.APIResponse  "Payment not found"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /payments/{id} [get]
 func (s *PaymentHandler) GetPaymentByID(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {

@@ -6,7 +6,8 @@ import (
 	"clinic-vet-api/internal/shared/page"
 )
 
-// EmployeeResponse represents an employee in HTTP responses.
+// EmployeeResponse represents an employee in HTTP responses
+// @Description Employee entity: id, name, gender, date of birth, photo, license, specialty, years experience, is_active, user_id, timestamps.
 type EmployeeResponse struct {
 	ID              uint      `json:"id"`
 	FirstName       string    `json:"first_name"`
@@ -23,14 +24,16 @@ type EmployeeResponse struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
-// EmployeeStatsResponse represents aggregate employee statistics.
+// EmployeeStatsResponse represents aggregate employee statistics
+// @Description Total employees, active count, and count per specialty.
 type EmployeeStatsResponse struct {
 	TotalEmployees  int64            `json:"total_employees"`
 	ActiveEmployees int64            `json:"active_employees"`
 	Specialties     map[string]int64 `json:"specialties"`
 }
 
-// EmployeeSearchRequest represents filters for listing/searching employees.
+// EmployeeSearchRequest represents filters for listing/searching employees
+// @Description Pagination plus optional specialty and is_active filter.
 type EmployeeSearchRequest struct {
 	page.PaginationRequest
 
@@ -38,7 +41,8 @@ type EmployeeSearchRequest struct {
 	IsActive  *bool  `form:"is_active,omitempty" json:"is_active,omitempty"`
 }
 
-// EmployeeScheduleRequest represents schedule data in create/update requests.
+// EmployeeScheduleRequest represents schedule data in create/update requests
+// @Description Day of week, entry/departure time (0-23), optional break window.
 type EmployeeScheduleRequest struct {
 	Day           string `json:"day" binding:"required"`                     // e.g. "monday"
 	EntryTime     int    `json:"entry_time" binding:"required,gte=0,lte=23"` // 0-23
@@ -47,7 +51,8 @@ type EmployeeScheduleRequest struct {
 	EndBreak      int    `json:"end_break" binding:"omitempty,gte=0,lte=23"`
 }
 
-// EmployeeCreateRequest represents the body for creating a new employee.
+// EmployeeCreateRequest represents the body for creating a new employee
+// @Description Name, gender, date of birth, photo, license number, years experience, specialty, schedule, optional is_active.
 type EmployeeCreateRequest struct {
 	FirstName   string                 `json:"first_name" binding:"required"`
 	LastName    string                 `json:"last_name" binding:"required"`
@@ -61,7 +66,8 @@ type EmployeeCreateRequest struct {
 	Schedule    EmployeeScheduleRequest `json:"schedule" binding:"required,dive"`
 }
 
-// EmployeeUpdateRequest represents the body for updating an existing employee.
+// EmployeeUpdateRequest represents the body for updating an existing employee
+// @Description ID (required) plus optional fields and optional schedule.
 type EmployeeUpdateRequest struct {
 	ID          uint                   `json:"id" binding:"required"`
 	FirstName   *string                `json:"first_name,omitempty"`

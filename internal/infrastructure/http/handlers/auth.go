@@ -25,7 +25,17 @@ func NewAuthHandler(service auth.AuthService, validator *validator.Validate, map
 	return &AuthHandler{service: service, validator: validator, mapper: mapper}
 }
 
-// Register POST /auth/register — body: RegisterRequest
+// Register godoc
+// @Summary      Register a new user
+// @Description  Creates a new user account (admin, customer, or employee). Admins get immediate access; others may require activation.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dtos.RegisterRequest  true  "Registration data"
+// @Success      201   {object}  http.APIResponse      "Registration successful"
+// @Failure      400   {object}  http.APIResponse      "Invalid request body or validation error"
+// @Failure      500   {object}  http.APIResponse      "Internal server error"
+// @Router       /auth/register [post]
 func (ctrl *AuthHandler) Register(c *gin.Context) {
 	var req dtos.RegisterRequest
 	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
@@ -48,7 +58,19 @@ func (ctrl *AuthHandler) Register(c *gin.Context) {
 	sharedhttp.SuccessCreated(c, msg, "Registration successful")
 }
 
-// ActivateAccount GET /auth/activate?user_id=&code= or POST body (query preferred for email links)
+// ActivateAccount godoc
+// @Summary      Activate account
+// @Description  Activates a user account using the user ID and activation code (e.g. from email link). Supports query params or JSON body.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        user_id  query     string  true   "User ID"
+// @Param        code     query     string  true   "Activation code"
+// @Param        body     body      dtos.ActivateAccountRequest  false  "Alternative: JSON body with user_id and code"
+// @Success      200      {object}  http.APIResponse  "Account activated"
+// @Failure      400      {object}  http.APIResponse  "Invalid or missing parameters"
+// @Failure      500      {object}  http.APIResponse  "Internal server error"
+// @Router       /auth/activate [post]
 func (ctrl *AuthHandler) ActivateAccount(c *gin.Context) {
 	var req dtos.ActivateAccountRequest
 	if err := c.ShouldBind(&req); err != nil {
@@ -75,7 +97,18 @@ func (ctrl *AuthHandler) ActivateAccount(c *gin.Context) {
 	sharedhttp.Success(c, nil, "Account activated successfully")
 }
 
-// Login POST /auth/login — body: LoginRequest
+// Login godoc
+// @Summary      Login
+// @Description  Authenticates with email and password. Returns access and refresh tokens. If 2FA is enabled, may return requires_two_factor with user_id.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body    body      dtos.LoginRequest  true  "Email and password; optional two_factor_code"
+// @Success      200     {object}  http.APIResponse   "Login successful (session payload with tokens and user)"
+// @Failure      400     {object}  http.APIResponse   "Invalid credentials or validation error"
+// @Failure      401     {object}  http.APIResponse   "Unauthorized"
+// @Failure      500     {object}  http.APIResponse   "Internal server error"
+// @Router       /auth/login [post]
 func (ctrl *AuthHandler) Login(c *gin.Context) {
 	var req dtos.LoginRequest
 	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
@@ -98,7 +131,19 @@ func (ctrl *AuthHandler) Login(c *gin.Context) {
 	sharedhttp.Success(c, ctrl.mapper.SessionPayloadToResponse(session), "Login successful")
 }
 
-// RefreshToken POST /auth/refresh — body: RefreshTokenRequest
+// RefreshToken godoc
+// @Summary      Refresh access token
+// @Description  Exchanges a valid refresh token for a new access token and refresh token. Requires Bearer auth.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body    body      dtos.RefreshTokenRequest  true  "Refresh token"
+// @Success      200     {object}  http.APIResponse          "New session payload"
+// @Failure      400     {object}  http.APIResponse          "Invalid or expired refresh token"
+// @Failure      401     {object}  http.APIResponse          "Unauthorized"
+// @Failure      500     {object}  http.APIResponse          "Internal server error"
+// @Router       /auth/refresh [post]
 func (ctrl *AuthHandler) RefreshToken(c *gin.Context) {
 	var req dtos.RefreshTokenRequest
 	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
@@ -116,7 +161,19 @@ func (ctrl *AuthHandler) RefreshToken(c *gin.Context) {
 	sharedhttp.Success(c, ctrl.mapper.SessionPayloadToResponse(session), "Token refreshed successfully")
 }
 
-// Logout POST /auth/logout — body: LogoutRequest
+// Logout godoc
+// @Summary      Logout
+// @Description  Invalidates the current session (refresh token). Requires Bearer auth.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body    body      dtos.LogoutRequest  true  "Refresh token to revoke"
+// @Success      200     {object}  http.APIResponse    "Logged out"
+// @Failure      400     {object}  http.APIResponse    "Invalid request"
+// @Failure      401     {object}  http.APIResponse   "Unauthorized"
+// @Failure      500     {object}  http.APIResponse   "Internal server error"
+// @Router       /auth/logout [post]
 func (ctrl *AuthHandler) Logout(c *gin.Context) {
 	var req dtos.LogoutRequest
 	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
@@ -134,7 +191,17 @@ func (ctrl *AuthHandler) Logout(c *gin.Context) {
 	sharedhttp.Success(c, nil, "Logout successful")
 }
 
-// LogoutAll POST /auth/logout-all — requires auth; user from context
+// LogoutAll godoc
+// @Summary      Logout from all devices
+// @Description  Invalidates all refresh tokens for the authenticated user. Requires Bearer auth.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  http.APIResponse  "Logged out from all devices"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /auth/logout-all [post]
 func (ctrl *AuthHandler) LogoutAll(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
@@ -151,7 +218,19 @@ func (ctrl *AuthHandler) LogoutAll(c *gin.Context) {
 	sharedhttp.Success(c, nil, "Logged out from all devices")
 }
 
-// VerifyTwoFactor POST /auth/2fa/verify — body: VerifyTwoFactorRequest; requires auth, user from context
+// VerifyTwoFactor godoc
+// @Summary      Verify 2FA code
+// @Description  Completes login by verifying the two-factor code. Returns new session payload. Requires Bearer auth.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body    body      dtos.VerifyTwoFactorRequest  true  "2FA code"
+// @Success      200     {object}  http.APIResponse            "Session with tokens"
+// @Failure      400     {object}  http.APIResponse            "Invalid code"
+// @Failure      401     {object}  http.APIResponse            "Unauthorized"
+// @Failure      500     {object}  http.APIResponse            "Internal server error"
+// @Router       /auth/2fa/verify [post]
 func (ctrl *AuthHandler) VerifyTwoFactor(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
@@ -175,7 +254,19 @@ func (ctrl *AuthHandler) VerifyTwoFactor(c *gin.Context) {
 	sharedhttp.Success(c, ctrl.mapper.SessionPayloadToResponse(session), "Two factor verified successfully")
 }
 
-// EnableTwoFactor POST /auth/2fa/enable — body: EnableTwoFactorRequest; requires auth
+// EnableTwoFactor godoc
+// @Summary      Enable two-factor authentication
+// @Description  Enables 2FA for the authenticated user (method: totp, sms, or email). Requires Bearer auth.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body    body      dtos.EnableTwoFactorRequest  true  "2FA method"
+// @Success      200     {object}  http.APIResponse            "2FA enabled"
+// @Failure      400     {object}  http.APIResponse            "Invalid request"
+// @Failure      401     {object}  http.APIResponse            "Unauthorized"
+// @Failure      500     {object}  http.APIResponse            "Internal server error"
+// @Router       /auth/2fa/enable [post]
 func (ctrl *AuthHandler) EnableTwoFactor(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
@@ -199,7 +290,17 @@ func (ctrl *AuthHandler) EnableTwoFactor(c *gin.Context) {
 	sharedhttp.Success(c, nil, "Two factor enabled successfully")
 }
 
-// DisableTwoFactor POST /auth/2fa/disable — requires auth; user from context only
+// DisableTwoFactor godoc
+// @Summary      Disable two-factor authentication
+// @Description  Disables 2FA for the authenticated user. Requires Bearer auth.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  http.APIResponse  "2FA disabled"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /auth/2fa/disable [post]
 func (ctrl *AuthHandler) DisableTwoFactor(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
@@ -234,7 +335,19 @@ func (ctrl *AuthHandler) VerifyEmail(c *gin.Context) {
 	sharedhttp.Success(c, nil, "Email verified successfully")
 }
 
-// RequestResetPassword POST /auth/request-reset-password — body: RequestResetPasswordRequest
+// RequestResetPassword godoc
+// @Summary      Request password reset
+// @Description  Sends a password reset link/code to the given email. Requires Bearer auth.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body    body      dtos.RequestResetPasswordRequest  true  "Email"
+// @Success      200     {object}  http.APIResponse                  "If email exists, reset link sent"
+// @Failure      400     {object}  http.APIResponse                  "Invalid request"
+// @Failure      401     {object}  http.APIResponse                  "Unauthorized"
+// @Failure      500     {object}  http.APIResponse                  "Internal server error"
+// @Router       /auth/reset-password/request [post]
 func (ctrl *AuthHandler) RequestResetPassword(c *gin.Context) {
 	var req dtos.RequestResetPasswordRequest
 	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
@@ -252,7 +365,19 @@ func (ctrl *AuthHandler) RequestResetPassword(c *gin.Context) {
 	sharedhttp.Success(c, nil, "If the email exists, a reset link has been sent")
 }
 
-// ResetPassword POST /auth/reset-password — body: ResetPasswordRequest
+// ResetPassword godoc
+// @Summary      Reset password
+// @Description  Resets the user password using email and the code received by email. Requires Bearer auth.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body    body      dtos.ResetPasswordRequest  true  "Email and reset code"
+// @Success      200     {object}  http.APIResponse            "Password reset"
+// @Failure      400     {object}  http.APIResponse            "Invalid or expired code"
+// @Failure      401     {object}  http.APIResponse            "Unauthorized"
+// @Failure      500     {object}  http.APIResponse            "Internal server error"
+// @Router       /auth/reset-password/reset [post]
 func (ctrl *AuthHandler) ResetPassword(c *gin.Context) {
 	var req dtos.ResetPasswordRequest
 	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {

@@ -28,6 +28,19 @@ func NewNotificationHandler(service notifications.NotificationService, validator
 // Customer read (my notifications)
 // ------------------------------------------------------------
 
+// GetMyNotifications godoc
+// @Summary      Get my notifications
+// @Description  Returns paginated notifications for the authenticated user. Requires any authenticated role.
+// @Tags         notifications
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page_number  query  int  false  "Page number"  default(1)
+// @Param        page_size    query  int  false  "Page size"    default(10)
+// @Success      200          {object}  http.APIResponse  "Paginated notifications"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /me/notifications [get]
 func (h *NotificationHandler) GetMyNotifications(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		userID, err := UserIDFromContext(ctx)
@@ -50,6 +63,20 @@ func (h *NotificationHandler) GetMyNotifications(c *gin.Context) {
 	})(c)
 }
 
+// GetMyNotificationByID godoc
+// @Summary      Get my notification by ID
+// @Description  Returns a single notification by ID for the authenticated user. Requires any authenticated role.
+// @Tags         notifications
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      string  true  "Notification ID"
+// @Success      200  {object}  http.APIResponse  "Notification"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      403  {object}  http.APIResponse  "Forbidden"
+// @Failure      404  {object}  http.APIResponse  "Not found"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /me/notifications/{id} [get]
 func (h *NotificationHandler) GetMyNotificationByID(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		userID, err := UserIDFromContext(ctx)

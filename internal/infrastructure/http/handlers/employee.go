@@ -25,6 +25,20 @@ func NewEmployeeHandler(service employees.EmployeeService, validator *validator.
 	}
 }
 
+// GetEmployeeByID godoc
+// @Summary      Get employee by ID
+// @Description  Returns a single employee by ID. Requires admin or manager role.
+// @Tags         employees
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Employee ID"
+// @Success      200  {object}  http.APIResponse{data=dtos.EmployeeResponse}  "Employee found"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      404  {object}  http.APIResponse  "Employee not found"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/{id} [get]
 func (s *EmployeeHandler) GetEmployeeByID(c *gin.Context) {
 	employeeIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -98,6 +112,19 @@ func (s *EmployeeHandler) GetEmployeeStats(c *gin.Context) {
 	http.Found(c, employeeStatsResponse, "Employee Stats")
 }
 
+// SearchEmployees godoc
+// @Summary      Search employees
+// @Description  Paginated search/filter of employees. Requires admin or manager role.
+// @Tags         employees
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body   body      dtos.EmployeeSearchRequest  true  "Search criteria and pagination"
+// @Success      200     {object}  http.APIResponse           "Paginated list of employees"
+// @Failure      400     {object}  http.APIResponse           "Validation error"
+// @Failure      401     {object}  http.APIResponse           "Unauthorized"
+// @Failure      500     {object}  http.APIResponse           "Internal server error"
+// @Router       /employees [get]
 func (s *EmployeeHandler) SearchEmployees(c *gin.Context) {
 	var requestBodyData dtos.EmployeeSearchRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
@@ -106,6 +133,19 @@ func (s *EmployeeHandler) SearchEmployees(c *gin.Context) {
 	}
 }
 
+// CreateEmployee godoc
+// @Summary      Create employee
+// @Description  Creates a new employee. Requires admin or manager role.
+// @Tags         employees
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body   body      dtos.EmployeeCreateRequest  true  "Employee data"
+// @Success      201    {object}  http.APIResponse             "Employee created"
+// @Failure      400    {object}  http.APIResponse             "Validation error"
+// @Failure      401    {object}  http.APIResponse             "Unauthorized"
+// @Failure      500    {object}  http.APIResponse             "Internal server error"
+// @Router       /employees [post]
 func (s *EmployeeHandler) CreateEmployee(c *gin.Context) {
 	var requestBodyData dtos.EmployeeCreateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
@@ -128,6 +168,19 @@ func (s *EmployeeHandler) CreateEmployee(c *gin.Context) {
 	http.Created(c, employee.ID.Value(), "Employee")
 }
 
+// UpdateEmployee godoc
+// @Summary      Update employee
+// @Description  Updates an existing employee by ID. Requires admin or manager role.
+// @Tags         employees
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body   body      dtos.EmployeeUpdateRequest  true  "Employee data to update"
+// @Success      200     {object}  http.APIResponse            "Employee updated"
+// @Failure      400     {object}  http.APIResponse            "Validation error"
+// @Failure      401     {object}  http.APIResponse            "Unauthorized"
+// @Failure      500     {object}  http.APIResponse            "Internal server error"
+// @Router       /employees/{id} [put]
 func (s *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 	var requestBodyData dtos.EmployeeUpdateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
@@ -149,6 +202,19 @@ func (s *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 	http.Updated(c, nil, "Employee")
 }
 
+// RestoreEmployee godoc
+// @Summary      Restore employee
+// @Description  Restores a soft-deleted employee. Requires admin or manager role.
+// @Tags         employees
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Employee ID"
+// @Success      200  {object}  http.APIResponse  "Employee restored"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/{id}/restore [post]
 func (s *EmployeeHandler) RestoreEmployee(c *gin.Context) {
 	employeeIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -164,6 +230,19 @@ func (s *EmployeeHandler) RestoreEmployee(c *gin.Context) {
 	}
 }
 
+// DeleteEmployee godoc
+// @Summary      Delete employee
+// @Description  Soft-deletes an employee by ID. Requires admin or manager role.
+// @Tags         employees
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Employee ID"
+// @Success      200  {object}  http.APIResponse  "Employee deleted"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/{id} [delete]
 func (s *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 	employeeIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {

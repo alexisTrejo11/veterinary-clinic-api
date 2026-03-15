@@ -32,8 +32,8 @@ type Application struct {
 }
 
 // @title API Clínica Veterinaria
-// @version 1.0
-// @description Esta es la documentación para la API de la clínica veterinaria.
+// @version 2.0
+// @description API REST para la gestión de la clínica veterinaria: autenticación, usuarios, clientes, empleados, mascotas, citas, pagos y notificaciones.
 // @termsOfService http://swagger.io/terms/
 // @contact.name Equipo de Soporte API
 // @contact.url http://www.swagger.io/support
@@ -42,6 +42,10 @@ type Application struct {
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost:8080
 // @BasePath /api/v2
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Bearer JWT token. Example: "Bearer &lt;access_token&gt;"
 func main() {
 	// Initialize application
 	app, err := initializeApplication()
@@ -192,12 +196,8 @@ func setupCORS(settings *config.AppSettings) gin.HandlerFunc {
 
 // setupModules initializes and registers all application modules
 func setupModules(router *gin.Engine, settings *config.AppSettings, queries *sqlc.Queries, validator *validator.Validate) error {
-
-	// Setup notification module
-	routerGroup := router.Group("/api/v2")
-
 	// Bootstrap other API modules
-	if err := config.BootstrapAPIModules(routerGroup, queries, validator, config.RedisClient, settings.Auth.JWTSecret); err != nil {
+	if err := config.BootstrapAPIModules(router, queries, validator, config.RedisClient, settings.Auth.JWTSecret); err != nil {
 		return fmt.Errorf("failed to bootstrap API modules: %w", err)
 	}
 

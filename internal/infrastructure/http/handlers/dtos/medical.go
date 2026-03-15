@@ -6,6 +6,8 @@ import (
 
 // ─── Session ─────────────────────────────────────────────────────────────────
 
+// CreateSessionRequest is the body for creating a medical session
+// @Description Pet, customer, employee, optional appointment, clinic service, visit type/date, optional vitals (weight, temp, heart/resp rate), symptoms, diagnosis, treatment, notes, medications, follow-up date.
 type CreateSessionRequest struct {
 	PetID         uint     `json:"pet_id" binding:"required"`
 	CustomerID    uint     `json:"customer_id" binding:"required"`
@@ -28,6 +30,8 @@ type CreateSessionRequest struct {
 	RespiratoryRate *int   `json:"respiratory_rate"`
 }
 
+// UpdateSessionRequest is the body for updating a medical session
+// @Description Optional fields to update; only provided fields are changed.
 type UpdateSessionRequest struct {
 	EmployeeID    *uint    `json:"employee_id"`
 	AppointmentID *uint    `json:"appointment_id"`
@@ -48,6 +52,8 @@ type UpdateSessionRequest struct {
 	RespiratoryRate *int   `json:"respiratory_rate"`
 }
 
+// SessionSearchRequest carries filters for session listing (query params)
+// @Description Optional pet_id, customer_id, employee_id, clinic_service, is_emergency, visit_date range, pagination.
 type SessionSearchRequest struct {
 	PetID          uint    `form:"pet_id"`
 	CustomerID     uint    `form:"customer_id"`
@@ -61,6 +67,8 @@ type SessionSearchRequest struct {
 
 // ─── Vaccination ────────────────────────────────────────────────────────────
 
+// AddVaccinationRequest is the body for adding a vaccination to a session
+// @Description Session ID, vaccine catalog ID, dose number, optional batch, expiration, site, next dose date, reaction notes, administered_by.
 type AddVaccinationRequest struct {
 	SessionID        uint    `json:"session_id" binding:"required"`
 	VaccineCatalogID uint    `json:"vaccine_catalog_id" binding:"required"`
@@ -73,6 +81,8 @@ type AddVaccinationRequest struct {
 	AdministeredBy   *uint   `json:"administered_by"`
 }
 
+// UpdateVaccinationRequest is the body for updating a vaccination record
+// @Description Optional batch_number, site_of_injection, next_dose_date, reaction_notes.
 type UpdateVaccinationRequest struct {
 	BatchNumber     *string `json:"batch_number"`
 	SiteOfInjection *string `json:"site_of_injection"`
@@ -82,6 +92,8 @@ type UpdateVaccinationRequest struct {
 
 // ─── Surgery ────────────────────────────────────────────────────────────────
 
+// AddSurgeryRequest is the body for adding a surgery to a session
+// @Description Session ID, procedure name, outcome (required), optional anesthesia, pre/intra/post-op notes, duration, surgeon_id.
 type AddSurgeryRequest struct {
 	SessionID        uint    `json:"session_id" binding:"required"`
 	ProcedureName    string  `json:"procedure_name" binding:"required"`
@@ -95,6 +107,8 @@ type AddSurgeryRequest struct {
 	SurgeonID        *uint   `json:"surgeon_id"`
 }
 
+// UpdateSurgeryRequest is the body for updating a surgery record
+// @Description Optional anesthesia, notes, duration, outcome.
 type UpdateSurgeryRequest struct {
 	AnesthesiaType   *string `json:"anesthesia_type"`
 	AnesthesiaAgent  *string `json:"anesthesia_agent"`
@@ -107,6 +121,8 @@ type UpdateSurgeryRequest struct {
 
 // ─── Prescription ───────────────────────────────────────────────────────────
 
+// AddPrescriptionRequest is the body for adding a prescription to a session
+// @Description Session ID, medication ID, dosage, frequency, start_date, optional duration_days, route, instructions.
 type AddPrescriptionRequest struct {
 	SessionID    uint   `json:"session_id" binding:"required"`
 	MedicationID uint   `json:"medication_id" binding:"required"`
@@ -118,6 +134,8 @@ type AddPrescriptionRequest struct {
 	StartDate    string `json:"start_date" binding:"required"` // RFC3339
 }
 
+// UpdatePrescriptionRequest is the body for updating a prescription
+// @Description Optional dosage, frequency, duration_days, route, instructions.
 type UpdatePrescriptionRequest struct {
 	Dosage       *string `json:"dosage"`
 	Frequency    *string `json:"frequency"`
@@ -128,6 +146,8 @@ type UpdatePrescriptionRequest struct {
 
 // ─── Attachment ─────────────────────────────────────────────────────────────
 
+// AddAttachmentRequest is the body for adding an attachment to a session
+// @Description Session ID, file_type, file_url, optional description, uploaded_by.
 type AddAttachmentRequest struct {
 	SessionID   uint   `json:"session_id" binding:"required"`
 	FileType    string `json:"file_type" binding:"required"`
@@ -138,6 +158,8 @@ type AddAttachmentRequest struct {
 
 // ─── Session service ────────────────────────────────────────────────────────
 
+// AddSessionServiceRequest is the body for adding a billable service to a session
+// @Description Session ID, service catalog ID, quantity, optional price_applied, notes.
 type AddSessionServiceRequest struct {
 	SessionID        uint     `json:"session_id" binding:"required"`
 	ServiceCatalogID uint     `json:"service_catalog_id" binding:"required"`
@@ -148,6 +170,8 @@ type AddSessionServiceRequest struct {
 
 // ─── Catalogs ───────────────────────────────────────────────────────────────
 
+// CreateVaccineCatalogRequest is the body for creating a vaccine catalog entry
+// @Description Name, optional manufacturer, species, disease_target, total_doses, schedule_days, notes.
 type CreateVaccineCatalogRequest struct {
 	Name          string  `json:"name" binding:"required"`
 	Manufacturer  *string `json:"manufacturer"`
@@ -158,6 +182,8 @@ type CreateVaccineCatalogRequest struct {
 	Notes         *string `json:"notes"`
 }
 
+// CreateMedicationCatalogRequest is the body for creating a medication catalog entry
+// @Description Name, optional active_ingredient, presentation, unit, requires_prescription, species_warnings.
 type CreateMedicationCatalogRequest struct {
 	Name                 string `json:"name" binding:"required"`
 	ActiveIngredient     *string `json:"active_ingredient"`
@@ -167,6 +193,8 @@ type CreateMedicationCatalogRequest struct {
 	SpeciesWarnings      *string `json:"species_warnings"`
 }
 
+// CreateServiceCatalogRequest is the body for creating a service catalog entry
+// @Description Name, category, optional description, base_price, duration_minutes, requires_fasting.
 type CreateServiceCatalogRequest struct {
 	Name            string   `json:"name" binding:"required"`
 	Category        string   `json:"category" binding:"required"`
@@ -177,6 +205,7 @@ type CreateServiceCatalogRequest struct {
 }
 
 // VaccinationHistoryRequest for query params (pet_id, vaccine_id, date_from, date_to, page, size)
+// @Description Optional pet_id, vaccine_id, date_from, date_to, plus pagination.
 type VaccinationHistoryRequest struct {
 	PetID     uint   `form:"pet_id"`
 	VaccineID uint   `form:"vaccine_id"`
