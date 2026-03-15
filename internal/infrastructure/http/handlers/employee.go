@@ -11,21 +11,21 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type BaseEmployeeHandler struct {
+type EmployeeHandler struct {
 	service   employees.EmployeeService
 	validator *validator.Validate
 	mapper    *mappers.EmployeeMapper
 }
 
-func NewBaseEmployeeHandler(service employees.EmployeeService, validator *validator.Validate) *BaseEmployeeHandler {
-	return &BaseEmployeeHandler{
+func NewEmployeeHandler(service employees.EmployeeService, validator *validator.Validate) *EmployeeHandler {
+	return &EmployeeHandler{
 		service:   service,
 		validator: validator,
 		mapper:    mappers.NewEmployeeMapper(),
 	}
 }
 
-func (s *BaseEmployeeHandler) GetEmployeeByID(c *gin.Context) {
+func (s *EmployeeHandler) GetEmployeeByID(c *gin.Context) {
 	employeeIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, err)
@@ -43,7 +43,7 @@ func (s *BaseEmployeeHandler) GetEmployeeByID(c *gin.Context) {
 	http.Found(c, employeeResponse, "Employee")
 }
 
-func (s *BaseEmployeeHandler) GetActiveEmployees(c *gin.Context) {
+func (s *EmployeeHandler) GetActiveEmployees(c *gin.Context) {
 	var requestBodyData dtos.EmployeeSearchRequest
 	if err := http.ShouldBindAndValidateQuery(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -62,7 +62,7 @@ func (s *BaseEmployeeHandler) GetActiveEmployees(c *gin.Context) {
 	http.Paginated(c, &employeeResponses, "Employees")
 }
 
-func (s *BaseEmployeeHandler) GetEmployeesBySpecialty(c *gin.Context) {
+func (s *EmployeeHandler) GetEmployeesBySpecialty(c *gin.Context) {
 	var pageRequest page.PaginationRequest
 	if err := http.ShouldBindPageParams(&pageRequest, c, s.validator); err != nil {
 		if err != nil {
@@ -87,7 +87,7 @@ func (s *BaseEmployeeHandler) GetEmployeesBySpecialty(c *gin.Context) {
 	http.Paginated(c, &employeeResponses, "Employees")
 }
 
-func (s *BaseEmployeeHandler) GetEmployeeStats(c *gin.Context) {
+func (s *EmployeeHandler) GetEmployeeStats(c *gin.Context) {
 	stats, err := s.service.GetEmployeeStats(c.Request.Context())
 	if err != nil {
 		http.ApplicationError(c, err)
@@ -98,7 +98,7 @@ func (s *BaseEmployeeHandler) GetEmployeeStats(c *gin.Context) {
 	http.Found(c, employeeStatsResponse, "Employee Stats")
 }
 
-func (s *BaseEmployeeHandler) GetEmployeesBySpecification(c *gin.Context) {
+func (s *EmployeeHandler) SearchEmployees(c *gin.Context) {
 	var requestBodyData dtos.EmployeeSearchRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -106,7 +106,7 @@ func (s *BaseEmployeeHandler) GetEmployeesBySpecification(c *gin.Context) {
 	}
 }
 
-func (s *BaseEmployeeHandler) CreateEmployee(c *gin.Context) {
+func (s *EmployeeHandler) CreateEmployee(c *gin.Context) {
 	var requestBodyData dtos.EmployeeCreateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -128,7 +128,7 @@ func (s *BaseEmployeeHandler) CreateEmployee(c *gin.Context) {
 	http.Created(c, employee.ID.Value(), "Employee")
 }
 
-func (s *BaseEmployeeHandler) UpdateEmployee(c *gin.Context) {
+func (s *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 	var requestBodyData dtos.EmployeeUpdateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -149,7 +149,7 @@ func (s *BaseEmployeeHandler) UpdateEmployee(c *gin.Context) {
 	http.Updated(c, nil, "Employee")
 }
 
-func (s *BaseEmployeeHandler) RestoreEmployee(c *gin.Context) {
+func (s *EmployeeHandler) RestoreEmployee(c *gin.Context) {
 	employeeIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, err)
@@ -164,7 +164,7 @@ func (s *BaseEmployeeHandler) RestoreEmployee(c *gin.Context) {
 	}
 }
 
-func (s *BaseEmployeeHandler) DeleteEmployee(c *gin.Context) {
+func (s *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 	employeeIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, err)

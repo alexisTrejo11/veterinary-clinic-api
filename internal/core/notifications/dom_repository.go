@@ -13,6 +13,6 @@ type NotificationRepository interface {
 	Create(ctx context.Context, notification *Notification) error
 	FindByID(ctx context.Context, id string) (Notification, error)
 	FindByUser(ctx context.Context, userID shared.UserID, pagination page.Pagination) (page.Page[Notification], error)
-	FindBySpecies(ctx context.Context, notificationType string, pagination page.Pagination) (page.Page[Notification], error)
+	FindByType(ctx context.Context, notificationType string, pagination page.Pagination) (page.Page[Notification], error)
 	FindByChannel(ctx context.Context, channel string, pagination page.Pagination) (page.Page[Notification], error)
 }

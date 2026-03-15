@@ -18,12 +18,12 @@ import (
 
 // AppointmentHandler handles appointment HTTP with customer-, employee-, and manager-scoped endpoints.
 type AppointmentHandler struct {
-	commandService       appointments.CommandService
-	queryService         appointments.QueryService
-	validator            *validator.Validate
-	mapper                *mappers.AppointmentResponseMapper
-	customerIDResolver   CustomerIDResolver
-	employeeIDResolver   EmployeeIDResolver
+	commandService     appointments.CommandService
+	queryService       appointments.QueryService
+	validator          *validator.Validate
+	mapper             *mappers.AppointmentResponseMapper
+	customerIDResolver CustomerIDResolver
+	employeeIDResolver EmployeeIDResolver
 }
 
 func NewAppointmentHandler(
@@ -446,7 +446,7 @@ func (h *AppointmentHandler) GetAppointmentByID(c *gin.Context) {
 	http.HandleGetRequest(h.validator, "Appointment", logic)(c)
 }
 
-func (h *AppointmentHandler) GetAppointmentsBySpecification(c *gin.Context) {
+func (h *AppointmentHandler) SearchAppointments(c *gin.Context) {
 	searchReq, err := dtos.NewApptSearchRequestFromContext(c)
 	if err != nil {
 		http.BadRequest(c, err)
@@ -538,7 +538,7 @@ func (h *AppointmentHandler) GetAppointmentsByPetID(c *gin.Context) {
 
 func (h *AppointmentHandler) CreateAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.AppointmentCreateRequest) (any, error) {
-		optEmployeeID, _ := EmployeeIDFromParamOptional(ctx)
+		optEmployeeID, _ := OptionalEmployeeIDFromQuery(ctx)
 		return h.createAppointmentInternal(ctx, req, optEmployeeID)
 	}
 	http.HandleCreateRequest(h.validator, "Appointment", logic)(c)
@@ -586,7 +586,8 @@ func (h *AppointmentHandler) ConfirmAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		employeeID, err := EmployeeIDFromParam(ctx)
+		// Manager passes employee_id as query: ?employee_id=1
+		employeeID, err := EmployeeIDFromQuery(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -603,7 +604,7 @@ func (h *AppointmentHandler) CompleteAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		optEmployeeID, _ := EmployeeIDFromParamOptional(ctx)
+		optEmployeeID, _ := OptionalEmployeeIDFromQuery(ctx)
 		notes := ctx.Query("notes")
 		return h.completeInternal(ctx, apptID.Value(), optEmployeeID, notes)
 	}
@@ -618,7 +619,7 @@ func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		optEmployeeID, _ := EmployeeIDFromParamOptional(ctx)
+		optEmployeeID, _ := OptionalEmployeeIDFromQuery(ctx)
 		reason := ctx.Query("reason")
 		return h.cancelInternal(ctx, apptID.Value(), optEmployeeID, reason)
 	}
@@ -633,7 +634,7 @@ func (h *AppointmentHandler) NotAttendAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		optEmployeeID, _ := EmployeeIDFromParamOptional(ctx)
+		optEmployeeID, _ := OptionalEmployeeIDFromQuery(ctx)
 		return h.notAttendInternal(ctx, apptID.Value(), optEmployeeID)
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {

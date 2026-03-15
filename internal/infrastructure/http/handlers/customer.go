@@ -10,17 +10,17 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type BaseCustomerHandler struct {
+type CustomerHandler struct {
 	service   customers.CustomerService
 	validator *validator.Validate
 	mapper    *mappers.CustomerMapper
 }
 
-func NewBaseCustomerHandler(service customers.CustomerService, validator *validator.Validate) *BaseCustomerHandler {
-	return &BaseCustomerHandler{service: service, validator: validator}
+func NewCustomerHandler(service customers.CustomerService, validator *validator.Validate) *CustomerHandler {
+	return &CustomerHandler{service: service, validator: validator}
 }
 
-func (s *BaseCustomerHandler) GetCustomerByID(c *gin.Context) {
+func (s *CustomerHandler) GetCustomerByID(c *gin.Context) {
 	customerIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, err)
@@ -38,7 +38,7 @@ func (s *BaseCustomerHandler) GetCustomerByID(c *gin.Context) {
 	http.Found(c, customerResponse, "Customer")
 }
 
-func (s *BaseCustomerHandler) GetCustomersBySpecification(c *gin.Context) {
+func (s *CustomerHandler) SearchCustomers(c *gin.Context) {
 	var requestBodyData dtos.CustomerSearchRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -46,7 +46,7 @@ func (s *BaseCustomerHandler) GetCustomersBySpecification(c *gin.Context) {
 	}
 }
 
-func (s *BaseCustomerHandler) CreateCustomer(c *gin.Context) {
+func (s *CustomerHandler) CreateCustomer(c *gin.Context) {
 	var requestBodyData dtos.CustomerCreateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -68,7 +68,7 @@ func (s *BaseCustomerHandler) CreateCustomer(c *gin.Context) {
 	http.Created(c, customer.ID.Value(), "Customer")
 }
 
-func (s *BaseCustomerHandler) UpdateCustomer(c *gin.Context) {
+func (s *CustomerHandler) UpdateCustomer(c *gin.Context) {
 	var requestBodyData dtos.CustomerUpdateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -89,7 +89,7 @@ func (s *BaseCustomerHandler) UpdateCustomer(c *gin.Context) {
 	http.Updated(c, nil, "Customer")
 }
 
-func (s *BaseCustomerHandler) DeleteCustomer(c *gin.Context) {
+func (s *CustomerHandler) DeleteCustomer(c *gin.Context) {
 	entityID, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, err)
@@ -106,7 +106,7 @@ func (s *BaseCustomerHandler) DeleteCustomer(c *gin.Context) {
 	http.Success(c, nil, "Customer")
 }
 
-func (s *BaseCustomerHandler) RestoreCustomer(c *gin.Context) {
+func (s *CustomerHandler) RestoreCustomer(c *gin.Context) {
 	entityID, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, err)

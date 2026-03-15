@@ -130,3 +130,20 @@ func EmployeeIDFromParamOptional(c *gin.Context) (*uint, error) {
 	}
 	return &id, nil
 }
+
+// EmployeeIDFromQuery returns employee_id from the query string (e.g. ?employee_id=1).
+func EmployeeIDFromQuery(c *gin.Context) (uint, error) {
+	return http.ParseQueryToUInt(c, "employee_id")
+}
+
+// OptionalEmployeeIDFromQuery returns employee_id from query if present; otherwise (nil, nil).
+func OptionalEmployeeIDFromQuery(c *gin.Context) (*uint, error) {
+	if c.Query("employee_id") == "" {
+		return nil, nil
+	}
+	id, err := http.ParseQueryToUInt(c, "employee_id")
+	if err != nil {
+		return nil, err
+	}
+	return &id, nil
+}

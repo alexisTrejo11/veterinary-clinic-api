@@ -107,3 +107,26 @@ const (
 	ServiceCategoryWellness     ServiceCategory = "wellness"
 	ServiceCategoryOther        ServiceCategory = "other"
 )
+
+var validServiceCategories = map[ServiceCategory]struct{}{
+	ServiceCategoryConsultation: {},
+	ServiceCategoryVaccination:  {},
+	ServiceCategorySurgery:      {},
+	ServiceCategoryDental:       {},
+	ServiceCategoryGrooming:     {},
+	ServiceCategoryLaboratory:   {},
+	ServiceCategoryImaging:     {},
+	ServiceCategoryEmergency:   {},
+	ServiceCategoryNutrition:    {},
+	ServiceCategoryBehavior:   {},
+	ServiceCategoryWellness:   {},
+	ServiceCategoryOther:      {},
+}
+
+func ParseServiceCategory(s string) (ServiceCategory, error) {
+	sc := ServiceCategory(s)
+	if _, ok := validServiceCategories[sc]; !ok {
+		return "", fmt.Errorf("invalid service category: %q", s)
+	}
+	return sc, nil
+}

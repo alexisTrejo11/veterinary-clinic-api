@@ -12,20 +12,20 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type BasePaymentHandler struct {
+type PaymentHandler struct {
 	queryService   payments.QueryService
 	commandService payments.CommandService
 	validator      *validator.Validate
 	mapper         *mappers.PaymentMapper
 }
 
-func NewBasePaymentHandler(
+func NewPaymentHandler(
 	queryService payments.QueryService,
 	commandService payments.CommandService,
 	validator *validator.Validate,
 	mapper *mappers.PaymentMapper,
-) *BasePaymentHandler {
-	return &BasePaymentHandler{
+) *PaymentHandler {
+	return &PaymentHandler{
 		queryService:   queryService,
 		commandService: commandService,
 		validator:      validator,
@@ -33,7 +33,7 @@ func NewBasePaymentHandler(
 	}
 }
 
-func (s *BasePaymentHandler) GetPaymentByID(c *gin.Context) {
+func (s *PaymentHandler) GetPaymentByID(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
@@ -51,7 +51,7 @@ func (s *BasePaymentHandler) GetPaymentByID(c *gin.Context) {
 	http.Found(c, paymentResponse, "Payment")
 }
 
-func (s *BasePaymentHandler) GetPaymentByTransactionID(c *gin.Context) {
+func (s *PaymentHandler) GetPaymentByTransactionID(c *gin.Context) {
 	transactionID := c.Param("transaction_id")
 	payment, err := s.queryService.GetPaymentByTransactionID(c.Request.Context(), transactionID)
 	if err != nil {
@@ -63,7 +63,7 @@ func (s *BasePaymentHandler) GetPaymentByTransactionID(c *gin.Context) {
 	http.Found(c, paymentResponse, "Payment")
 }
 
-func (s *BasePaymentHandler) GetPaymentsBySpecification(c *gin.Context) {
+func (s *PaymentHandler) GetPaymentsBySpecification(c *gin.Context) {
 	var requestBodyData dtos.PaymentSearchRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -86,7 +86,7 @@ func (s *BasePaymentHandler) GetPaymentsBySpecification(c *gin.Context) {
 	http.Paginated(c, &responsePage, "Payments")
 }
 
-func (s *BasePaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
+func (s *PaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
 	customerIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
@@ -104,7 +104,7 @@ func (s *BasePaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
 	http.Paginated(c, &responsePage, "Payments")
 }
 
-func (s *BasePaymentHandler) CreatePayment(c *gin.Context) {
+func (s *PaymentHandler) CreatePayment(c *gin.Context) {
 	var requestBodyData dtos.PaymentCreateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -126,7 +126,7 @@ func (s *BasePaymentHandler) CreatePayment(c *gin.Context) {
 	http.Created(c, payment.ID.Value(), "Payment")
 }
 
-func (s *BasePaymentHandler) UpdatePayment(c *gin.Context) {
+func (s *PaymentHandler) UpdatePayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
@@ -160,7 +160,7 @@ func (s *BasePaymentHandler) UpdatePayment(c *gin.Context) {
 	http.Updated(c, nil, "Payment")
 }
 
-func (s *BasePaymentHandler) DeletePayment(c *gin.Context) {
+func (s *PaymentHandler) DeletePayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
@@ -181,7 +181,7 @@ func (s *BasePaymentHandler) DeletePayment(c *gin.Context) {
 	http.Success(c, nil, "Payment")
 }
 
-func (s *BasePaymentHandler) CancelPayment(c *gin.Context) {
+func (s *PaymentHandler) CancelPayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
@@ -202,7 +202,7 @@ func (s *BasePaymentHandler) CancelPayment(c *gin.Context) {
 	http.Success(c, nil, "Payment")
 }
 
-func (s *BasePaymentHandler) ProcessPayment(c *gin.Context) {
+func (s *PaymentHandler) ProcessPayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
@@ -223,7 +223,7 @@ func (s *BasePaymentHandler) ProcessPayment(c *gin.Context) {
 	http.Success(c, nil, "Payment")
 }
 
-func (s *BasePaymentHandler) RefundPayment(c *gin.Context) {
+func (s *PaymentHandler) RefundPayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
 		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))

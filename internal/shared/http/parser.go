@@ -61,18 +61,25 @@ func ShouldBindPageParams(requestPageParams *page.PaginationRequest, ctx *gin.Co
 func ParseParamToUInt(c *gin.Context, paramName string) (uint, error) {
 	idStr := c.Param(paramName)
 	if idStr == "" {
-		return 0, fmt.Errorf("empty id")
+		return 0, fmt.Errorf("missing param %q", paramName)
 	}
+	return parseUInt(idStr, paramName)
+}
 
-	intValue, err := strconv.Atoi(idStr)
+// ParseQueryToUInt parses a query parameter to uint (e.g. ?employee_id=1).
+func ParseQueryToUInt(c *gin.Context, paramName string) (uint, error) {
+	idStr := c.Query(paramName)
+	if idStr == "" {
+		return 0, fmt.Errorf("missing query %q", paramName)
+	}
+	return parseUInt(idStr, paramName)
+}
+
+func parseUInt(s string, name string) (uint, error) {
+	intValue, err := strconv.ParseUint(s, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("id must be a valid number")
+		return 0, fmt.Errorf("%s must be a valid number", name)
 	}
-
-	if intValue < 0 {
-		return 0, fmt.Errorf("ID cannot be negative")
-	}
-
 	return uint(intValue), nil
 }
 
