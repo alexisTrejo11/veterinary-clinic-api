@@ -17,7 +17,7 @@ func NewCustomerMapper() *CustomerMapper {
 
 func (m *CustomerMapper) ToCustomerResponse(customer customers.Customer) dtos.CustomerResponse {
 	return dtos.CustomerResponse{
-		ID:          customer.ID.Value,
+		ID:          customer.ID.Value(),
 		FirstName:   customer.FirstName,
 		LastName:    customer.LastName,
 		Gender:      string(customer.Gender),
@@ -94,4 +94,3 @@ func (m *CustomerMapper) RequestToUpdateCommand(request dtos.CustomerUpdateReque
 
 	return cmd, nil
 }
-

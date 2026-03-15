@@ -123,7 +123,7 @@ func (s *BasePaymentHandler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	http.Created(c, payment.ID.Value, "Payment")
+	http.Created(c, payment.ID.Value(), "Payment")
 }
 
 func (s *BasePaymentHandler) UpdatePayment(c *gin.Context) {

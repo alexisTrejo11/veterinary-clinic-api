@@ -1,8 +1,10 @@
 package addresses
 
 import (
+	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/page"
 	"context"
+	"errors"
 )
 
 var (
@@ -10,7 +12,7 @@ var (
 )
 
 type CreateAddressCommand struct {
-	UserID              uint
+	UserID              shared.UserID
 	Street              string
 	City                string
 	State               string
@@ -24,6 +26,7 @@ type CreateAddressCommand struct {
 
 type UpdateAddressCommand struct {
 	ID                  AddressID
+	UserID              *shared.UserID
 	Street              *string
 	City                *string
 	State               *string
@@ -39,11 +42,11 @@ type AddressService interface {
 	CreateAddress(ctx context.Context, cmd CreateAddressCommand) (Address, error)
 	UpdateAddress(ctx context.Context, cmd UpdateAddressCommand) error
 	RestoreAddress(ctx context.Context, id AddressID) error
-	DeleteAddress(ctx context.Context, id AddressID) error
-	GetAddressByIDAndUserID(ctx context.Context, id AddressID, UserID uint) (Address, error)
-	GetAddressesByUserID(ctx context.Context, UserID uint) ([]Address, error)
+	DeleteAddress(ctx context.Context, id AddressID, userID *shared.UserID) error
+	GetAddressByIDAndUserID(ctx context.Context, id AddressID, userID *shared.UserID) (Address, error)
+	GetAddressesByUserID(ctx context.Context, userID shared.UserID) ([]Address, error)
 	GetAddressesBySpecification(ctx context.Context, spec AddressSpecification) (page.Page[Address], error)
-	GetAddressesByIDAndUserID(ctx context.Context, id AddressID, UserID uint) (Address, error)
+	GetAddressesByIDAndUserID(ctx context.Context, id AddressID, userID shared.UserID) (Address, error)
 }
 
 type addressService struct {
@@ -93,7 +96,7 @@ func (s *addressService) CreateAddress(ctx context.Context, cmd CreateAddressCom
 			return Address{}, err
 		}
 		for i := range addresses {
-			if addresses[i].ID.Value == created.ID.Value {
+			if addresses[i].ID.Value() == created.ID.Value() {
 				addresses[i].IsDefault = true
 			} else if addresses[i].IsDefault {
 				addresses[i].IsDefault = false
@@ -161,7 +164,7 @@ func (s *addressService) UpdateAddress(ctx context.Context, cmd UpdateAddressCom
 			return err
 		}
 		for i := range addresses {
-			if addresses[i].ID.Value == updated.ID.Value {
+			if addresses[i].ID.Value() == updated.ID.Value() {
 				addresses[i].IsDefault = true
 			} else if addresses[i].IsDefault {
 				addresses[i].IsDefault = false
@@ -197,23 +200,41 @@ func (s *addressService) RestoreAddress(ctx context.Context, id AddressID) error
 	return s.repository.RestoreByID(ctx, id)
 }
 
-func (s *addressService) DeleteAddress(ctx context.Context, id AddressID) error {
-	err := s.repository.Delete(ctx, id)
-	return err
+func AddressNotFoundError(ctx context.Context, id AddressID) error {
+	return errors.New("address not found")
 }
 
-func (s *addressService) GetAddressByIDAndUserID(ctx context.Context, id AddressID, UserID uint) (Address, error) {
-	return s.repository.GetByIDAndUserID(ctx, id, UserID)
+func (s *addressService) DeleteAddress(ctx context.Context, id AddressID, optUserID *shared.UserID) error {
+	if optUserID == nil {
+		if address, err := s.repository.GetByID(ctx, id); err != nil {
+			return err
+		} else {
+			return s.repository.Delete(ctx, address.ID)
+		}
+	}
+
+	address, err := s.repository.GetByIDAndUserID(ctx, id, *optUserID)
+	if err != nil {
+		return err
+	}
+	return s.repository.Delete(ctx, address.ID)
 }
 
-func (s *addressService) GetAddressesByUserID(ctx context.Context, UserID uint) ([]Address, error) {
-	return s.repository.GetAllByUserID(ctx, UserID)
+func (s *addressService) GetAddressByIDAndUserID(ctx context.Context, id AddressID, userID *shared.UserID) (Address, error) {
+	if userID == nil {
+		return s.repository.GetByID(ctx, id)
+	}
+	return s.repository.GetByIDAndUserID(ctx, id, *userID)
+}
+
+func (s *addressService) GetAddressesByUserID(ctx context.Context, userID shared.UserID) ([]Address, error) {
+	return s.repository.GetAllByUserID(ctx, userID)
 }
 
 func (s *addressService) GetAddressesBySpecification(ctx context.Context, spec AddressSpecification) (page.Page[Address], error) {
 	return s.repository.GetBySpecification(ctx, spec)
 }
 
-func (s *addressService) GetAddressesByIDAndUserID(ctx context.Context, id AddressID, UserID uint) (Address, error) {
-	return s.repository.GetByIDAndUserID(ctx, id, UserID)
+func (s *addressService) GetAddressesByIDAndUserID(ctx context.Context, id AddressID, userID shared.UserID) (Address, error) {
+	return s.repository.GetByIDAndUserID(ctx, id, userID)
 }

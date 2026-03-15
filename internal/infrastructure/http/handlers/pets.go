@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"errors"
+	"strconv"
+
 	"clinic-vet-api/internal/core/pets"
 	"clinic-vet-api/internal/infrastructure/http/handlers/dtos"
 	"clinic-vet-api/internal/infrastructure/http/handlers/mappers"
-	"clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/http"
 	"clinic-vet-api/internal/shared/page"
 
@@ -12,137 +14,293 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type BasePetHandler struct {
-	service   pets.Service
-	validator *validator.Validate
-	mapper    *mappers.PetMapper
+type PetHandler struct {
+	service            pets.Service
+	validator          *validator.Validate
+	mapper             *mappers.PetMapper
+	customerIDResolver CustomerIDResolver
 }
 
-func NewBasePetHandler(service pets.Service, validator *validator.Validate) *BasePetHandler {
-	return &BasePetHandler{service: service, validator: validator}
+func NewPetHandler(
+	service pets.Service,
+	validator *validator.Validate,
+	mapper *mappers.PetMapper,
+	customerIDResolver CustomerIDResolver,
+) *PetHandler {
+	if mapper == nil {
+		mapper = mappers.NewPetMapper()
+	}
+	return &PetHandler{
+		service:            service,
+		validator:          validator,
+		mapper:             mapper,
+		customerIDResolver: customerIDResolver,
+	}
 }
 
-func (s *BasePetHandler) SearchPets(c *gin.Context) {
+// parsePetIDFromParam returns the pet id from the "id" URL param.
+func parsePetIDFromParam(c *gin.Context) (pets.PetID, error) {
+	id, err := http.ParseParamToUInt(c, "id")
+	if err != nil {
+		return pets.PetID{}, err
+	}
+	return pets.NewPetID(id), nil
+}
+
+// ------------------------------------------------------------
+// Internal handlers
+// ------------------------------------------------------------
+
+func (s *PetHandler) getPetByIDInternal(ctx *gin.Context, petID pets.PetID, optCustomerID *uint) (any, error) {
+	if optCustomerID != nil {
+		return s.service.GetPetByIDAndCustomerID(ctx.Request.Context(), petID, *optCustomerID)
+	}
+	return s.service.GetPetByID(ctx.Request.Context(), petID)
+}
+
+func (s *PetHandler) getPetsByCustomerIDInternal(ctx *gin.Context, getCustomerID CustomerIDProvider, pagination page.Pagination) (any, error) {
+	customerID, err := getCustomerID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.service.GetPetsByCustomerID(ctx.Request.Context(), customerID, pagination)
+}
+
+func (s *PetHandler) createPetInternal(ctx *gin.Context, req dtos.PetCreateRequest, getCustomerID CustomerIDProvider, isActive bool) (any, error) {
+	customerID, err := getCustomerID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	command, err := s.mapper.RequestToCreateCommand(req, customerID, isActive)
+	if err != nil {
+		return nil, err
+	}
+	pet, err := s.service.CreatePet(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return pet.ID.Value(), nil
+}
+
+func (s *PetHandler) updatePetInternal(ctx *gin.Context, req dtos.PetUpdateRequest, petID pets.PetID, optCustomerID *uint) (any, error) {
+	command, err := s.mapper.RequestToUpdateCommand(req, petID, optCustomerID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.service.UpdatePet(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (s *PetHandler) deletePetInternal(ctx *gin.Context, petID pets.PetID, optCustomerID *uint, isHardDelete bool) (any, error) {
+	command := pets.DeletePetCommand{
+		PetID:         petID,
+		OptCustomerID: optCustomerID,
+		IsHardDelete:  isHardDelete,
+	}
+	err := s.service.DeletePet(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (s *PetHandler) restorePetInternal(ctx *gin.Context, petID pets.PetID) (any, error) {
+	err := s.service.RestorePet(ctx.Request.Context(), petID)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+// ------------------------------------------------------------
+// Manager level handlers
+// ------------------------------------------------------------
+
+func (s *PetHandler) GetPetByID(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		petID, err := parsePetIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return s.getPetByIDInternal(ctx, petID, nil)
+	}
+	http.HandleGetRequest(s.validator, "Pet", logic)(c)
+}
+
+func (s *PetHandler) GetPetsByCustomerID(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		var pageParams page.PaginationRequest
+		if err := http.ShouldBindPageParams(&pageParams, ctx, s.validator); err != nil {
+			return nil, err
+		}
+		return s.getPetsByCustomerIDInternal(ctx, CustomerIDFromParam, pageParams.ToPagination())
+	}
+	http.HandleRequestNoBodyWithResponder(s.validator, logic, func(c *gin.Context, res any) {
+		if res == nil {
+			http.Success(c, nil, "No pets found")
+			return
+		}
+		p := res.(page.Page[pets.Pet])
+		responsePage := s.mapper.ToPaginatedResponse(p)
+		http.Paginated(c, &responsePage, "Pets")
+	})(c)
+}
+
+func (s *PetHandler) CreatePet(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.PetCreateRequest) (any, error) {
+		isActive := true
+		if q := ctx.Query("is_active"); q != "" {
+			var err error
+			isActive, err = strconv.ParseBool(q)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return s.createPetInternal(ctx, req, CustomerIDFromParam, isActive)
+	}
+	http.HandleCreateRequest(s.validator, "Pet", logic)(c)
+}
+
+func (s *PetHandler) UpdatePet(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.PetUpdateRequest) (any, error) {
+		petID, err := parsePetIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		optCustomerID, _ := CustomerIDFromParamOptional(ctx)
+		return s.updatePetInternal(ctx, req, petID, optCustomerID)
+	}
+	http.HandleUpdateRequest(s.validator, "Pet", logic)(c)
+}
+
+func (s *PetHandler) DeletePet(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		petID, err := parsePetIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		isHard := ctx.Query("hard") == "true"
+		return s.deletePetInternal(ctx, petID, nil, isHard)
+	}
+	http.HandleDeleteRequest(s.validator, "Pet", logic)(c)
+}
+
+func (s *PetHandler) RestorePet(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		petID, err := parsePetIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return s.restorePetInternal(ctx, petID)
+	}
+	http.HandleRequestNoBodyWithResponder(s.validator, logic, func(c *gin.Context, _ any) {
+		http.Updated(c, nil, "Pet")
+	})(c)
+}
+
+func (s *PetHandler) SearchPets(c *gin.Context) {
 	var requestBodyData dtos.PetSearchRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
 		return
 	}
-
 	query, err := s.mapper.RequestToSpecification(requestBodyData)
 	if err != nil {
 		http.BadRequest(c, err)
 		return
 	}
-
 	petPage, err := s.service.GetPetBySpecification(c.Request.Context(), &query)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
 	}
-
 	responsePage := s.mapper.ToPaginatedResponse(petPage)
 	http.Paginated(c, &responsePage, "Pets")
 }
 
-func (s *BasePetHandler) CreatePet(c *gin.Context, customerID *uint, isActive bool) {
-	var requestBodyData dtos.PetCreateRequest
-	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
-		http.BadRequest(c, err)
-		return
-	}
+// ------------------------------------------------------------
+// Customer level handlers ("my" endpoints)
+// ------------------------------------------------------------
 
-	command, err := s.mapper.RequestToCreateCommand(requestBodyData, *customerID, isActive)
-	if err != nil {
-		http.BadRequest(c, err)
-		return
+func (s *PetHandler) getMyCustomerID(ctx *gin.Context) (uint, error) {
+	if s.customerIDResolver == nil {
+		return 0, errors.New("customer resolver not configured")
 	}
-
-	pet, err := s.service.CreatePet(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Created(c, pet.ID.Value, "Pet")
+	return CustomerIDFromContext(ctx, s.customerIDResolver)
 }
 
-func (s *BasePetHandler) RestorePet(c *gin.Context) {
-	petIDUInt, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (s *PetHandler) GetMyPet(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		customerID, err := s.getMyCustomerID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		petID, err := parsePetIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return s.getPetByIDInternal(ctx, petID, &customerID)
 	}
-
-	petID := pets.NewPetID(petIDUInt)
-	err = s.service.RestorePet(c.Request.Context(), petID)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Updated(c, nil, "Pet")
+	http.HandleGetRequest(s.validator, "Pet", logic)(c)
 }
 
-func (s *BasePetHandler) DeletePet(c *gin.Context) {
-	petIDUInt, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (s *PetHandler) GetMyPets(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		var pageParams page.PaginationRequest
+		if err := http.ShouldBindPageParams(&pageParams, ctx, s.validator); err != nil {
+			return nil, err
+		}
+		getCustomerID := func(c *gin.Context) (uint, error) { return s.getMyCustomerID(c) }
+		return s.getPetsByCustomerIDInternal(ctx, getCustomerID, pageParams.ToPagination())
 	}
-
-	// TODO: Include customer ID, maybe as a query parameter or inside gin context
-	petID := pets.NewPetID(petIDUInt)
-	command := pets.DeletePetCommand{
-		PetID:        petID,
-		IsHardDelete: false,
-	}
-
-	err = s.service.DeletePet(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Success(c, nil, "Pet")
+	http.HandleRequestNoBodyWithResponder(s.validator, logic, func(c *gin.Context, res any) {
+		if res == nil {
+			http.Success(c, nil, "No pets found")
+			return
+		}
+		p := res.(page.Page[pets.Pet])
+		responsePage := s.mapper.ToPaginatedResponse(p)
+		http.Paginated(c, &responsePage, "Pets")
+	})(c)
 }
 
-func (s *BasePetHandler) GetPetByID(c *gin.Context) {
-	petIDUInt, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (s *PetHandler) CreatePetForMe(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.PetCreateRequest) (any, error) {
+		getCustomerID := func(c *gin.Context) (uint, error) { return s.getMyCustomerID(c) }
+		return s.createPetInternal(ctx, req, getCustomerID, true)
 	}
-
-	petID := pets.NewPetID(petIDUInt)
-	pet, err := s.service.GetPetByID(c.Request.Context(), petID)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Success(c, pet, "Pet")
+	http.HandleCreateRequest(s.validator, "Pet", logic)(c)
 }
 
-func (s *BasePetHandler) GetPetsByCustomerID(c *gin.Context) {
-	customerIDUInt, err := http.ParseParamToUInt(c, "customer_id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "customer_id", c.Param("customer_id")))
-		return
+func (s *PetHandler) UpdateMyPet(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.PetUpdateRequest) (any, error) {
+		customerID, err := s.getMyCustomerID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		petID, err := parsePetIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return s.updatePetInternal(ctx, req, petID, &customerID)
 	}
+	http.HandleUpdateRequest(s.validator, "Pet", logic)(c)
+}
 
-	var pageParams page.PaginationRequest
-	if err := http.ShouldBindPageParams(&pageParams, c, s.validator); err != nil {
-		http.BadRequest(c, errors.RequestURLQueryError(err, c.Request.URL.RawQuery))
-		return
+func (s *PetHandler) DeleteMyPet(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		customerID, err := s.getMyCustomerID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		petID, err := parsePetIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return s.deletePetInternal(ctx, petID, &customerID, false)
 	}
-	pagination := pageParams.ToPagination()
-
-	petPage, err := s.service.GetPetsByCustomerID(c.Request.Context(), customerIDUInt, pagination)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-	responsePage := s.mapper.ToPaginatedResponse(petPage)
-	http.Paginated(c, &responsePage, "Pets")
+	http.HandleDeleteRequest(s.validator, "Pet", logic)(c)
 }

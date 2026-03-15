@@ -45,22 +45,22 @@ func (s *AppointmentSpecification) ToSearchParams() SearchParams {
 	}
 
 	if s.ID != nil {
-		id := int32(s.ID.Value)
+		id := int32(s.ID.Value())
 		params.ID = &id
 	}
 
 	if s.CustomerID != nil {
-		id := int32(s.CustomerID.Value)
+		id := int32(s.CustomerID.Value())
 		params.CustomerID = &id
 	}
 
 	if s.EmployeeID != nil {
-		id := int32(s.EmployeeID.Value)
+		id := int32(s.EmployeeID.Value())
 		params.EmployeeID = &id
 	}
 
 	if s.PetID != nil {
-		id := int32(s.PetID.Value)
+		id := int32(s.PetID.Value())
 		params.PetID = &id
 	}
 

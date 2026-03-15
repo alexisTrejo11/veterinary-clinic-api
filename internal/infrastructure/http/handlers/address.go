@@ -4,24 +4,124 @@ import (
 	"clinic-vet-api/internal/core/addresses"
 	"clinic-vet-api/internal/infrastructure/http/handlers/dtos"
 	"clinic-vet-api/internal/infrastructure/http/handlers/mappers"
-	"clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
-type BaseAddressHandler struct {
+type AddressHandler struct {
 	service   addresses.AddressService
 	validator *validator.Validate
 	mapper    *mappers.AddressMapper
 }
 
-func NewBaseAddressHandler(service addresses.AddressService, validator *validator.Validate) *BaseAddressHandler {
-	return &BaseAddressHandler{service: service, validator: validator}
+func NewAddressHandler(service addresses.AddressService, validator *validator.Validate, mapper *mappers.AddressMapper) *AddressHandler {
+	if mapper == nil {
+		mapper = mappers.NewAddressMapper()
+	}
+	return &AddressHandler{service: service, validator: validator, mapper: mapper}
 }
 
-func (s *BaseAddressHandler) SearchAddresses(c *gin.Context) {
+// ------------------------------------------------------------
+// Internal handlers
+// ------------------------------------------------------------
+
+func (s *AddressHandler) getAddressByIDInternal(ctx *gin.Context, getID EntityIDProvider, getUserID OptionalIdentityProvider) (any, error) {
+	entityID, err := getID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	addressID := entityID.(addresses.AddressID)
+	address, err := s.service.GetAddressByIDAndUserID(ctx.Request.Context(), addressID, userID)
+	return address, nil
+}
+
+func (s *AddressHandler) getAddressesByUserIDInternal(ctx *gin.Context, getUserID IdentityProvider) (any, error) {
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	addresses, err := s.service.GetAddressesByUserID(ctx.Request.Context(), userID)
+	return addresses, nil
+}
+
+func (s *AddressHandler) createAddressInternal(ctx *gin.Context, req dtos.AddressCreateRequest, getID IdentityProvider) (any, error) {
+	userID, err := getID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	command, err := s.mapper.RequestToCreateCommand(req, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	address, err := s.service.CreateAddress(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return address.ID.Value(), nil
+}
+
+func (s *AddressHandler) updateAddressInternal(ctx *gin.Context, req dtos.AddressUpdateRequest, getID OptionalIdentityProvider) (any, error) {
+	userID, err := getID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	command, err := s.mapper.RequestToUpdateCommand(req, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.service.UpdateAddress(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (s *AddressHandler) deleteAddressInternal(ctx *gin.Context, getID OptionalIdentityProvider) (any, error) {
+	userID, err := getID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	entityID, err := http.ParseParamToUInt(ctx, "id")
+	if err != nil {
+		return nil, err
+	}
+
+	addressID := addresses.NewAddressID(entityID)
+	err = s.service.DeleteAddress(ctx.Request.Context(), addressID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+// ------------------------------------------------------------
+// Manager level handlers
+// ------------------------------------------------------------
+
+func (s *AddressHandler) GetAddressByID(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		return s.getAddressByIDInternal(ctx, AddressIDFromParam, UserIDFromContextPtr)
+	}
+	http.HandleRequestNoBodyStruct(s.validator, logic)(c)
+}
+
+func (s *AddressHandler) SearchAddresses(c *gin.Context) {
 	var requestBodyData dtos.AddressSearchRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
@@ -44,102 +144,55 @@ func (s *BaseAddressHandler) SearchAddresses(c *gin.Context) {
 	http.Paginated(c, &responsePage, "Addresses")
 }
 
-func (s *BaseAddressHandler) GetAddressesByUserID(c *gin.Context) {
-	userIDUInt, err := http.ParseParamToUInt(c, "user_id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "user_id", c.Param("user_id")))
-		return
+func (s *AddressHandler) GetAddressesByUserID(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		return s.getAddressesByUserIDInternal(ctx, UserIDFromParam)
 	}
-
-	addresses, err := s.service.GetAddressesByUserID(c.Request.Context(), userIDUInt)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	responsePage := s.mapper.ToCustomerAddressesResponse(addresses)
-	http.Success(c, responsePage, "Addresses successfully retrieved")
+	http.HandleRequestNoBodyStruct(s.validator, logic)(c)
 }
 
-func (s *BaseAddressHandler) CreateAddress(c *gin.Context) {
-	var requestBodyData dtos.AddressCreateRequest
-	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
-		http.BadRequest(c, err)
-		return
+func (s *AddressHandler) CreateAddress(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.AddressCreateRequest) (any, error) {
+		return s.createAddressInternal(ctx, req, UserIDFromParam)
 	}
-
-	command, err := s.mapper.RequestToCreateCommand(requestBodyData)
-	if err != nil {
-		http.BadRequest(c, err)
-		return
-	}
-
-	address, err := s.service.CreateAddress(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Created(c, address.ID.Value, "Address")
+	http.HandleRequest(s.validator, logic)(c)
 }
 
-func (s *BaseAddressHandler) UpdateAddress(c *gin.Context) {
-	var requestBodyData dtos.AddressUpdateRequest
-	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
-		http.BadRequest(c, err)
-		return
+func (s *AddressHandler) UpdateAddress(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.AddressUpdateRequest) (any, error) {
+		return s.updateAddressInternal(ctx, req, UserIDFromParamOptional)
 	}
-
-	command, err := s.mapper.RequestToUpdateCommand(requestBodyData)
-	if err != nil {
-		http.BadRequest(c, err)
-		return
-	}
-	err = s.service.UpdateAddress(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Updated(c, nil, "Address")
+	http.HandleRequest(s.validator, logic)(c)
 }
 
-func (s *BaseAddressHandler) DeleteAddress(c *gin.Context) {
-	entityID, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, err)
-		return
+func (s *AddressHandler) DeleteAddress(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		return s.deleteAddressInternal(ctx, UserIDFromParamOptional)
 	}
-
-	addressID := addresses.NewAddressID(entityID)
-	err = s.service.DeleteAddress(c.Request.Context(), addressID)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Success(c, nil, "Address")
+	http.HandleRequestNoBodyStruct(s.validator, logic)(c)
 }
 
-func (s *BaseAddressHandler) GetAddressByID(c *gin.Context) {
-	entityID, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, err)
-		return
-	}
+// ------------------------------------------------------------
+// Customer level handlers
+// ------------------------------------------------------------
 
-	userIDUInt, err := http.ParseParamToUInt(c, "user_id")
-	if err != nil {
-		http.BadRequest(c, err)
-		return
+func (s *AddressHandler) CreateAddressForMe(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.AddressCreateRequest) (any, error) {
+		return s.createAddressInternal(ctx, req, UserIDFromContext)
 	}
+	http.HandleRequest(s.validator, logic)(c)
+}
 
-	addressID := addresses.NewAddressID(entityID)
-	address, err := s.service.GetAddressByIDAndUserID(c.Request.Context(), addressID, userIDUInt)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
+func (s *AddressHandler) UpdateMyAddress(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.AddressUpdateRequest) (any, error) {
+		return s.updateAddressInternal(ctx, req, UserIDFromContextPtr)
 	}
+	http.HandleRequest(s.validator, logic)(c)
+}
 
-	http.Found(c, address, "Address")
+func (s *AddressHandler) DeleteMyAddress(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		return s.deleteAddressInternal(ctx, UserIDFromContextPtr)
+	}
+	http.HandleRequestNoBodyStruct(s.validator, logic)(c)
 }

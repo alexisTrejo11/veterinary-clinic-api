@@ -38,6 +38,15 @@ func (r *AppointmentsByDateRangeRequest) EndTime() time.Time {
 	return end
 }
 
+// AppointmentRequestByCustomerRequest is the body when a customer requests an appointment (customer_id from auth).
+type AppointmentRequestByCustomerRequest struct {
+	PetID          uint      `json:"pet_id" binding:"required"`
+	ScheduledDate  time.Time `json:"scheduled_date" binding:"required"`
+	Reason         string    `json:"reason" binding:"required"`
+	Service        string    `json:"service" binding:"required"`
+	Notes          *string   `json:"notes"`
+}
+
 // CreateApptRequest represents the request to create an appointment
 // @Description Request body for creating a new appointment
 type AppointmentCreateRequest struct {

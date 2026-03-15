@@ -23,16 +23,16 @@ func (m *AuthMapper) RegisterRequestToCommand(req dtos.RegisterRequest) (auth.Re
 		return auth.RegisterCommand{}, err
 	}
 	cmd := auth.RegisterCommand{
-		Role:        role,
-		Email:       req.Email,
-		Password:    req.Password,
-		Name:        req.Name,
-		PhoneNumber: req.PhoneNumber,
-		DateOfBirth: req.DateOfBirth,
-		Gender:      req.Gender,
-		PhotoURL:    req.PhotoURL,
-		Bio:         req.Bio,
-		EmployeeID:  req.EmployeeID,
+		Role:          role,
+		Email:         req.Email,
+		Password:      req.Password,
+		Name:          req.Name,
+		PhoneNumber:   req.PhoneNumber,
+		DateOfBirth:   req.DateOfBirth,
+		Gender:        req.Gender,
+		PhotoURL:      req.PhotoURL,
+		Bio:           req.Bio,
+		EmployeeID:    req.EmployeeID,
 		LicenseNumber: req.LicenseNumber,
 	}
 	return cmd, nil
@@ -129,7 +129,7 @@ func tokenToResponse(t auth.Token) dtos.TokenResponse {
 
 func userToAuthResponse(u users.User) dtos.UserAuthResponse {
 	return dtos.UserAuthResponse{
-		ID:    u.ID.Value,
+		ID:    u.ID.Value(),
 		Email: u.Email.String(),
 		Role:  u.Role.String(),
 	}
@@ -138,7 +138,7 @@ func userToAuthResponse(u users.User) dtos.UserAuthResponse {
 func (m *AuthMapper) RequiresTwoFactorToResponse(userID shared.UserID) dtos.RequiresTwoFactorResponse {
 	return dtos.RequiresTwoFactorResponse{
 		RequiresTwoFactor: true,
-		UserID:            userID.Value,
+		UserID:            userID.Value(),
 		Message:           "Two-factor authentication is required to complete login",
 	}
 }

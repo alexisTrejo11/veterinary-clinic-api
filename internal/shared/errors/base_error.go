@@ -240,3 +240,7 @@ func ForbiddenError(ctx context.Context, operation, resource, reason string) err
 	err.Log(ctx, operation)
 	return err
 }
+
+func UserNotFoundInContextError(ctx context.Context, operation string) error {
+	return UnauthorizedError(ctx, operation, "user not found in context")
+}

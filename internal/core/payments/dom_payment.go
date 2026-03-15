@@ -48,11 +48,11 @@ type PaymentReport struct {
 }
 
 type PaymentID struct {
-	shared.BaseID
+	shared.IntegerID
 }
 
 func NewPaymentID(id uint) PaymentID {
-	return PaymentID{shared.BaseID{Value: id}}
+	return PaymentID{shared.NewBaseID(id)}
 }
 
 func (p *Payment) MarkAsPaid(ctx context.Context, transactionID string, paidAt time.Time) error {

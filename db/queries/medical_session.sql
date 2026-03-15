@@ -89,42 +89,24 @@ AND deleted_at IS NULL;
 
 -- name: SaveMedicalSession :one
 INSERT INTO medical_sessions (
-    pet_id, 
-    customer_id,
-    employee_id,
-    visit_date,
-    visit_type,
-    diagnosis, 
-    clinic_service,
-    treatment,
-    notes,
-    condition,
-    weight,
-    temperature,
-    heart_rate,
-    respiratory_rate
+    pet_id, customer_id, employee_id, appointment_id,
+    visit_date, visit_type, clinic_service,
+    diagnosis, treatment, notes, condition,
+    weight, temperature, heart_rate, respiratory_rate,
+    symptoms, medications, follow_up_date, is_emergency
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
 )
 RETURNING *;
 
 -- name: UpdateMedicalSession :one
 UPDATE medical_sessions
-SET 
-    pet_id = $2, 
-    customer_id = $3,
-    employee_id = $4,
-    visit_date = $5, 
-    visit_type = $6,
-    diagnosis = $7, 
-    treatment = $8,
-    notes = $9,
-    condition = $10,
-    weight = $11,
-    temperature = $12,
-    heart_rate = $13,
-    respiratory_rate = $14,
-    clinic_service = $15,
+SET
+    pet_id = $2, customer_id = $3, employee_id = $4, appointment_id = $5,
+    visit_date = $6, visit_type = $7, clinic_service = $8,
+    diagnosis = $9, treatment = $10, notes = $11, condition = $12,
+    weight = $13, temperature = $14, heart_rate = $15, respiratory_rate = $16,
+    symptoms = $17, medications = $18, follow_up_date = $19, is_emergency = $20,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
@@ -156,3 +138,52 @@ WHERE customer_id = $1 AND deleted_at IS NULL;
 SELECT COUNT(*) FROM medical_sessions
 WHERE visit_date BETWEEN $1 AND $2
 AND deleted_at IS NULL;
+
+-- name: FindMedicalSessionsBySpec :many
+SELECT * FROM medical_sessions
+WHERE (cardinality(sqlc.arg(ids)::int[]) = 0 OR id = ANY(sqlc.arg(ids)::int[]))
+  AND (cardinality(sqlc.arg(pet_ids)::int[]) = 0 OR pet_id = ANY(sqlc.arg(pet_ids)::int[]))
+  AND (cardinality(sqlc.arg(customer_ids)::int[]) = 0 OR customer_id = ANY(sqlc.arg(customer_ids)::int[]))
+  AND (cardinality(sqlc.arg(employee_ids)::int[]) = 0 OR employee_id = ANY(sqlc.arg(employee_ids)::int[]))
+  AND (sqlc.narg(appointment_id)::int IS NULL OR appointment_id = sqlc.narg(appointment_id)::int)
+  AND (cardinality(sqlc.arg(clinic_services)::varchar[]) = 0 OR clinic_service = ANY(sqlc.arg(clinic_services)::varchar[]))
+  AND (sqlc.narg(is_emergency)::boolean IS NULL OR is_emergency = sqlc.narg(is_emergency)::boolean)
+  AND (sqlc.narg(is_deleted)::boolean IS NULL OR (deleted_at IS NOT NULL) = sqlc.narg(is_deleted)::boolean)
+  AND (sqlc.narg(visit_date_from)::timestamptz IS NULL OR visit_date >= sqlc.narg(visit_date_from)::timestamptz)
+  AND (sqlc.narg(visit_date_to)::timestamptz IS NULL OR visit_date <= sqlc.narg(visit_date_to)::timestamptz)
+  AND (sqlc.narg(follow_up_from)::timestamptz IS NULL OR follow_up_date >= sqlc.narg(follow_up_from)::timestamptz)
+  AND (sqlc.narg(follow_up_to)::timestamptz IS NULL OR follow_up_date <= sqlc.narg(follow_up_to)::timestamptz)
+ORDER BY visit_date DESC
+LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
+
+-- name: CountMedicalSessionsBySpec :one
+SELECT COUNT(*) FROM medical_sessions
+WHERE (cardinality(sqlc.arg(ids)::int[]) = 0 OR id = ANY(sqlc.arg(ids)::int[]))
+  AND (cardinality(sqlc.arg(pet_ids)::int[]) = 0 OR pet_id = ANY(sqlc.arg(pet_ids)::int[]))
+  AND (cardinality(sqlc.arg(customer_ids)::int[]) = 0 OR customer_id = ANY(sqlc.arg(customer_ids)::int[]))
+  AND (cardinality(sqlc.arg(employee_ids)::int[]) = 0 OR employee_id = ANY(sqlc.arg(employee_ids)::int[]))
+  AND (sqlc.narg(appointment_id)::int IS NULL OR appointment_id = sqlc.narg(appointment_id)::int)
+  AND (cardinality(sqlc.arg(clinic_services)::varchar[]) = 0 OR clinic_service = ANY(sqlc.arg(clinic_services)::varchar[]))
+  AND (sqlc.narg(is_emergency)::boolean IS NULL OR is_emergency = sqlc.narg(is_emergency)::boolean)
+  AND (sqlc.narg(is_deleted)::boolean IS NULL OR (deleted_at IS NOT NULL) = sqlc.narg(is_deleted)::boolean)
+  AND (sqlc.narg(visit_date_from)::timestamptz IS NULL OR visit_date >= sqlc.narg(visit_date_from)::timestamptz)
+  AND (sqlc.narg(visit_date_to)::timestamptz IS NULL OR visit_date <= sqlc.narg(visit_date_to)::timestamptz)
+  AND (sqlc.narg(follow_up_from)::timestamptz IS NULL OR follow_up_date >= sqlc.narg(follow_up_from)::timestamptz)
+  AND (sqlc.narg(follow_up_to)::timestamptz IS NULL OR follow_up_date <= sqlc.narg(follow_up_to)::timestamptz);
+
+-- name: RestoreMedicalSessionByID :exec
+UPDATE medical_sessions
+SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1;
+
+-- name: IsDeletedMedicalSessionByID :one
+SELECT deleted_at IS NOT NULL FROM medical_sessions WHERE id = $1;
+
+-- name: CountAllMedicalSessionsIncludingDeleted :one
+SELECT COUNT(*) FROM medical_sessions;
+
+-- name: CountMedicalSessionsByClinicService :many
+SELECT clinic_service, COUNT(*) AS count
+FROM medical_sessions
+WHERE deleted_at IS NULL
+GROUP BY clinic_service;

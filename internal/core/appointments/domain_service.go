@@ -49,7 +49,7 @@ func (s *appointmentDomainService) ValidateNoOverlapping(ctx context.Context, ap
 	// Check for conflicts, excluding the current appointment if it exists
 	for _, existing := range page.Items {
 		// Skip if it's the same appointment (update case)
-		if !appointment.ID.IsZero() && existing.ID.Equals(appointment.ID.Value) {
+		if !appointment.ID.IsZero() && existing.ID.Equals(appointment.ID.Value()) {
 			continue
 		}
 

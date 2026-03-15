@@ -18,10 +18,10 @@ type Customer struct {
 }
 
 // CustomerID is a unique identifier for a customer user
-type CustomerID struct{ shared.BaseID }
+type CustomerID struct{ shared.IntegerID }
 
 func NewCustomerID(value uint) CustomerID {
-	return CustomerID{shared.BaseID{Value: value}}
+	return CustomerID{shared.NewBaseID(value)}
 }
 
 func (o *Customer) UpdatePhoto(ctx context.Context, newPhoto string) error {
@@ -124,7 +124,7 @@ func (o *Customer) AddPet(ctx context.Context, newPet *pet.Pet) error {
 	}
 
 	for _, existingPet := range o.Pets {
-		if existingPet.ID.Value == newPet.ID.Value {
+		if existingPet.ID.Value() == newPet.ID.Value() {
 			return PetAlreadyExistsError(ctx, newPet.ID, operation)
 		}
 	}
@@ -138,7 +138,7 @@ func (o *Customer) RemovePet(ctx context.Context, petID pets.PetID) error {
 	const operation = "remove_pet"
 
 	for i, existingPet := range o.Pets {
-		if existingPet.ID.Value == petID.Value {
+		if existingPet.ID.Value() == petID.Value() {
 			// Remove the pet
 			o.Pets = append(o.Pets[:i], o.Pets[i+1:]...)
 			o.IncrementVersion()

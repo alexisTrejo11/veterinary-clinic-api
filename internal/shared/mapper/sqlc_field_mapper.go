@@ -4,7 +4,6 @@ import (
 	"clinic-vet-api/internal/core/addresses"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/employees"
-	"clinic-vet-api/internal/core/medical"
 	"clinic-vet-api/internal/core/pets"
 	"clinic-vet-api/internal/core/users"
 	"clinic-vet-api/internal/shared"
@@ -187,7 +186,7 @@ func (m *PgInt4Mapper) ToUserIDPtr(pgType pgtype.Int4) *shared.UserID {
 
 func (m *PgInt4Mapper) FromUserIDPtr(id *shared.UserID) pgtype.Int4 {
 	if id != nil {
-		return pgtype.Int4{Int32: int32(id.Value), Valid: true}
+		return pgtype.Int4{Int32: int32(id.Value()), Valid: true}
 	}
 	return pgtype.Int4{Valid: false}
 }
@@ -204,12 +203,12 @@ func (m *PgInt4Mapper) ToAddressID(pgType pgtype.Int4) addresses.AddressID {
 	if pgType.Valid {
 		return addresses.NewAddressID(uint(pgType.Int32))
 	}
-	return addresses.AddressID{}
+	return addresses.NewAddressID(0)
 }
 
 func (m *PgInt4Mapper) FromAddressID(id addresses.AddressID) pgtype.Int4 {
 	if !id.IsZero() {
-		return pgtype.Int4{Int32: int32(id.Value), Valid: true}
+		return pgtype.Int4{Int32: int32(id.Value()), Valid: true}
 	}
 	return pgtype.Int4{Valid: false}
 }
@@ -229,24 +228,9 @@ func (m *PgInt4Mapper) ToEmployeeID(pgType pgtype.Int4) employees.EmployeeID {
 	return employees.EmployeeID{}
 }
 
-func (m *PgInt4Mapper) ToMedSessionIDPtr(pgType pgtype.Int4) *medical.MedSessionID {
-	if pgType.Valid {
-		id := medical.NewMedSessionID(uint(pgType.Int32))
-		return &id
-	}
-	return nil
-}
-
-func (m *PgInt4Mapper) FromMedSessionIDPtr(id *medical.MedSessionID) pgtype.Int4 {
-	if id != nil {
-		return pgtype.Int4{Int32: int32(id.Value), Valid: true}
-	}
-	return pgtype.Int4{Valid: false}
-}
-
 func (m *PgInt4Mapper) FromCustomerIDPtr(id *customers.CustomerID) pgtype.Int4 {
 	if id != nil {
-		return pgtype.Int4{Int32: int32(id.Value), Valid: true}
+		return pgtype.Int4{Int32: int32(id.Value()), Valid: true}
 	}
 	return pgtype.Int4{Valid: false}
 }
@@ -284,13 +268,6 @@ func (m *PgDateMapper) FromTime(t time.Time) pgtype.Date {
 		return pgtype.Date{Time: t, Valid: true}
 	}
 	return pgtype.Date{Valid: false}
-}
-
-func (m *SqlcFieldMapper) DewormIDPtrToPgInt4(id *medical.DewormID) pgtype.Int4 {
-	if id != nil {
-		return pgtype.Int4{Int32: int32(id.Value), Valid: true}
-	}
-	return pgtype.Int4{Valid: false}
 }
 
 func (m *SqlcFieldMapper) StringPtrToPgText(s *string) pgtype.Text {
@@ -344,25 +321,21 @@ func (m *SqlcFieldMapper) UintToPgInt4(i uint) pgtype.Int4 {
 
 func (m *SqlcFieldMapper) PetIDPtrToInt32(id *pets.PetID) int32 {
 	if id != nil {
-		return int32(id.Value)
+		return int32(id.Value())
 	}
 	return 0
 }
 
 func (m *SqlcFieldMapper) EmployeeIDPtrToInt32(id *employees.EmployeeID) int32 {
 	if id != nil {
-		return int32(id.Value)
+		return int32(id.Value())
 	}
 	return 0
 }
 
-func (m *SqlcFieldMapper) DewormIDToInt32(id medical.DewormID) int32 {
-	return int32(id.Value)
-}
-
 func (m *SqlcFieldMapper) UserIDPtrToInt32(id *shared.UserID) pgtype.Int4 {
 	if id != nil {
-		return pgtype.Int4{Int32: int32(id.Value), Valid: true}
+		return pgtype.Int4{Int32: int32(id.Value()), Valid: true}
 	}
 	return pgtype.Int4{Valid: false}
 }

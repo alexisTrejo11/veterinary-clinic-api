@@ -3,7 +3,6 @@ package mapper
 import (
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/employees"
-	"clinic-vet-api/internal/core/medical"
 	"clinic-vet-api/internal/shared"
 )
 
@@ -26,27 +25,11 @@ func PtrToCustomerIDPtr(id *uint) *customers.CustomerID {
 	return &customerID
 }
 
-func PtrToMedSessionIDPtr(id *uint) *medical.MedSessionID {
-	if id == nil {
-		return nil
-	}
-	medSessionID := medical.NewMedSessionID(*id)
-	return &medSessionID
-}
-
-func MedSessionIDPtrToPtr(id *medical.MedSessionID) *uint {
-	if id == nil {
-		return nil
-	}
-	medSessionID := id.Value
-	return &medSessionID
-}
-
 func PaidByCustomerPtrToPtr(id *customers.CustomerID) *uint {
 	if id == nil {
 		return nil
 	}
-	customerID := id.Value
+	customerID := id.Value()
 	return &customerID
 }
 
@@ -54,7 +37,7 @@ func PaidByEmployeePtrToPtr(id *employees.EmployeeID) *uint {
 	if id == nil {
 		return nil
 	}
-	employeeID := id.Value
+	employeeID := id.Value()
 	return &employeeID
 }
 
@@ -70,6 +53,6 @@ func PaidToEmployeePtrToPtr(id *employees.EmployeeID) *uint {
 	if id == nil {
 		return nil
 	}
-	employeeID := id.Value
+	employeeID := id.Value()
 	return &employeeID
 }

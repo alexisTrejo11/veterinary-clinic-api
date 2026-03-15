@@ -8,14 +8,14 @@ import (
 
 // CustomerSpecification defines filters and pagination for customer queries.
 type CustomerSpecification struct {
-	IDs        []CustomerID
-	UserIDs    []uint
-	IsActive   *bool
-	MinAge     *int
-	MaxAge     *int
+	IDs         []CustomerID
+	UserIDs     []uint
+	IsActive    *bool
+	MinAge      *int
+	MaxAge      *int
 	CreatedFrom *time.Time
 	CreatedTo   *time.Time
-	SearchTerm *string // matches first/last name or email
+	SearchTerm  *string // matches first/last name or email
 	page.Pagination
 }
 
@@ -29,7 +29,7 @@ func (s *CustomerSpecification) IsSatisfiedBy(entity any) bool {
 	if len(s.IDs) > 0 {
 		match := false
 		for _, id := range s.IDs {
-			if id.Value == c.ID.Value {
+			if id.Value() == c.ID.Value() {
 				match = true
 				break
 			}
@@ -125,4 +125,3 @@ func (s *CustomerSpecification) WithPagination(p page.Pagination) *CustomerSpeci
 	s.Pagination = p
 	return s
 }
-

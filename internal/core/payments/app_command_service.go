@@ -47,7 +47,7 @@ func (s *commandService) ProcessPayment(ctx context.Context, cmd ProcessPaymentC
 
 	// Generate an internal transaction ID since we do not integrate
 	// with external payment gateways.
-	transactionID := fmt.Sprintf("INT-%d-%d", payment.ID.Value, time.Now().UnixNano())
+	transactionID := fmt.Sprintf("INT-%d-%d", payment.ID.Value(), time.Now().UnixNano())
 
 	if err := payment.Pay(ctx, transactionID); err != nil {
 		return err

@@ -9,12 +9,12 @@ import (
 
 // PetSpecification holds filter and pagination criteria for querying pets.
 type PetSpecification struct {
-	IDs          []PetID
-	CustomerIDs  []uint
-	Species      []PetSpecies
-	Genders      []PetGender
-	IsActive     *bool
-	SearchTerm   *string // name, breed
+	IDs         []PetID
+	CustomerIDs []uint
+	Species     []PetSpecies
+	Genders     []PetGender
+	IsActive    *bool
+	SearchTerm  *string // name, breed
 	page.Pagination
 }
 
@@ -28,7 +28,7 @@ func (s *PetSpecification) IsSatisfiedBy(entity any) bool {
 	if len(s.IDs) > 0 {
 		found := false
 		for _, id := range s.IDs {
-			if id.Value == pet.ID.Value {
+			if id.Value() == pet.ID.Value() {
 				found = true
 				break
 			}
@@ -105,7 +105,7 @@ func (s *PetSpecification) ToSQL() (where string, args []any) {
 	if len(s.IDs) > 0 {
 		ids := make([]any, len(s.IDs))
 		for i, id := range s.IDs {
-			ids[i] = id.Value
+			ids[i] = id.Value()
 		}
 		conditions = append(conditions, "id = ANY($"+strconv.Itoa(idx)+")")
 		args = append(args, ids)

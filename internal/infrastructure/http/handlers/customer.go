@@ -65,7 +65,7 @@ func (s *BaseCustomerHandler) CreateCustomer(c *gin.Context) {
 		return
 	}
 
-	http.Created(c, customer.ID.Value, "Customer")
+	http.Created(c, customer.ID.Value(), "Customer")
 }
 
 func (s *BaseCustomerHandler) UpdateCustomer(c *gin.Context) {

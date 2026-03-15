@@ -16,6 +16,30 @@ func NewAppointmentResponseMapper() *AppointmentResponseMapper {
 	return &AppointmentResponseMapper{}
 }
 
+// RequestToRequestByCustomerCommand maps customer request DTO to RequestByCustomerCommand (customerID from context).
+func (m *AppointmentResponseMapper) RequestToRequestByCustomerCommand(
+	req dtos.AppointmentRequestByCustomerRequest,
+	customerID customers.CustomerID,
+) (appointments.RequestByCustomerCommand, error) {
+	service, err := appointments.ParseClinicService(req.Service)
+	if err != nil {
+		return appointments.RequestByCustomerCommand{}, err
+	}
+	reason, err := appointments.ParseVisitReason(req.Reason)
+	if err != nil {
+		return appointments.RequestByCustomerCommand{}, err
+	}
+	petID := pets.NewPetID(req.PetID)
+	return appointments.NewRequestByCustomerCommand(
+		petID,
+		customerID,
+		req.ScheduledDate,
+		reason,
+		service,
+		req.Notes,
+	), nil
+}
+
 // RequestToCreateCommand maps DTO to CreateCommand with full parsing and validation
 func (m *AppointmentResponseMapper) RequestToCreateCommand(
 	req dtos.AppointmentCreateRequest, optEmpID *uint,
@@ -102,10 +126,10 @@ func (m *AppointmentResponseMapper) RequestToRescheduleCommand(
 	)
 }
 
-// ToDeleteCommand maps primitive ID to DeleteCommand
-func (m *AppointmentResponseMapper) ToDeleteCommand(id uint) appointments.DeleteCommand {
+// ToDeleteCommand maps primitive ID and hard flag to DeleteCommand
+func (m *AppointmentResponseMapper) ToDeleteCommand(id uint, isHardDelete bool) appointments.DeleteCommand {
 	appointmentID := appointments.NewAppointmentID(id)
-	return appointments.NewDeleteCommand(appointmentID)
+	return appointments.NewDeleteCommand(appointmentID, isHardDelete)
 }
 
 // ToNotAttendCommand maps primitives to NotAttendCommand
@@ -238,20 +262,22 @@ func (m *AppointmentResponseMapper) RequestToSearchQuery(
 func (m *AppointmentResponseMapper) ToResponse(appt appointments.Appointment) dtos.AppointmentResponse {
 	var employeIDUint uint
 	if appt.EmployeeID != nil {
-		employeIDUint = appt.EmployeeID.Value
+		employeIDUint = appt.EmployeeID.Value()
 	}
 
 	return dtos.AppointmentResponse{
-		ID:         appt.ID.Value,
-		PetID:      appt.PetID.Value,
-		CustomerID: appt.CustomerID.Value,
-		EmployeeID: employeIDUint,
-		Service:    appt.Service.DisplayName(),
-		Datetime:   appt.ScheduledDate.Format(time.RFC822),
-		Notes:      appt.Notes,
-		Status:     appt.Status.DisplayName(),
-		CreatedAt:  appt.CreatedAt.Format(time.RFC822),
-		UpdatedAt:  appt.UpdatedAt.Format(time.RFC822),
+		ID:            appt.ID.Value(),
+		PetID:         appt.PetID.Value(),
+		CustomerID:    appt.CustomerID.Value(),
+		EmployeeID:    employeIDUint,
+		Service:       appt.Service.DisplayName(),
+		Datetime:      appt.ScheduledDate.Format(time.RFC822),
+		ScheduledDate: appt.ScheduledDate.Format(time.RFC822),
+		Reason:        appt.Reason.DisplayName(),
+		Notes:         appt.Notes,
+		Status:        appt.Status.DisplayName(),
+		CreatedAt:     appt.CreatedAt.Format(time.RFC822),
+		UpdatedAt:     appt.UpdatedAt.Format(time.RFC822),
 	}
 }
 

@@ -99,6 +99,18 @@ type MedicalSession struct {
 	DeletedAt       pgtype.Timestamptz
 }
 
+type Medication struct {
+	ID                   int32
+	Name                 string
+	ActiveIngredient     pgtype.Text
+	Presentation         pgtype.Text
+	Unit                 pgtype.Text
+	RequiresPrescription pgtype.Bool
+	SpeciesWarnings      pgtype.Text
+	IsActive             pgtype.Bool
+	CreatedAt            pgtype.Timestamptz
+}
+
 type Notification struct {
 	ID               int32
 	UserID           int32
@@ -217,6 +229,95 @@ type PetVaccination struct {
 	UpdatedAt        pgtype.Timestamptz
 }
 
+type PetVaccinationHistory struct {
+	PetID         int32
+	VaccinationID int32
+	SessionID     int32
+	VisitDate     pgtype.Timestamptz
+	VaccineName   string
+	DiseaseTarget pgtype.Text
+	DoseNumber    int32
+	BatchNumber   pgtype.Text
+	NextDoseDate  pgtype.Date
+	ReactionNotes pgtype.Text
+	VetID         int32
+}
+
+type ServiceCatalog struct {
+	ID              int32
+	Name            string
+	Category        string
+	Description     pgtype.Text
+	BasePrice       pgtype.Numeric
+	DurationMin     pgtype.Int4
+	RequiresFasting pgtype.Bool
+	IsActive        pgtype.Bool
+	CreatedAt       pgtype.Timestamptz
+}
+
+type SessionAttachment struct {
+	ID          int32
+	SessionID   int32
+	FileType    string
+	FileUrl     string
+	Description pgtype.Text
+	UploadedBy  pgtype.Int4
+	CreatedAt   pgtype.Timestamptz
+}
+
+type SessionPrescription struct {
+	ID           int32
+	SessionID    int32
+	MedicationID int32
+	Dosage       string
+	Frequency    string
+	DurationDays pgtype.Int4
+	Route        pgtype.Text
+	Instructions pgtype.Text
+	StartDate    pgtype.Date
+	EndDate      pgtype.Date
+	CreatedAt    pgtype.Timestamptz
+}
+
+type SessionService struct {
+	ID               int32
+	SessionID        int32
+	ServiceCatalogID int32
+	Quantity         pgtype.Numeric
+	PriceApplied     pgtype.Numeric
+	Notes            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+}
+
+type SessionSurgery struct {
+	ID              int32
+	SessionID       int32
+	ProcedureName   string
+	AnesthesiaType  pgtype.Text
+	AnesthesiaAgent pgtype.Text
+	PreOpNotes      pgtype.Text
+	IntraOpNotes    pgtype.Text
+	PostOpNotes     pgtype.Text
+	DurationMinutes pgtype.Int4
+	Outcome         pgtype.Text
+	SurgeonID       pgtype.Int4
+	CreatedAt       pgtype.Timestamptz
+}
+
+type SessionVaccination struct {
+	ID               int32
+	SessionID        int32
+	VaccineCatalogID int32
+	BatchNumber      pgtype.Text
+	DoseNumber       int32
+	ExpirationDate   pgtype.Date
+	SiteOfInjection  pgtype.Text
+	NextDoseDate     pgtype.Date
+	ReactionNotes    pgtype.Text
+	AdministeredBy   pgtype.Int4
+	CreatedAt        pgtype.Timestamptz
+}
+
 type User struct {
 	ID                          int32
 	Email                       pgtype.Text
@@ -248,4 +349,17 @@ type User struct {
 	CreatedAt                   pgtype.Timestamptz
 	UpdatedAt                   pgtype.Timestamptz
 	DeletedAt                   pgtype.Timestamptz
+}
+
+type VaccineCatalog struct {
+	ID            int32
+	Name          string
+	Manufacturer  pgtype.Text
+	Species       pgtype.Text
+	DiseaseTarget pgtype.Text
+	TotalDoses    pgtype.Int4
+	ScheduleDays  []int32
+	Notes         pgtype.Text
+	IsActive      pgtype.Bool
+	CreatedAt     pgtype.Timestamptz
 }

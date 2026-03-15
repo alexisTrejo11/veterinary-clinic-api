@@ -30,10 +30,10 @@ type Pet struct {
 	EmergencyContactPhone *string
 }
 
-type PetID struct{ shared.BaseID }
+type PetID struct{ shared.IntegerID }
 
 func NewPetID(id uint) PetID {
-	return PetID{BaseID: shared.BaseID{Value: id}}
+	return PetID{shared.NewBaseID(id)}
 }
 func (p *Pet) Activate() error {
 	if p.IsActive {

@@ -3,6 +3,7 @@ package mappers
 import (
 	"clinic-vet-api/internal/core/addresses"
 	"clinic-vet-api/internal/infrastructure/http/handlers/dtos"
+	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/page"
 )
 
@@ -19,7 +20,7 @@ func (m *AddressMapper) RequestToSpecification(r dtos.AddressSearchRequest) (add
 	}, nil
 }
 
-func (m *AddressMapper) RequestToCreateCommand(r dtos.AddressCreateRequest) (addresses.CreateAddressCommand, error) {
+func (m *AddressMapper) RequestToCreateCommand(r dtos.AddressCreateRequest, userID shared.UserID) (addresses.CreateAddressCommand, error) {
 	country, err := addresses.ParseCountry(r.Country)
 	if err != nil {
 		return addresses.CreateAddressCommand{}, err
@@ -29,7 +30,7 @@ func (m *AddressMapper) RequestToCreateCommand(r dtos.AddressCreateRequest) (add
 		return addresses.CreateAddressCommand{}, err
 	}
 	return addresses.CreateAddressCommand{
-		UserID:              r.UserID,
+		UserID:              userID,
 		Street:              r.Street,
 		City:                r.City,
 		State:               r.State,
@@ -42,7 +43,7 @@ func (m *AddressMapper) RequestToCreateCommand(r dtos.AddressCreateRequest) (add
 	}, nil
 }
 
-func (m *AddressMapper) RequestToUpdateCommand(r dtos.AddressUpdateRequest) (addresses.UpdateAddressCommand, error) {
+func (m *AddressMapper) RequestToUpdateCommand(r dtos.AddressUpdateRequest, userID *shared.UserID) (addresses.UpdateAddressCommand, error) {
 	var country *addresses.Country
 	if r.Country != nil {
 		countryObj, err := addresses.ParseCountry(*r.Country)
@@ -63,6 +64,7 @@ func (m *AddressMapper) RequestToUpdateCommand(r dtos.AddressUpdateRequest) (add
 
 	return addresses.UpdateAddressCommand{
 		ID:                  addresses.NewAddressID(r.ID),
+		UserID:              userID,
 		Street:              r.Street,
 		City:                r.City,
 		State:               r.State,
@@ -77,7 +79,7 @@ func (m *AddressMapper) RequestToUpdateCommand(r dtos.AddressUpdateRequest) (add
 
 func (m *AddressMapper) ToResponse(a addresses.Address) dtos.AddressResponse {
 	return dtos.AddressResponse{
-		ID:                  a.ID.Value,
+		ID:                  a.ID.Value(),
 		Street:              a.Street,
 		City:                a.City,
 		State:               a.State,

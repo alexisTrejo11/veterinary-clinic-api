@@ -175,7 +175,7 @@ func (m *PaymentMapper) ToPaymentResponse(p payments.Payment) dtos.PaymentRespon
 	customerID := uint(p.PaidFromCustomer.Int32())
 
 	return dtos.PaymentResponse{
-		ID: p.ID.Value,
+		ID: p.ID.Value(),
 
 		Amount:   amount,
 		Currency: p.Amount.Currency(),
@@ -209,4 +209,3 @@ func (m *PaymentMapper) ToPaymentResponse(p payments.Payment) dtos.PaymentRespon
 func (m *PaymentMapper) ToPaginatedResponse(p page.Page[payments.Payment]) page.Page[dtos.PaymentResponse] {
 	return page.MapItems(p, m.ToPaymentResponse)
 }
-

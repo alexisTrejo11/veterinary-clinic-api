@@ -27,6 +27,28 @@ type PetCreateRequest struct {
 	EmergencyPhone      *string `json:"emergency_contact_phone" binding:"omitempty"`
 }
 
+type PetUpdateRequest struct {
+	Name                *string `json:"name" binding:"omitempty"`
+	Photo               *string `json:"photo" binding:"omitempty,url"`
+	Species             *string `json:"species" binding:"omitempty"`
+	Breed               *string `json:"breed" binding:"omitempty"`
+	Age                 *int    `json:"age" binding:"omitempty"`
+	Gender              *string `json:"gender" binding:"omitempty"`
+	Color               *string `json:"color" binding:"omitempty"`
+	MicrochipID         *string `json:"microchip_id" binding:"omitempty"`
+	BloodType           *string `json:"blood_type" binding:"omitempty"`
+	IsNeutered          *bool   `json:"is_neutered" binding:"omitempty"`
+	IsActive            *bool   `json:"is_active" binding:"omitempty"`
+	Allergies           *string `json:"allergies" binding:"omitempty"`
+	CurrentMedications  *string `json:"current_medications" binding:"omitempty"`
+	SpecialNeeds        *string `json:"special_needs" binding:"omitempty"`
+	FeedingInstructions *string `json:"feeding_instructions" binding:"omitempty"`
+	BehavioralNotes     *string `json:"behavioral_notes" binding:"omitempty"`
+	VeterinaryContact   *string `json:"veterinary_contact" binding:"omitempty"`
+	EmergencyName       *string `json:"emergency_contact_name" binding:"omitempty"`
+	EmergencyPhone      *string `json:"emergency_contact_phone" binding:"omitempty"`
+}
+
 type PetSearchRequest struct {
 	page.PaginationRequest
 }

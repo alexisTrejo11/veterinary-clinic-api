@@ -33,15 +33,7 @@ BEGIN
             'cash', 'credit_card', 'debit_card', 'bank_transfer', 'paypal', 'stripe', 'check'
         );
     END IF;
-
-    -- Clinic services and appointment status
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'clinic_service') THEN
-        CREATE TYPE clinic_service AS ENUM(
-            'general_consultation', 'vaccination', 'surgery', 'dental_care', 'emergency_care',
-            'grooming', 'nutrition_consult', 'behavior_consult', 'wellness_exam', 'other'
-        );
-    END IF;
-
+   
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'appointment_status') THEN
         CREATE TYPE appointment_status AS ENUM('pending', 'cancelled', 'confirmed', 'rescheduled' ,'completed', 'not_presented');
     END IF;

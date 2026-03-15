@@ -160,7 +160,7 @@ func (s *authService) ActivateAccount(ctx context.Context, cmd ActivateAccountCo
 	}
 
 	uid, err := parseUserID(uidStr)
-	if err != nil || uid.Value != cmd.UserID.Value {
+	if err != nil || uid.Value() != cmd.UserID.Value() {
 		return InvalidVerificationCodeError(ctx, op)
 	}
 
@@ -313,7 +313,7 @@ func (s *authService) Logout(ctx context.Context, cmd LogoutCommand) error {
 	}
 
 	_ = s.tokenService.RevokeToken(ctx, cmd.RefreshToken, TokenTypeRefreshToken)
-	return s.sessionRepository.DeleteUserSession(ctx, userID.Value, cmd.RefreshToken)
+	return s.sessionRepository.DeleteUserSession(ctx, userID.Value(), cmd.RefreshToken)
 }
 
 func (s *authService) LogoutAll(ctx context.Context, cmd LogoutAllCommand) error {
@@ -324,7 +324,7 @@ func (s *authService) LogoutAll(ctx context.Context, cmd LogoutAllCommand) error
 		return UserNotFoundError(ctx, cmd.UserID, op)
 	}
 
-	return s.sessionRepository.DeleteAllUserSessions(ctx, cmd.UserID.Value)
+	return s.sessionRepository.DeleteAllUserSessions(ctx, cmd.UserID.Value())
 }
 
 func (s *authService) VerifyTwoFactor(ctx context.Context, cmd VerifyTwoFactorCommand) (SessionPayload, error) {
@@ -461,7 +461,7 @@ func (s *authService) DeleteAccount(ctx context.Context, userID shared.UserID) e
 		return UserNotFoundError(ctx, userID, op)
 	}
 
-	_ = s.sessionRepository.DeleteAllUserSessions(ctx, userID.Value)
+	_ = s.sessionRepository.DeleteAllUserSessions(ctx, userID.Value())
 	return s.userCommand.DeleteUser(ctx, users.DeleteUserCommand{
 		ID:           userID,
 		IsHardDelete: false,

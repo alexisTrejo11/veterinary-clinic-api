@@ -10,11 +10,11 @@ import (
 )
 
 type (
-	EmployeeID struct{ shared.BaseID }
+	EmployeeID struct{ shared.IntegerID }
 )
 
 func NewEmployeeID(value uint) EmployeeID {
-	return EmployeeID{shared.BaseID{Value: value}}
+	return EmployeeID{shared.NewBaseID(value)}
 }
 
 type Employee struct {

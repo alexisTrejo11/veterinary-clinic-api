@@ -231,7 +231,7 @@ func (r *SqlcAppointmentRepository) update(ctx context.Context, appointment *app
 
 	_, err := r.queries.UpdateAppointment(ctx, params)
 	if err != nil {
-		return r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateAppointment, appointment.ID.Value), err)
+		return r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateAppointment, appointment.ID.Value()), err)
 	}
 
 	return nil
@@ -334,8 +334,8 @@ func (r *SqlcAppointmentRepository) specRowsToEntities(rows []sqlc.FindAppointme
 
 func (r *SqlcAppointmentRepository) toCreateParams(appt *appointments.Appointment) sqlc.CreateAppointmentParams {
 	params := sqlc.CreateAppointmentParams{
-		CustomerID:    int32(appt.CustomerID.Value),
-		PetID:         int32(appt.PetID.Value),
+		CustomerID:    int32(appt.CustomerID.Value()),
+		PetID:         int32(appt.PetID.Value()),
 		ScheduledDate: pgtype.Timestamptz{Time: appt.ScheduledDate, Valid: true},
 		Status:        models.AppointmentStatus(string(appt.Status)),
 		ClinicService: models.ClinicService(string(appt.Service.String())),
@@ -343,7 +343,7 @@ func (r *SqlcAppointmentRepository) toCreateParams(appt *appointments.Appointmen
 
 	if appt.EmployeeID != nil {
 		params.EmployeeID = pgtype.Int4{
-			Int32: int32(appt.EmployeeID.Value),
+			Int32: int32(appt.EmployeeID.Value()),
 			Valid: true,
 		}
 	} else {
@@ -364,10 +364,10 @@ func (r *SqlcAppointmentRepository) toCreateParams(appt *appointments.Appointmen
 
 func (r *SqlcAppointmentRepository) toUpdateParams(appt *appointments.Appointment) sqlc.UpdateAppointmentParams {
 	return sqlc.UpdateAppointmentParams{
-		ID:            int32(appt.ID.Value),
-		CustomerID:    int32(appt.CustomerID.Value),
-		EmployeeID:    pgtype.Int4{Int32: int32(appt.EmployeeID.Value), Valid: appt.EmployeeID != nil},
-		PetID:         int32(appt.PetID.Value),
+		ID:            int32(appt.ID.Value()),
+		CustomerID:    int32(appt.CustomerID.Value()),
+		EmployeeID:    pgtype.Int4{Int32: int32(appt.EmployeeID.Value()), Valid: appt.EmployeeID != nil},
+		PetID:         int32(appt.PetID.Value()),
 		ScheduledDate: pgtype.Timestamptz{Time: appt.ScheduledDate, Valid: true},
 		Notes:         pgtype.Text{String: *appt.Notes, Valid: appt.Notes != nil},
 		Status:        models.AppointmentStatus(string(appt.Status)),

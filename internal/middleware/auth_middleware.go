@@ -25,6 +25,10 @@ type UserContext struct {
 	Role   string
 }
 
+func (uc *UserContext) UserIDValueObject() shared.UserID {
+	return shared.NewUserID(uc.UserID)
+}
+
 // AuthMiddleware parses JWT and sets user claims on context. No repository.
 type AuthMiddleware struct {
 	jwtKey []byte

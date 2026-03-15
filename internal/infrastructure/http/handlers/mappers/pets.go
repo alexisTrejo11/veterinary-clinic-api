@@ -51,9 +51,55 @@ func (m *PetMapper) RequestToCreateCommand(r dtos.PetCreateRequest, customerID u
 	}, nil
 }
 
+func (m *PetMapper) RequestToUpdateCommand(r dtos.PetUpdateRequest, petID pets.PetID, optCustomerID *uint) (pets.UpdatePetCommand, error) {
+	cmd := pets.UpdatePetCommand{PetID: petID, CustomerID: optCustomerID}
+	if r.Name != nil {
+		cmd.Name = r.Name
+	}
+	if r.Photo != nil {
+		cmd.Photo = r.Photo
+	}
+	if r.Species != nil {
+		species, err := pets.ParsePetSpecies(*r.Species)
+		if err != nil {
+			return pets.UpdatePetCommand{}, err
+		}
+		cmd.Species = &species
+	}
+	if r.Breed != nil {
+		cmd.Breed = r.Breed
+	}
+	if r.Age != nil {
+		cmd.Age = r.Age
+	}
+	if r.Gender != nil {
+		gender, err := pets.ParsePetGender(*r.Gender)
+		if err != nil {
+			return pets.UpdatePetCommand{}, err
+		}
+		cmd.Gender = &gender
+	}
+	if r.Color != nil {
+		cmd.Color = r.Color
+	}
+	if r.MicrochipID != nil {
+		cmd.MicrochipID = r.MicrochipID
+	}
+	if r.BloodType != nil {
+		cmd.BloodType = r.BloodType
+	}
+	if r.IsNeutered != nil {
+		cmd.IsNeutered = r.IsNeutered
+	}
+	if r.IsActive != nil {
+		cmd.IsActive = r.IsActive
+	}
+	return cmd, nil
+}
+
 func (m *PetMapper) ToResponse(p pets.Pet) dtos.PetResponse {
 	return dtos.PetResponse{
-		ID:                  p.ID.Value,
+		ID:                  p.ID.Value(),
 		Name:                p.Name,
 		Species:             p.Species.DisplayName(),
 		Gender:              p.Gender.DisplayName(),

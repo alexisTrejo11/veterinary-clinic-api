@@ -9,7 +9,6 @@ type AddressSearchRequest struct {
 }
 
 type AddressCreateRequest struct {
-	UserID              uint
 	Street              string
 	City                string
 	State               string

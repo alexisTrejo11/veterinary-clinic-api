@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/errors"
 )
 
@@ -74,17 +75,17 @@ func InvalidBuildingTypeError(ctx context.Context, bt BuildingType, operation st
 // Business rule errors
 // ======================================================================
 
-func MaxAddressesPerCustomerError(ctx context.Context, customerID uint, max int, operation string) error {
+func MaxAddressesPerCustomerError(ctx context.Context, customerID shared.UserID, max int, operation string) error {
 	return errors.BusinessRuleError(
 		ctx,
-		fmt.Sprintf("customer %d already has the maximum of %d addresses", customerID, max),
+		fmt.Sprintf("customer %s already has the maximum of %d addresses", customerID.String(), max),
 		addressEntity,
 		FieldCustomerID,
 		operation,
 	)
 }
 
-func DefaultAddressRequiredError(ctx context.Context, customerID uint, operation string) error {
+func DefaultAddressRequiredError(ctx context.Context, customerID shared.UserID, operation string) error {
 	return errors.BusinessRuleError(
 		ctx,
 		fmt.Sprintf("customer %d must have at least one default address", customerID),
@@ -93,4 +94,3 @@ func DefaultAddressRequiredError(ctx context.Context, customerID uint, operation
 		operation,
 	)
 }
-

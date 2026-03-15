@@ -7,9 +7,6 @@ BEGIN
         DROP TYPE appointment_status;
     END IF;
 
-    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'clinic_service') THEN
-        DROP TYPE clinic_service;
-    END IF;
 
     IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
         DROP TYPE payment_method;

@@ -74,14 +74,26 @@ func (m *UserHandlerMapper) ToCreateUserCommand(req dtos.CreateUserRequest) (use
 }
 
 func (m *UserHandlerMapper) ToResponse(user users.User) dtos.UserResponse {
+	var employeeID *uint
+	if user.EmployeeID != nil {
+		employeeIDUint := user.EmployeeID.Value()
+		employeeID = &employeeIDUint
+	}
+
+	var customerID *uint
+	if user.CustomerID != nil {
+		customerIDUint := user.CustomerID.Value()
+		customerID = &customerIDUint
+	}
+
 	return dtos.UserResponse{
-		ID:            user.ID.Value,
+		ID:            user.ID.Value(),
 		Email:         user.Email.Value(),
 		PhoneNumber:   user.PhoneNumber.Value(),
 		Role:          user.Role.DisplayName(),
 		Status:        user.Status.DisplayName(),
-		EmployeeID:    &user.EmployeeID.Value,
-		CustomerID:    &user.CustomerID.Value,
+		EmployeeID:    employeeID,
+		CustomerID:    customerID,
 		OAuthProvider: user.OAuthProvider,
 		EmailVerified: user.EmailVerified,
 		CreatedAt:     user.CreatedAt,

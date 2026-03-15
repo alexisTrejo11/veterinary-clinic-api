@@ -2,10 +2,10 @@ package appointments
 
 import "clinic-vet-api/internal/shared"
 
-type AppointmentID struct{ shared.BaseID }
+type AppointmentID struct{ shared.IntegerID }
 
 func NewAppointmentID(id uint) AppointmentID {
-	return AppointmentID{BaseID: shared.BaseID{Value: id}}
+	return AppointmentID{shared.NewBaseID(id)}
 }
 
 type AppointmentSummaryStats struct {

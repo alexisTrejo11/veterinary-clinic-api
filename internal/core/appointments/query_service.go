@@ -42,7 +42,6 @@ type QueryService interface {
 	GetByIDAndCustomerID(ctx context.Context, id AppointmentID, customerID customers.CustomerID) (Appointment, error)
 	GetByIDAndEmployeeID(ctx context.Context, id AppointmentID, empID employees.EmployeeID) (Appointment, error)
 	GetBySpecfication(ctx context.Context, query GetBySpecQuery) (p.Page[Appointment], error)
-	GetByDateRange(ctx context.Context, startDate, endDate time.Time, pagination p.Pagination) (p.Page[Appointment], error)
 	GetByCustomerID(ctx context.Context, customerID customers.CustomerID, pagination p.Pagination) (p.Page[Appointment], error)
 	GetByEmployeeID(ctx context.Context, empID employees.EmployeeID, pagination p.Pagination) (p.Page[Appointment], error)
 	GetByPetID(ctx context.Context, petID pets.PetID, pagination p.Pagination) (p.Page[Appointment], error)
@@ -97,15 +96,6 @@ func (s *queryService) GetBySpecfication(
 	specQuery GetBySpecQuery,
 ) (p.Page[Appointment], error) {
 	return s.repository.Find(ctx, specQuery.spec)
-}
-
-func (s *queryService) GetByDateRange(
-	ctx context.Context,
-	startDate, endDate time.Time,
-	pagination p.Pagination,
-) (p.Page[Appointment], error) {
-	specification := SpecByDateRange(startDate, endDate).FromPagination(pagination)
-	return s.repository.Find(ctx, specification)
 }
 
 func (s *queryService) GetByCustomerID(
@@ -166,13 +156,13 @@ func (s *queryService) GetSummary(ctx context.Context, query GetStatsQuery) (App
 
 		// Filter by vet ID
 		if query.EmployeeID != nil {
-			if appointment.EmployeeID == nil || appointment.EmployeeID.Value != query.EmployeeID.Value {
+			if appointment.EmployeeID == nil || appointment.EmployeeID.Value() != query.EmployeeID.Value() {
 				includeAppointment = false
 			}
 		}
 
 		// Filter by customer ID
-		if query.CustomerID != nil && !appointment.CustomerID.Equals(query.CustomerID.Value) {
+		if query.CustomerID != nil && !appointment.CustomerID.Equals(query.CustomerID.Value()) {
 			includeAppointment = false
 		}
 

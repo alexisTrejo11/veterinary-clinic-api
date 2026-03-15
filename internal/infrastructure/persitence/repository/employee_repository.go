@@ -227,7 +227,7 @@ func (r *EmployeeSqlcRepository) update(ctx context.Context, employee *employees
 	}
 	_, err := r.queries.UpdateEmployee(ctx, params)
 	if err != nil {
-		return r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateEmployee, employee.ID.Value), err)
+		return r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateEmployee, employee.ID.Value()), err)
 	}
 	// Refresh timestamps from DB if needed; for simplicity we don't re-fetch
 	employee.IncrementVersion()

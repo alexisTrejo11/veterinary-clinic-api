@@ -46,16 +46,16 @@ func (m *EmployeeMapper) RequestToCreateCommand(r dtos.EmployeeCreateRequest) (e
 	}
 
 	return employees.CreateEmployeeCommand{
-		FirstName:      r.FirstName,
-		LastName:       r.LastName,
-		Gender:         gender,
-		DateOfBirth:    dob,
-		Photo:          r.Photo,
-		LicenseNumber:  r.LicenseNo,
+		FirstName:       r.FirstName,
+		LastName:        r.LastName,
+		Gender:          gender,
+		DateOfBirth:     dob,
+		Photo:           r.Photo,
+		LicenseNumber:   r.LicenseNo,
 		YearsExperience: r.YearsExp,
-		IsActive:       isActive,
-		Specialty:      specialty,
-		Schedule:       schedule,
+		IsActive:        isActive,
+		Specialty:       specialty,
+		Schedule:        schedule,
 	}, nil
 }
 
@@ -102,16 +102,16 @@ func (m *EmployeeMapper) RequestToUpdateCommand(r dtos.EmployeeUpdateRequest) (e
 	}
 
 	cmd := employees.UpdateEmployeeCommand{
-		ID:          &id,
-		FirstName:   r.FirstName,
-		LastName:    r.LastName,
-		Gender:      gender,
-		DateOfBirth: dob,
-		Photo:       r.Photo,
+		ID:              &id,
+		FirstName:       r.FirstName,
+		LastName:        r.LastName,
+		Gender:          gender,
+		DateOfBirth:     dob,
+		Photo:           r.Photo,
 		YearsExperience: r.YearsExp,
-		IsActive:    r.IsActive,
-		Specialty:   specialty,
-		Schedule:    schedule,
+		IsActive:        r.IsActive,
+		Specialty:       specialty,
+		Schedule:        schedule,
 	}
 
 	// License number is a value (not pointer) in the command; only set it when provided.
@@ -125,7 +125,7 @@ func (m *EmployeeMapper) RequestToUpdateCommand(r dtos.EmployeeUpdateRequest) (e
 // ToEmployeeResponse maps an Employee aggregate to the response DTO.
 func (m *EmployeeMapper) ToEmployeeResponse(e employees.Employee) dtos.EmployeeResponse {
 	return dtos.EmployeeResponse{
-		ID:              e.ID.Value,
+		ID:              e.ID.Value(),
 		FirstName:       e.FirstName,
 		LastName:        e.LastName,
 		Gender:          string(e.Gender),
@@ -158,4 +158,3 @@ func (m *EmployeeMapper) ToEmployeeStatsResponse(s employees.EmployeeStats) dtos
 		Specialties:     specialties,
 	}
 }
-

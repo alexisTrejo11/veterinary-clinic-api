@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/db/models"
+	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/page"
@@ -158,6 +158,22 @@ func (r *CustomersSqlcRepository) ExistsByUserID(ctx context.Context, userID uin
 	return true, nil
 }
 
+func (r *CustomersSqlcRepository) FindByUserID(ctx context.Context, userID uint) (customers.Customer, error) {
+	row, err := r.queries.GetCustomerByUserID(ctx, pgtype.Int4{Int32: int32(userID), Valid: true})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return customers.Customer{}, r.notFoundError("user_id", fmt.Sprintf("%d", userID))
+		}
+		return customers.Customer{}, r.dbError(OpSelect, "failed to find customer by user ID", err)
+	}
+	return r.toEntity(row), nil
+}
+
+func (r *CustomersSqlcRepository) RestoreByID(ctx context.Context, id customers.CustomerID) error {
+	// TODO: Implement restore by ID
+	return nil
+}
+
 func (r *CustomersSqlcRepository) CountAll(ctx context.Context) (int64, error) {
 	count, err := r.queries.CountAllCustomers(ctx)
 	if err != nil {
@@ -203,7 +219,7 @@ func (r *CustomersSqlcRepository) update(ctx context.Context, customer customers
 		DateOfBirth: r.pgMap.PgDate.FromTime(customer.DateOfBirth),
 	}
 	if err := r.queries.UpdateCustomer(ctx, params); err != nil {
-		return customers.Customer{}, r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateCustomer, customer.ID.Value), err)
+		return customers.Customer{}, r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateCustomer, customer.ID.Value()), err)
 	}
 	// Re-fetch to return full entity with timestamps
 	updated, err := r.queries.GetCustomerByID(ctx, customer.ID.Int32())

@@ -96,6 +96,18 @@ const (
 	ErrMsgCreatePayment                = "failed to create payment"
 	ErrMsgUpdatePayment                = "failed to update payment"
 
+	// Medical session / extension error messages
+	TableMedicalSessions = "medical_sessions"
+	ErrMsgFindMedicalSessionByID       = "failed to find medical session by ID"
+	ErrMsgFindMedicalSessionsBySpec    = "failed to find medical sessions by specification"
+	ErrMsgSaveMedicalSession          = "failed to save medical session"
+	ErrMsgUpdateMedicalSession        = "failed to update medical session"
+	ErrMsgSoftDeleteMedicalSession    = "failed to soft delete medical session"
+	ErrMsgHardDeleteMedicalSession    = "failed to hard delete medical session"
+	ErrMsgRestoreMedicalSession       = "failed to restore medical session"
+	ErrMsgCountMedicalSessions        = "failed to count medical sessions"
+	ErrMsgCheckMedicalSessionExists   = "failed to check medical session existence"
+
 	// SQL operations
 	DriverSQL = "SQLC"
 	OpSelect  = "SELECT"

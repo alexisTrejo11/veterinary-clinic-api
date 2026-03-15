@@ -42,7 +42,7 @@ func (r *SqlcUserRepository) FindByID(ctx context.Context, id shared.UserID) (us
 		if errors.Is(err, sql.ErrNoRows) {
 			return users.User{}, r.notFoundError("id", id.String())
 		}
-		return users.User{}, r.dbError(OpSelect, fmt.Sprintf("%s with ID %d", ErrMsgFindUser, id.Value), err)
+		return users.User{}, r.dbError(OpSelect, fmt.Sprintf("%s with ID %d", ErrMsgFindUser, id.Value()), err)
 	}
 
 	return r.ToEntity(sqlRow), nil
@@ -78,7 +78,7 @@ func (r *SqlcUserRepository) FindByCustomerID(ctx context.Context, customerID cu
 		if errors.Is(err, sql.ErrNoRows) {
 			return users.User{}, r.notFoundError("customer_id", customerID.String())
 		}
-		return users.User{}, r.dbError(OpSelect, fmt.Sprintf("failed to find user by customer ID %d", customerID.Value), err)
+		return users.User{}, r.dbError(OpSelect, fmt.Sprintf("failed to find user by customer ID %d", customerID.Value()), err)
 	}
 
 	return r.ToEntity(userRow), nil
@@ -90,7 +90,7 @@ func (r *SqlcUserRepository) FindByEmployeeID(ctx context.Context, employeeID em
 		if errors.Is(err, sql.ErrNoRows) {
 			return users.User{}, r.notFoundError("employee_id", employeeID.String())
 		}
-		return users.User{}, r.dbError(OpSelect, fmt.Sprintf("failed to find user by employee ID %d", employeeID.Value), err)
+		return users.User{}, r.dbError(OpSelect, fmt.Sprintf("failed to find user by employee ID %d", employeeID.Value()), err)
 	}
 
 	return r.ToEntity(userRow), nil
@@ -141,7 +141,7 @@ func (r *SqlcUserRepository) FindSpecification(ctx context.Context, spec users.U
 func (r *SqlcUserRepository) ExistsByID(ctx context.Context, id shared.UserID) (bool, error) {
 	exists, err := r.queries.ExistsUserByID(ctx, id.Int32())
 	if err != nil {
-		return false, r.dbError(OpSelect, fmt.Sprintf("%s with ID %d", ErrMsgCheckUserExists, id.Value), err)
+		return false, r.dbError(OpSelect, fmt.Sprintf("%s with ID %d", ErrMsgCheckUserExists, id.Value()), err)
 	}
 	return exists, nil
 }
@@ -165,7 +165,7 @@ func (r *SqlcUserRepository) ExistsByPhone(ctx context.Context, phone users.Phon
 func (r *SqlcUserRepository) ExistsByCustomerID(ctx context.Context, customerID cust.CustomerID) (bool, error) {
 	exists, err := r.queries.ExistsUserByCustomerID(ctx, customerID.Int32())
 	if err != nil {
-		return false, r.dbError(OpSelect, fmt.Sprintf("failed to check user existence by customer ID %d", customerID.Value), err)
+		return false, r.dbError(OpSelect, fmt.Sprintf("failed to check user existence by customer ID %d", customerID.Value()), err)
 	}
 	return exists, nil
 }
@@ -173,7 +173,7 @@ func (r *SqlcUserRepository) ExistsByCustomerID(ctx context.Context, customerID 
 func (r *SqlcUserRepository) ExistsByEmployeeID(ctx context.Context, employeeID emp.EmployeeID) (bool, error) {
 	exists, err := r.queries.ExistsUserByEmployeeID(ctx, employeeID.Int32())
 	if err != nil {
-		return false, r.dbError(OpSelect, fmt.Sprintf("failed to check user existence by employee ID %d", employeeID.Value), err)
+		return false, r.dbError(OpSelect, fmt.Sprintf("failed to check user existence by employee ID %d", employeeID.Value()), err)
 	}
 	return exists, nil
 }
@@ -191,21 +191,21 @@ func (r *SqlcUserRepository) Save(ctx context.Context, user *users.User) error {
 
 func (r *SqlcUserRepository) SoftDelete(ctx context.Context, id shared.UserID) error {
 	if err := r.queries.SoftDeleteUser(ctx, id.Int32()); err != nil {
-		return r.dbError(OpDelete, fmt.Sprintf("%s with ID %d", ErrMsgSoftDeleteUser, id.Value), err)
+		return r.dbError(OpDelete, fmt.Sprintf("%s with ID %d", ErrMsgSoftDeleteUser, id.Value()), err)
 	}
 	return nil
 }
 
 func (r *SqlcUserRepository) HardDelete(ctx context.Context, id shared.UserID) error {
 	if err := r.queries.HardDeleteUser(ctx, id.Int32()); err != nil {
-		return r.dbError(OpDelete, fmt.Sprintf("%s with ID %d", ErrMsgHardDeleteUser, id.Value), err)
+		return r.dbError(OpDelete, fmt.Sprintf("%s with ID %d", ErrMsgHardDeleteUser, id.Value()), err)
 	}
 	return nil
 }
 
 func (r *SqlcUserRepository) RestoreByID(ctx context.Context, id shared.UserID) error {
 	if err := r.queries.RestoreUser(ctx, id.Int32()); err != nil {
-		return r.dbError(OpUpdate, fmt.Sprintf("failed to restore user with ID %d", id.Value), err)
+		return r.dbError(OpUpdate, fmt.Sprintf("failed to restore user with ID %d", id.Value()), err)
 	}
 	return nil
 }
@@ -243,7 +243,7 @@ func (r *SqlcUserRepository) update(ctx context.Context, user *users.User) error
 	params := r.toUpdateParams(*user)
 	_, err := r.queries.UpdateUser(ctx, params)
 	if err != nil {
-		return r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateUser, user.ID.Value), err)
+		return r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateUser, user.ID.Value()), err)
 	}
 	return nil
 }
@@ -478,7 +478,7 @@ func (r *SqlcUserRepository) toUpdateParams(user users.User) sqlc.UpdateUserPara
 	}
 
 	return sqlc.UpdateUserParams{
-		ID:                          int32(user.ID.Value),
+		ID:                          int32(user.ID.Value()),
 		Email:                       r.pgMap.PgText.FromString(user.Email.String()),
 		PhoneNumber:                 r.pgMap.PgText.FromString(user.PhoneNumber.String()),
 		HashedPassword:              r.pgMap.PgText.FromString(user.HashedPassword),

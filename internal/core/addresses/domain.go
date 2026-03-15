@@ -9,7 +9,7 @@ import (
 
 type Address struct {
 	shared.Entity[AddressID]
-	UserID              uint
+	UserID              shared.UserID
 	Street              string
 	City                string
 	State               string
@@ -32,11 +32,15 @@ func (a *Address) SetAsNotDefault() {
 type (
 	BuildingType string
 	Country      string
-	AddressID    struct{ shared.BaseID }
+	AddressID    shared.IntegerID
 )
 
 func NewAddressID(id uint) AddressID {
-	return AddressID{shared.BaseID{Value: id}}
+	return shared.NewBaseID(id)
+}
+
+func NewAddressIDEmpty() AddressID {
+	return shared.NewBaseIDEmpty()
 }
 
 const (
@@ -145,9 +149,9 @@ type AddressRepository interface {
 	Delete(ctx context.Context, id AddressID) error
 	ExistsByID(ctx context.Context, id AddressID) (bool, error)
 	GetBySpecification(ctx context.Context, spec AddressSpecification) (page.Page[Address], error)
-	CountByUserID(ctx context.Context, userID uint) (int64, error)
-	GetAllByUserID(ctx context.Context, userID uint) ([]Address, error)
-	GetByIDAndUserID(ctx context.Context, id AddressID, userID uint) (Address, error)
+	CountByUserID(ctx context.Context, userID shared.UserID) (int64, error)
+	GetAllByUserID(ctx context.Context, userID shared.UserID) ([]Address, error)
+	GetByIDAndUserID(ctx context.Context, id AddressID, userID shared.UserID) (Address, error)
 }
 
 type AddressSpecification struct {

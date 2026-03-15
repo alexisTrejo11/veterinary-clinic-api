@@ -16,11 +16,11 @@ type CustomerRepository interface {
 	SoftDelete(ctx context.Context, id CustomerID) error
 	HardDelete(ctx context.Context, id CustomerID) error
 	IsDeletedByID(ctx context.Context, id CustomerID) (bool, error)
+	RestoreByID(ctx context.Context, id CustomerID) error
 
 	ExistsByUserID(ctx context.Context, userID uint) (bool, error)
+	FindByUserID(ctx context.Context, userID uint) (Customer, error)
 
 	CountAll(ctx context.Context) (int64, error)
 	CountActive(ctx context.Context) (int64, error)
-
-	// Optional: aggregate stats extension point (pets, appointments, etc.)
 }

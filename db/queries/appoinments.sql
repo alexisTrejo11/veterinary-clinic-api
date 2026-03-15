@@ -11,7 +11,7 @@ WHERE
     AND (
         $5::TEXT IS NULL OR 
         $5::TEXT = '' OR 
-        clinic_service = $5::clinic_service  
+        clinic_service = $5  
     )
     AND (
         $6::TEXT IS NULL OR 
@@ -35,7 +35,7 @@ WHERE
     AND (
         $5::TEXT IS NULL OR 
         $5::TEXT = '' OR 
-        clinic_service = $5::clinic_service
+        clinic_service = $5
     )
     AND (
         $6::TEXT IS NULL OR 

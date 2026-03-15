@@ -125,7 +125,7 @@ func (s *BaseEmployeeHandler) CreateEmployee(c *gin.Context) {
 		return
 	}
 
-	http.Created(c, employee.ID.Value, "Employee")
+	http.Created(c, employee.ID.Value(), "Employee")
 }
 
 func (s *BaseEmployeeHandler) UpdateEmployee(c *gin.Context) {

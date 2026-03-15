@@ -145,8 +145,8 @@ func NewConfirmCommand(
 }
 
 // NewDeleteCommand creates a new DeleteCommand instance
-func NewDeleteCommand(id AppointmentID) DeleteCommand {
-	return DeleteCommand{ID: id}
+func NewDeleteCommand(id AppointmentID, isHardDelete bool) DeleteCommand {
+	return DeleteCommand{ID: id, IsHardDelete: isHardDelete}
 }
 
 // NewNotAttendCommand creates a new NotAttendCommand instance

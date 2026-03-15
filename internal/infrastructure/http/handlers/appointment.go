@@ -1,408 +1,642 @@
 package handlers
 
 import (
+	"errors"
+
 	"clinic-vet-api/internal/core/appointments"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/employees"
 	"clinic-vet-api/internal/core/pets"
 	"clinic-vet-api/internal/infrastructure/http/handlers/dtos"
 	"clinic-vet-api/internal/infrastructure/http/handlers/mappers"
-	"clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/http"
 	"clinic-vet-api/internal/shared/page"
-	"fmt"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
-// ==========================================================================
-// Base Controller
-// ==========================================================================
-
-// BaseAppointmentController provides base controller that could be consumed by other controllers
-type BaseAppointmentController struct {
-	commandService appointments.CommandService
-	queryService   appointments.QueryService
-	validate       *validator.Validate
-	mapper         *mappers.AppointmentResponseMapper
+// AppointmentHandler handles appointment HTTP with customer-, employee-, and manager-scoped endpoints.
+type AppointmentHandler struct {
+	commandService       appointments.CommandService
+	queryService         appointments.QueryService
+	validator            *validator.Validate
+	mapper                *mappers.AppointmentResponseMapper
+	customerIDResolver   CustomerIDResolver
+	employeeIDResolver   EmployeeIDResolver
 }
 
-func NewBaseAppointmentController(
+func NewAppointmentHandler(
 	commandService appointments.CommandService,
 	queryService appointments.QueryService,
-	validate *validator.Validate,
-) *BaseAppointmentController {
-	return &BaseAppointmentController{
-		commandService: commandService,
-		queryService:   queryService,
-		validate:       validate,
-		mapper:         mappers.NewAppointmentResponseMapper(),
+	validator *validator.Validate,
+	mapper *mappers.AppointmentResponseMapper,
+	customerIDResolver CustomerIDResolver,
+	employeeIDResolver EmployeeIDResolver,
+) *AppointmentHandler {
+	if mapper == nil {
+		mapper = mappers.NewAppointmentResponseMapper()
+	}
+	return &AppointmentHandler{
+		commandService:     commandService,
+		queryService:       queryService,
+		validator:          validator,
+		mapper:             mapper,
+		customerIDResolver: customerIDResolver,
+		employeeIDResolver: employeeIDResolver,
 	}
 }
 
-type GetByIDExtraArgs struct {
-	employeeID *uint
-	customerID *uint
+func parseAppointmentIDFromParam(c *gin.Context) (appointments.AppointmentID, error) {
+	id, err := http.ParseParamToUInt(c, "id")
+	if err != nil {
+		return appointments.AppointmentID{}, err
+	}
+	return appointments.NewAppointmentID(id), nil
 }
 
-// Query Handlers
+// ------------------------------------------------------------
+// Internal handlers
+// ------------------------------------------------------------
 
-func (ctrl *BaseAppointmentController) GetAppointmentByID(c *gin.Context, args GetByIDExtraArgs) {
-	idUint, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (h *AppointmentHandler) getAppointmentByIDInternal(
+	ctx *gin.Context,
+	apptID appointments.AppointmentID,
+	optCustomerID *uint,
+	optEmployeeID *uint,
+) (any, error) {
+	if optCustomerID != nil {
+		cid := customers.NewCustomerID(*optCustomerID)
+		return h.queryService.GetByIDAndCustomerID(ctx.Request.Context(), apptID, cid)
 	}
-
-	appointmentId := appointments.NewAppointmentID(idUint)
-	appt, err := ctrl.queryService.GetByID(c.Request.Context(), appointmentId)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
+	if optEmployeeID != nil {
+		eid := employees.NewEmployeeID(*optEmployeeID)
+		return h.queryService.GetByIDAndEmployeeID(ctx.Request.Context(), apptID, eid)
 	}
-
-	appointmentResponse := ctrl.mapper.ToResponse(appt)
-	http.Found(c, appointmentResponse, "Appointment")
+	return h.queryService.GetByID(ctx.Request.Context(), apptID)
 }
 
-func (ctrl *BaseAppointmentController) GetAppointmentsBySpecification(c *gin.Context) {
-	searchSpecification, err := dtos.NewApptSearchRequestFromContext(c)
+func (h *AppointmentHandler) getAppointmentsByCustomerIDInternal(
+	ctx *gin.Context,
+	getCustomerID CustomerIDProvider,
+	pagination page.Pagination,
+) (any, error) {
+	customerID, err := getCustomerID(ctx)
 	if err != nil {
-		http.BadRequest(c, errors.RequestURLQueryError(err, c.Request.URL.RawQuery))
-		return
+		return nil, err
 	}
-
-	if err := ctrl.validate.Struct(searchSpecification); err != nil {
-		http.BadRequest(c, errors.InvalidDataError(err))
-		return
-	}
-
-	searchQuery, err := ctrl.mapper.RequestToSearchQuery(searchSpecification)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	appointmentPage, err := ctrl.queryService.GetBySpecfication(c.Request.Context(), searchQuery)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	responsePage := ctrl.mapper.ToResponsePage(appointmentPage)
-	http.Paginated(c, responsePage, "Appointments")
+	cid := customers.NewCustomerID(customerID)
+	return h.queryService.GetByCustomerID(ctx.Request.Context(), cid, pagination)
 }
 
-func (ctrl *BaseAppointmentController) FindAppointmentsByDateRange(c *gin.Context) {
-	var requestData dtos.AppointmentsByDateRangeRequest
-	if err := c.ShouldBindQuery(&requestData); err != nil {
-		http.BadRequest(c, errors.RequestBodyDataError(err))
-		return
-	}
-
-	if err := ctrl.validate.Struct(&requestData); err != nil {
-		http.BadRequest(c, errors.InvalidDataError(err))
-		return
-	}
-
-	appointmentPage, err := ctrl.queryService.GetByDateRange(
-		c.Request.Context(),
-		requestData.StartTime(),
-		requestData.EndTime(),
-		requestData.ToPagination(),
-	)
+func (h *AppointmentHandler) getAppointmentsByEmployeeIDInternal(
+	ctx *gin.Context,
+	getEmployeeID EmployeeIDProvider,
+	pagination page.Pagination,
+) (any, error) {
+	employeeID, err := getEmployeeID(ctx)
 	if err != nil {
-		http.ApplicationError(c, err)
-		return
+		return nil, err
 	}
-
-	responsePage := ctrl.mapper.ToResponsePage(appointmentPage)
-	http.Paginated(c, responsePage, "Appointments")
+	eid := employees.NewEmployeeID(employeeID)
+	return h.queryService.GetByEmployeeID(ctx.Request.Context(), eid, pagination)
 }
 
-func (ctrl *BaseAppointmentController) FindAppointmentsByCustomer(
-	c *gin.Context,
-	customerID uint,
-	//extraArgs customerQueryExtraArgs,
-) {
-	var pageParams page.PaginationRequest
-	if err := http.ShouldBindPageParams(&pageParams, c, ctrl.validate); err != nil {
-		http.BadRequest(c, errors.RequestURLQueryError(err, c.Request.URL.RawQuery))
-		return
-	}
-
-	//query := query.NewFindApptsByCustomerIDQuery(pageParams, customerID, extraArgs.PetID, extraArgs.Status)
-	customerIDObj := customers.NewCustomerID(customerID)
-	pagintation := pageParams.ToPagination()
-	appointmentPage, err := ctrl.queryService.GetByCustomerID(c.Request.Context(), customerIDObj, pagintation)
+func (h *AppointmentHandler) getAppointmentsBySpecificationInternal(
+	ctx *gin.Context,
+	searchReq dtos.AppointmentSearchRequest,
+) (any, error) {
+	query, err := h.mapper.RequestToSearchQuery(searchReq)
 	if err != nil {
-		http.ApplicationError(c, err)
-		return
+		return nil, err
 	}
-
-	responsePage := ctrl.mapper.ToResponsePage(appointmentPage)
-	http.Paginated(c, responsePage, "Appointments")
+	return h.queryService.GetBySpecfication(ctx.Request.Context(), query)
 }
 
-func (ctrl *BaseAppointmentController) GetAppointmentsByEmployee(c *gin.Context, employeeID uint) {
-	var pageParams page.PaginationRequest
-	if err := c.ShouldBindQuery(&pageParams); err != nil {
-		http.BadRequest(c, errors.RequestURLQueryError(err, c.Request.URL.RawQuery))
-		return
-	}
-
-	employeeIDObj := employees.NewEmployeeID(employeeID)
-	pagination := pageParams.ToPagination()
-
-	appointmentPage, err := ctrl.queryService.GetByEmployeeID(c.Request.Context(), employeeIDObj, pagination)
+func (h *AppointmentHandler) requestAppointmentInternal(
+	ctx *gin.Context,
+	req dtos.AppointmentRequestByCustomerRequest,
+	getCustomerID CustomerIDProvider,
+) (any, error) {
+	customerID, err := getCustomerID(ctx)
 	if err != nil {
-		http.ApplicationError(c, err)
-		return
+		return nil, err
 	}
-
-	responsePage := ctrl.mapper.ToResponsePage(appointmentPage)
-	http.Paginated(c, responsePage, "Appointments")
-}
-
-func (ctrl *BaseAppointmentController) GetAppointmentsByPet(c *gin.Context, petID uint) {
-	var pageParams page.PaginationRequest
-	if err := c.ShouldBindQuery(&pageParams); err != nil {
-		http.BadRequest(c, errors.RequestURLQueryError(err, c.Request.URL.RawQuery))
-		return
-	}
-
-	petIdObj := pets.NewPetID(petID)
-	pagination := pageParams.ToPagination()
-	appointmentPage, err := ctrl.queryService.GetByPetID(c.Request.Context(), petIdObj, pagination)
+	cid := customers.NewCustomerID(customerID)
+	command, err := h.mapper.RequestToRequestByCustomerCommand(req, cid)
 	if err != nil {
-		http.ApplicationError(c, err)
-		return
+		return nil, err
 	}
-
-	responsePage := ctrl.mapper.ToResponsePage(appointmentPage)
-	http.Paginated(c, responsePage, "Appointments")
+	err = h.commandService.RequestAppointment(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
-func (ctrl *BaseAppointmentController) GetAppointmentStats(c *gin.Context) {
-	// TODO: Implement appointment stats logic or remove this function if not needed
+func (h *AppointmentHandler) createAppointmentInternal(
+	ctx *gin.Context,
+	req dtos.AppointmentCreateRequest,
+	optEmployeeID *uint,
+) (any, error) {
+	command, err := h.mapper.RequestToCreateCommand(req, optEmployeeID)
+	if err != nil {
+		return nil, err
+	}
+	created, err := h.commandService.CreateAppointment(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return created.ID.Value(), nil
 }
 
-// Command Operations
+func (h *AppointmentHandler) updateAppointmentInternal(
+	ctx *gin.Context,
+	req dtos.AppointmentUpdateGeneralInfoRequest,
+	apptID uint,
+) (any, error) {
+	cmd, err := h.mapper.RequestToUpdateCommand(req, apptID)
+	if err != nil {
+		return nil, err
+	}
+	err = h.commandService.UpdateAppointmentGeneralInfo(ctx.Request.Context(), cmd)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
 
-func (ctrl *BaseAppointmentController) CreateAppointment(c *gin.Context, employeeID *uint) {
-	var request dtos.AppointmentCreateRequest
-	if err := http.ShouldBindAndValidateBody(c, &request, ctrl.validate); err != nil {
+func (h *AppointmentHandler) deleteAppointmentInternal(ctx *gin.Context, apptID uint, isHard bool) (any, error) {
+	command := h.mapper.ToDeleteCommand(apptID, isHard)
+	err := h.commandService.DeleteAppointment(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *AppointmentHandler) rescheduleInternal(
+	ctx *gin.Context,
+	req dtos.RescheduleAppointmentRequest,
+	apptID uint,
+) (any, error) {
+	command := h.mapper.RequestToRescheduleCommand(req, apptID)
+	err := h.commandService.RescheduleAppointment(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *AppointmentHandler) confirmInternal(ctx *gin.Context, apptID uint, employeeID uint) (any, error) {
+	command := h.mapper.ToConfirmCommand(apptID, employeeID)
+	err := h.commandService.ConfirmAppointment(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *AppointmentHandler) completeInternal(ctx *gin.Context, apptID uint, optEmployeeID *uint, notes string) (any, error) {
+	command := h.mapper.ToCompleteCommand(apptID, optEmployeeID, notes)
+	err := h.commandService.CompleteAppointment(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *AppointmentHandler) cancelInternal(ctx *gin.Context, apptID uint, optEmployeeID *uint, reason string) (any, error) {
+	command := h.mapper.ToCancelCommand(apptID, optEmployeeID, reason)
+	err := h.commandService.CancelAppointment(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *AppointmentHandler) notAttendInternal(ctx *gin.Context, apptID uint, optEmployeeID *uint) (any, error) {
+	command := h.mapper.ToNotAttendCommand(apptID, optEmployeeID)
+	err := h.commandService.MarkAppointmentAsNotAttend(ctx.Request.Context(), command)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *AppointmentHandler) getMyCustomerID(c *gin.Context) (uint, error) {
+	if h.customerIDResolver == nil {
+		return 0, errors.New("customer resolver not configured")
+	}
+	return CustomerIDFromContext(c, h.customerIDResolver)
+}
+
+func (h *AppointmentHandler) getMyEmployeeID(c *gin.Context) (uint, error) {
+	if h.employeeIDResolver == nil {
+		return 0, errors.New("employee resolver not configured")
+	}
+	return EmployeeIDFromContext(c, h.employeeIDResolver)
+}
+
+// ------------------------------------------------------------
+// Customer handlers (only their appointments)
+// ------------------------------------------------------------
+
+func (h *AppointmentHandler) GetMyAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		customerID, err := h.getMyCustomerID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.getAppointmentByIDInternal(ctx, apptID, &customerID, nil)
+	}
+	http.HandleGetRequest(h.validator, "Appointment", logic)(c)
+}
+
+func (h *AppointmentHandler) GetMyAppointments(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		var pageParams page.PaginationRequest
+		if err := http.ShouldBindPageParams(&pageParams, ctx, h.validator); err != nil {
+			return nil, err
+		}
+		getCustomerID := func(c *gin.Context) (uint, error) { return h.getMyCustomerID(c) }
+		return h.getAppointmentsByCustomerIDInternal(ctx, getCustomerID, pageParams.ToPagination())
+	}
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, res any) {
+		if res == nil {
+			http.Success(c, nil, "No appointments found")
+			return
+		}
+		p := res.(page.Page[appointments.Appointment])
+		responsePage := h.mapper.ToResponsePage(p)
+		http.Paginated(c, responsePage, "Appointments")
+	})(c)
+}
+
+func (h *AppointmentHandler) RequestAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.AppointmentRequestByCustomerRequest) (any, error) {
+		getCustomerID := func(c *gin.Context) (uint, error) { return h.getMyCustomerID(c) }
+		return h.requestAppointmentInternal(ctx, req, getCustomerID)
+	}
+	http.HandleRequestWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment request submitted successfully")
+	})(c)
+}
+
+// ------------------------------------------------------------
+// Employee handlers (only their assigned appointments)
+// ------------------------------------------------------------
+
+func (h *AppointmentHandler) GetMyAppointmentAsEmployee(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		employeeID, err := h.getMyEmployeeID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.getAppointmentByIDInternal(ctx, apptID, nil, &employeeID)
+	}
+	http.HandleGetRequest(h.validator, "Appointment", logic)(c)
+}
+
+func (h *AppointmentHandler) GetMyAppointmentsAsEmployee(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		var pageParams page.PaginationRequest
+		if err := http.ShouldBindPageParams(&pageParams, ctx, h.validator); err != nil {
+			return nil, err
+		}
+		getEmployeeID := func(c *gin.Context) (uint, error) { return h.getMyEmployeeID(c) }
+		return h.getAppointmentsByEmployeeIDInternal(ctx, getEmployeeID, pageParams.ToPagination())
+	}
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, res any) {
+		if res == nil {
+			http.Success(c, nil, "No appointments found")
+			return
+		}
+		p := res.(page.Page[appointments.Appointment])
+		responsePage := h.mapper.ToResponsePage(p)
+		http.Paginated(c, responsePage, "Appointments")
+	})(c)
+}
+
+func (h *AppointmentHandler) CreateAppointmentAsEmployee(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.AppointmentCreateRequest) (any, error) {
+		employeeID, err := h.getMyEmployeeID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.createAppointmentInternal(ctx, req, &employeeID)
+	}
+	http.HandleCreateRequest(h.validator, "Appointment", logic)(c)
+}
+
+func (h *AppointmentHandler) UpdateMyAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.AppointmentUpdateGeneralInfoRequest) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.updateAppointmentInternal(ctx, req, apptID.Value())
+	}
+	http.HandleUpdateRequest(h.validator, "Appointment", logic)(c)
+}
+
+func (h *AppointmentHandler) RescheduleMyAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.RescheduleAppointmentRequest) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.rescheduleInternal(ctx, req, apptID.Value())
+	}
+	http.HandleRequestWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment rescheduled successfully")
+	})(c)
+}
+
+func (h *AppointmentHandler) ConfirmMyAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		employeeID, err := h.getMyEmployeeID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.confirmInternal(ctx, apptID.Value(), employeeID)
+	}
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment confirmed successfully")
+	})(c)
+}
+
+func (h *AppointmentHandler) CompleteMyAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		employeeID, err := h.getMyEmployeeID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		notes := ctx.Query("notes")
+		return h.completeInternal(ctx, apptID.Value(), &employeeID, notes)
+	}
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment completed successfully")
+	})(c)
+}
+
+func (h *AppointmentHandler) CancelMyAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		employeeID, err := h.getMyEmployeeID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		reason := ctx.Query("reason")
+		return h.cancelInternal(ctx, apptID.Value(), &employeeID, reason)
+	}
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment cancelled successfully")
+	})(c)
+}
+
+func (h *AppointmentHandler) NotAttendMyAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		employeeID, err := h.getMyEmployeeID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.notAttendInternal(ctx, apptID.Value(), &employeeID)
+	}
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment marked as not attended successfully")
+	})(c)
+}
+
+// ------------------------------------------------------------
+// Manager/Admin handlers (all appointments)
+// ------------------------------------------------------------
+
+func (h *AppointmentHandler) GetAppointmentByID(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.getAppointmentByIDInternal(ctx, apptID, nil, nil)
+	}
+	http.HandleGetRequest(h.validator, "Appointment", logic)(c)
+}
+
+func (h *AppointmentHandler) GetAppointmentsBySpecification(c *gin.Context) {
+	searchReq, err := dtos.NewApptSearchRequestFromContext(c)
+	if err != nil {
 		http.BadRequest(c, err)
 		return
 	}
-
-	command, err := ctrl.mapper.RequestToCreateCommand(request, employeeID)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	createdAppt, err := ctrl.commandService.CreateAppointment(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Created(c, createdAppt.ID, "Appointment")
-}
-
-func (ctrl *BaseAppointmentController) UpdateAppointment(c *gin.Context, apptID uint) {
-	var requestData dtos.AppointmentUpdateGeneralInfoRequest
-	if err := http.ShouldBindAndValidateBody(c, &requestData, ctrl.validate); err != nil {
+	if err := h.validator.Struct(searchReq); err != nil {
 		http.BadRequest(c, err)
 		return
 	}
-
-	updateCommand, err := ctrl.mapper.RequestToUpdateCommand(requestData, apptID)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
+	logic := func(ctx *gin.Context) (any, error) {
+		return h.getAppointmentsBySpecificationInternal(ctx, searchReq)
 	}
-
-	err = ctrl.commandService.UpdateAppointmentGeneralInfo(c.Request.Context(), updateCommand)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Updated(c, nil, "Appointment")
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, res any) {
+		if res == nil {
+			http.Success(c, nil, "No appointments found")
+			return
+		}
+		p := res.(page.Page[appointments.Appointment])
+		responsePage := h.mapper.ToResponsePage(p)
+		http.Paginated(c, responsePage, "Appointments")
+	})(c)
 }
 
-func (ctrl *BaseAppointmentController) DeleteAppointment(c *gin.Context) {
-	entityID, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (h *AppointmentHandler) GetAppointmentsByCustomerID(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		var pageParams page.PaginationRequest
+		if err := http.ShouldBindPageParams(&pageParams, ctx, h.validator); err != nil {
+			return nil, err
+		}
+		return h.getAppointmentsByCustomerIDInternal(ctx, CustomerIDFromParam, pageParams.ToPagination())
 	}
-
-	command := ctrl.mapper.ToDeleteCommand(entityID)
-	err = ctrl.commandService.DeleteAppointment(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Success(c, nil, "Appointment deleted successfully")
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, res any) {
+		if res == nil {
+			http.Success(c, nil, "No appointments found")
+			return
+		}
+		p := res.(page.Page[appointments.Appointment])
+		responsePage := h.mapper.ToResponsePage(p)
+		http.Paginated(c, responsePage, "Appointments")
+	})(c)
 }
 
-func (ctrl *BaseAppointmentController) RescheduleAppointment(c *gin.Context, employeeID *uint) {
-	appointmentID, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (h *AppointmentHandler) GetAppointmentsByEmployeeID(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		var pageParams page.PaginationRequest
+		if err := http.ShouldBindPageParams(&pageParams, ctx, h.validator); err != nil {
+			return nil, err
+		}
+		return h.getAppointmentsByEmployeeIDInternal(ctx, EmployeeIDFromParam, pageParams.ToPagination())
 	}
-
-	var requestData dtos.RescheduleAppointmentRequest
-	if err := c.ShouldBindJSON(&requestData); err != nil {
-		http.BadRequest(c, errors.RequestBodyDataError(err))
-		return
-	}
-
-	command := ctrl.mapper.RequestToRescheduleCommand(requestData, appointmentID)
-	err = ctrl.commandService.RescheduleAppointment(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Success(c, nil, "Appointment rescheduled successfully")
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, res any) {
+		if res == nil {
+			http.Success(c, nil, "No appointments found")
+			return
+		}
+		p := res.(page.Page[appointments.Appointment])
+		responsePage := h.mapper.ToResponsePage(p)
+		http.Paginated(c, responsePage, "Appointments")
+	})(c)
 }
 
-func (ctrl *BaseAppointmentController) NotAttend(c *gin.Context, employeeID *uint) {
-	appointmentID, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (h *AppointmentHandler) GetAppointmentsByPetID(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		petIDRaw, err := http.ParseParamToUInt(c, "pet_id")
+		if err != nil {
+			return nil, err
+		}
+		var pageParams page.PaginationRequest
+		if err := http.ShouldBindPageParams(&pageParams, c, h.validator); err != nil {
+			return nil, err
+		}
+		petID := pets.NewPetID(petIDRaw)
+		page, err := h.queryService.GetByPetID(c.Request.Context(), petID, pageParams.ToPagination())
+		if err != nil {
+			return nil, err
+		}
+		return page, nil
 	}
-
-	command := ctrl.mapper.ToNotAttendCommand(appointmentID, employeeID)
-	err = ctrl.commandService.MarkAppointmentAsNotAttend(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Success(c, nil, "Appointment marked as not attended successfully")
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, res any) {
+		if res == nil {
+			http.Success(c, nil, "No appointments found")
+			return
+		}
+		p := res.(page.Page[appointments.Appointment])
+		responsePage := h.mapper.ToResponsePage(p)
+		http.Paginated(c, responsePage, "Appointments")
+	})(c)
 }
 
-func (ctrl *BaseAppointmentController) ConfirmAppointment(c *gin.Context, employeeID uint) {
-	appointmentID, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (h *AppointmentHandler) CreateAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.AppointmentCreateRequest) (any, error) {
+		optEmployeeID, _ := EmployeeIDFromParamOptional(ctx)
+		return h.createAppointmentInternal(ctx, req, optEmployeeID)
 	}
-
-	command := ctrl.mapper.ToConfirmCommand(appointmentID, employeeID)
-	err = ctrl.commandService.ConfirmAppointment(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Success(c, nil, "Appointment confirmed successfully")
+	http.HandleCreateRequest(h.validator, "Appointment", logic)(c)
 }
 
-func (ctrl *BaseAppointmentController) CompleteAppointment(c *gin.Context, employeeID *uint) {
-	appointmentID, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (h *AppointmentHandler) UpdateAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.AppointmentUpdateGeneralInfoRequest) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.updateAppointmentInternal(ctx, req, apptID.Value())
 	}
-	notes := c.Query("notes")
-
-	command := ctrl.mapper.ToCompleteCommand(appointmentID, employeeID, notes)
-	err = ctrl.commandService.CompleteAppointment(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
-	}
-
-	http.Success(c, nil, "Appointment completed successfully")
+	http.HandleUpdateRequest(h.validator, "Appointment", logic)(c)
 }
 
-func (ctrl *BaseAppointmentController) CancelAppointment(c *gin.Context, employeeID *uint) {
-	appointmentID, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
-		return
+func (h *AppointmentHandler) DeleteAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		isHard := ctx.Query("hard") == "true"
+		return h.deleteAppointmentInternal(ctx, apptID.Value(), isHard)
 	}
-	reason := c.Query("reason")
+	http.HandleDeleteRequest(h.validator, "Appointment", logic)(c)
+}
 
-	command := ctrl.mapper.ToCancelCommand(appointmentID, employeeID, reason)
-	err = ctrl.commandService.CancelAppointment(c.Request.Context(), command)
-	if err != nil {
-		http.ApplicationError(c, err)
-		return
+func (h *AppointmentHandler) RescheduleAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context, req dtos.RescheduleAppointmentRequest) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.rescheduleInternal(ctx, req, apptID.Value())
 	}
-
-	http.Success(c, nil, "Appointment cancelled successfully")
+	http.HandleRequestWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment rescheduled successfully")
+	})(c)
 }
 
-// ==========================================================================
-// Manager Controller
-// ==========================================================================
-
-type AppointmentManagerHandler struct {
-	commandService appointments.CommandService
-	queryService   appointments.QueryService
-	validator      *validator.Validate
-	baseHandler    *BaseAppointmentController
-}
-
-func NewAppointmentManagerHandler(
-	commandService appointments.CommandService,
-	queryService appointments.QueryService,
-	validate *validator.Validate,
-) AppointmentManagerHandler {
-	baseHandler := NewBaseAppointmentController(commandService, queryService, validate)
-	return AppointmentManagerHandler{
-		commandService: commandService,
-		queryService:   queryService,
-		validator:      validate,
-		baseHandler:    baseHandler,
+func (h *AppointmentHandler) ConfirmAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		employeeID, err := EmployeeIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.confirmInternal(ctx, apptID.Value(), employeeID)
 	}
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment confirmed successfully")
+	})(c)
 }
 
-func (ctrl AppointmentManagerHandler) GetBySpecfificationAppointments(c *gin.Context) {
-	ctrl.baseHandler.GetAppointmentsBySpecification(c)
-}
-
-func (ctrl AppointmentManagerHandler) GetAppointmentByID(c *gin.Context) {
-	ctrl.baseHandler.GetAppointmentByID(c, GetByIDExtraArgs{})
-}
-func (ctrl AppointmentManagerHandler) CreateAppointment(c *gin.Context) {
-	employeeID := c.Param("employeeID")
-	if employeeID == "" {
-		http.BadRequest(c, errors.RequestURLQueryError(fmt.Errorf("employeeID query param is required"), c.Request.URL.RawQuery))
-		return
+func (h *AppointmentHandler) CompleteAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		optEmployeeID, _ := EmployeeIDFromParamOptional(ctx)
+		notes := ctx.Query("notes")
+		return h.completeInternal(ctx, apptID.Value(), optEmployeeID, notes)
 	}
-
-	employeeIDUint, err := strconv.ParseUint(employeeID, 10, 64)
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLQueryError(err, c.Request.URL.RawQuery))
-		return
-	}
-
-	employeeIDUintVal := uint(employeeIDUint)
-	ctrl.baseHandler.CreateAppointment(c, &employeeIDUintVal)
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment completed successfully")
+	})(c)
 }
 
-func (ctrl AppointmentManagerHandler) UpdateAppointment(c *gin.Context) {
-	appointmentID, err := http.ParseParamToUInt(c, "id")
-	if err != nil {
-		http.BadRequest(c, errors.RequestURLQueryError(err, c.Request.URL.RawQuery))
-		return
+func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		optEmployeeID, _ := EmployeeIDFromParamOptional(ctx)
+		reason := ctx.Query("reason")
+		return h.cancelInternal(ctx, apptID.Value(), optEmployeeID, reason)
 	}
-	ctrl.baseHandler.UpdateAppointment(c, appointmentID)
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment cancelled successfully")
+	})(c)
 }
 
-func (ctrl AppointmentManagerHandler) DeleteAppointment(c *gin.Context) {
-	ctrl.baseHandler.DeleteAppointment(c)
+func (h *AppointmentHandler) NotAttendAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		optEmployeeID, _ := EmployeeIDFromParamOptional(ctx)
+		return h.notAttendInternal(ctx, apptID.Value(), optEmployeeID)
+	}
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment marked as not attended successfully")
+	})(c)
 }

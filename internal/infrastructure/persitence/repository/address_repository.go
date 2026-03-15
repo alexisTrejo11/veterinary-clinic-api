@@ -2,6 +2,7 @@ package repository
 
 import (
 	"clinic-vet-api/internal/core/addresses"
+	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/page"
 	"clinic-vet-api/sqlc"
@@ -25,7 +26,9 @@ func NewAddressSqlcRepository(queries *sqlc.Queries) addresses.AddressRepository
 	}
 }
 
-func (r *AddressSqlcRepository) GetByID(ctx context.Context, id addresses.AddressID) (addresses.Address, error) {
+func (r *AddressSqlcRepository) GetByID(
+	ctx context.Context, id addresses.AddressID,
+) (addresses.Address, error) {
 	row, err := r.queries.GetAddressByID(ctx, id.Int32())
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -36,21 +39,27 @@ func (r *AddressSqlcRepository) GetByID(ctx context.Context, id addresses.Addres
 	return r.toEntity(row), nil
 }
 
-func (r *AddressSqlcRepository) RestoreByID(ctx context.Context, id addresses.AddressID) error {
+func (r *AddressSqlcRepository) RestoreByID(
+	ctx context.Context, id addresses.AddressID,
+) error {
 	if err := r.queries.RestoreAddress(ctx, id.Int32()); err != nil {
 		return r.dbError(OpUpdate, ErrMsgRestoreAddress, err)
 	}
 	return nil
 }
 
-func (r *AddressSqlcRepository) Save(ctx context.Context, address addresses.Address) (addresses.Address, error) {
+func (r *AddressSqlcRepository) Save(
+	ctx context.Context, address addresses.Address,
+) (addresses.Address, error) {
 	if address.ID.IsZero() {
 		return r.create(ctx, address)
 	}
 	return r.update(ctx, address)
 }
 
-func (r *AddressSqlcRepository) BulkUpdate(ctx context.Context, list []addresses.Address) error {
+func (r *AddressSqlcRepository) BulkUpdate(
+	ctx context.Context, list []addresses.Address,
+) error {
 	for i := range list {
 		if _, err := r.update(ctx, list[i]); err != nil {
 			return err
@@ -59,14 +68,18 @@ func (r *AddressSqlcRepository) BulkUpdate(ctx context.Context, list []addresses
 	return nil
 }
 
-func (r *AddressSqlcRepository) Delete(ctx context.Context, id addresses.AddressID) error {
+func (r *AddressSqlcRepository) Delete(
+	ctx context.Context, id addresses.AddressID,
+) error {
 	if err := r.queries.SoftDeleteAddress(ctx, id.Int32()); err != nil {
 		return r.dbError(OpDelete, ErrMsgSoftDeleteAddress, err)
 	}
 	return nil
 }
 
-func (r *AddressSqlcRepository) ExistsByID(ctx context.Context, id addresses.AddressID) (bool, error) {
+func (r *AddressSqlcRepository) ExistsByID(
+	ctx context.Context, id addresses.AddressID,
+) (bool, error) {
 	exists, err := r.queries.ExistsAddressByID(ctx, id.Int32())
 	if err != nil {
 		return false, r.dbError(OpSelect, "failed to check address existence", err)
@@ -74,7 +87,9 @@ func (r *AddressSqlcRepository) ExistsByID(ctx context.Context, id addresses.Add
 	return exists, nil
 }
 
-func (r *AddressSqlcRepository) GetBySpecification(ctx context.Context, spec addresses.AddressSpecification) (page.Page[addresses.Address], error) {
+func (r *AddressSqlcRepository) GetBySpecification(
+	ctx context.Context, spec addresses.AddressSpecification,
+) (page.Page[addresses.Address], error) {
 	userFilter := int32(0)
 	if spec.UserID != nil {
 		userFilter = int32(*spec.UserID)
@@ -103,16 +118,21 @@ func (r *AddressSqlcRepository) GetBySpecification(ctx context.Context, spec add
 	return page.NewPage(items, total, pagReq), nil
 }
 
-func (r *AddressSqlcRepository) CountByUserID(ctx context.Context, userID uint) (int64, error) {
-	count, err := r.queries.CountAddressesByUserID(ctx, int32(userID))
+func (r *AddressSqlcRepository) CountByUserID(
+	ctx context.Context, userID shared.UserID,
+) (int64, error) {
+	count, err := r.queries.CountAddressesByUserID(ctx, userID.Int32())
 	if err != nil {
 		return 0, r.dbError(OpCount, ErrMsgFindAddressByUserID, err)
 	}
 	return count, nil
 }
 
-func (r *AddressSqlcRepository) GetAllByUserID(ctx context.Context, userID uint) ([]addresses.Address, error) {
-	rows, err := r.queries.GetAddressesByUserID(ctx, int32(userID))
+func (r *AddressSqlcRepository) GetAllByUserID(
+	ctx context.Context,
+	userID shared.UserID,
+) ([]addresses.Address, error) {
+	rows, err := r.queries.GetAddressesByUserID(ctx, userID.Int32())
 	if err != nil {
 		return nil, r.dbError(OpSelect, ErrMsgFindAddressByUserID, err)
 	}
@@ -123,10 +143,14 @@ func (r *AddressSqlcRepository) GetAllByUserID(ctx context.Context, userID uint)
 	return items, nil
 }
 
-func (r *AddressSqlcRepository) GetByIDAndUserID(ctx context.Context, id addresses.AddressID, userID uint) (addresses.Address, error) {
+func (r *AddressSqlcRepository) GetByIDAndUserID(
+	ctx context.Context,
+	id addresses.AddressID,
+	userID shared.UserID,
+) (addresses.Address, error) {
 	row, err := r.queries.GetAddressByIDAndUserID(ctx, sqlc.GetAddressByIDAndUserIDParams{
 		ID:     id.Int32(),
-		UserID: int32(userID),
+		UserID: userID.Int32(),
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -137,13 +161,15 @@ func (r *AddressSqlcRepository) GetByIDAndUserID(ctx context.Context, id address
 	return r.toEntity(row), nil
 }
 
-func (r *AddressSqlcRepository) create(ctx context.Context, address addresses.Address) (addresses.Address, error) {
+func (r *AddressSqlcRepository) create(
+	ctx context.Context, address addresses.Address,
+) (addresses.Address, error) {
 	innerNum := ""
 	if address.BuildingInnerNumber != nil {
 		innerNum = *address.BuildingInnerNumber
 	}
 	params := sqlc.CreateAddressParams{
-		UserID:              int32(address.UserID),
+		UserID:              address.UserID.Int32(),
 		Street:              address.Street,
 		City:                address.City,
 		State:               address.State,
@@ -151,7 +177,7 @@ func (r *AddressSqlcRepository) create(ctx context.Context, address addresses.Ad
 		Country:             string(address.Country),
 		BuildingType:        string(address.BuildingType),
 		BuildingOuterNumber: address.BuildingOuterNumber,
-		BuildingInnerNumber:  innerNum,
+		BuildingInnerNumber: innerNum,
 		IsDefault:           address.IsDefault,
 	}
 	created, err := r.queries.CreateAddress(ctx, params)
@@ -162,7 +188,9 @@ func (r *AddressSqlcRepository) create(ctx context.Context, address addresses.Ad
 	return out, nil
 }
 
-func (r *AddressSqlcRepository) update(ctx context.Context, address addresses.Address) (addresses.Address, error) {
+func (r *AddressSqlcRepository) update(
+	ctx context.Context, address addresses.Address,
+) (addresses.Address, error) {
 	innerNum := ""
 	if address.BuildingInnerNumber != nil {
 		innerNum = *address.BuildingInnerNumber
@@ -176,12 +204,12 @@ func (r *AddressSqlcRepository) update(ctx context.Context, address addresses.Ad
 		Country:             string(address.Country),
 		BuildingType:        string(address.BuildingType),
 		BuildingOuterNumber: address.BuildingOuterNumber,
-		BuildingInnerNumber:  innerNum,
+		BuildingInnerNumber: innerNum,
 		IsDefault:           address.IsDefault,
 	}
 	updated, err := r.queries.UpdateAddress(ctx, params)
 	if err != nil {
-		return addresses.Address{}, r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateAddress, address.ID.Value), err)
+		return addresses.Address{}, r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateAddress, address.ID.Value()), err)
 	}
 	return r.toEntity(updated), nil
 }
@@ -192,7 +220,7 @@ func (r *AddressSqlcRepository) toEntity(row sqlc.Address) addresses.Address {
 		innerNum = &row.BuildingInnerNumber
 	}
 	addr := addresses.Address{
-		UserID:              uint(row.UserID),
+		UserID:              shared.NewUserID(uint(row.UserID)),
 		Street:              row.Street,
 		City:                row.City,
 		State:               row.State,

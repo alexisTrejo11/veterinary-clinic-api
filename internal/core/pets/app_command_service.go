@@ -8,6 +8,7 @@ import (
 
 type Service interface {
 	CreatePet(ctx context.Context, cmd CreatePetCommand) (Pet, error)
+	UpdatePet(ctx context.Context, cmd UpdatePetCommand) error
 	DeactivatePet(ctx context.Context, id PetID) error
 	ActivatePet(ctx context.Context, id PetID) error
 	RestorePet(ctx context.Context, id PetID) error
@@ -15,6 +16,7 @@ type Service interface {
 
 	GetPetsByCustomerID(ctx context.Context, customerID uint, pagination page.Pagination) (page.Page[Pet], error)
 	GetPetByID(ctx context.Context, id PetID) (Pet, error)
+	GetPetByIDAndCustomerID(ctx context.Context, id PetID, customerID uint) (Pet, error)
 	GetPetBySpecification(ctx context.Context, spec *PetSpecification) (page.Page[Pet], error)
 }
 
@@ -66,7 +68,13 @@ func (s *petService) CreatePet(ctx context.Context, cmd CreatePetCommand) (Pet, 
 }
 
 func (s *petService) UpdatePet(ctx context.Context, cmd UpdatePetCommand) error {
-	pet, err := s.repository.FindByID(ctx, cmd.PetID)
+	var pet Pet
+	var err error
+	if cmd.CustomerID != nil {
+		pet, err = s.repository.FindByIDAndCustomerID(ctx, cmd.PetID, *cmd.CustomerID)
+	} else {
+		pet, err = s.repository.FindByID(ctx, cmd.PetID)
+	}
 	if err != nil {
 		return err
 	}
@@ -154,6 +162,12 @@ func (s *petService) RestorePet(ctx context.Context, id PetID) error {
 }
 
 func (s *petService) DeletePet(ctx context.Context, cmd DeletePetCommand) error {
+	if cmd.OptCustomerID != nil {
+		_, err := s.repository.FindByIDAndCustomerID(ctx, cmd.PetID, *cmd.OptCustomerID)
+		if err != nil {
+			return err
+		}
+	}
 	return s.repository.Delete(ctx, cmd.PetID, cmd.IsHardDelete)
 }
 
@@ -167,6 +181,10 @@ func (s *petService) GetPetsByCustomerID(ctx context.Context, customerID uint, p
 
 func (s *petService) GetPetByID(ctx context.Context, id PetID) (Pet, error) {
 	return s.repository.FindByID(ctx, id)
+}
+
+func (s *petService) GetPetByIDAndCustomerID(ctx context.Context, id PetID, customerID uint) (Pet, error) {
+	return s.repository.FindByIDAndCustomerID(ctx, id, customerID)
 }
 
 func (s *petService) GetPetBySpecification(ctx context.Context, spec *PetSpecification) (page.Page[Pet], error) {

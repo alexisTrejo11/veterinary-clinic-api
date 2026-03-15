@@ -40,7 +40,7 @@ func (s *UserSpecification) IsSatisfiedBy(entity any) bool {
 	if len(s.IDs) > 0 {
 		found := false
 		for _, id := range s.IDs {
-			if id.Value == user.ID().Value {
+			if id.Value() == user.ID().Value() {
 				found = true
 				break
 			}
@@ -145,7 +145,7 @@ func (s *UserSpecification) ToSQL() (string, []any) {
 	if len(s.IDs) > 0 {
 		ids := make([]any, len(s.IDs))
 		for i, id := range s.IDs {
-			ids[i] = id.Value
+			ids[i] = id.Value()
 		}
 		conditions = append(conditions, "id IN (?)")
 		args = append(args, ids)

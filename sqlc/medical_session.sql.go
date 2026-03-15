@@ -24,6 +24,17 @@ func (q *Queries) CountAllMedicalSession(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countAllMedicalSessionsIncludingDeleted = `-- name: CountAllMedicalSessionsIncludingDeleted :one
+SELECT COUNT(*) FROM medical_sessions
+`
+
+func (q *Queries) CountAllMedicalSessionsIncludingDeleted(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAllMedicalSessionsIncludingDeleted)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countMedicalSessionByCustomerID = `-- name: CountMedicalSessionByCustomerID :one
 SELECT COUNT(*) FROM medical_sessions
 WHERE customer_id = $1 AND deleted_at IS NULL
@@ -86,6 +97,89 @@ WHERE pet_id = $1 AND deleted_at IS NULL
 
 func (q *Queries) CountMedicalSessionByPetID(ctx context.Context, petID int32) (int64, error) {
 	row := q.db.QueryRow(ctx, countMedicalSessionByPetID, petID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countMedicalSessionsByClinicService = `-- name: CountMedicalSessionsByClinicService :many
+SELECT clinic_service, COUNT(*) AS count
+FROM medical_sessions
+WHERE deleted_at IS NULL
+GROUP BY clinic_service
+`
+
+type CountMedicalSessionsByClinicServiceRow struct {
+	ClinicService models.ClinicService
+	Count         int64
+}
+
+func (q *Queries) CountMedicalSessionsByClinicService(ctx context.Context) ([]CountMedicalSessionsByClinicServiceRow, error) {
+	rows, err := q.db.Query(ctx, countMedicalSessionsByClinicService)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountMedicalSessionsByClinicServiceRow
+	for rows.Next() {
+		var i CountMedicalSessionsByClinicServiceRow
+		if err := rows.Scan(&i.ClinicService, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countMedicalSessionsBySpec = `-- name: CountMedicalSessionsBySpec :one
+SELECT COUNT(*) FROM medical_sessions
+WHERE (cardinality($1::int[]) = 0 OR id = ANY($1::int[]))
+  AND (cardinality($2::int[]) = 0 OR pet_id = ANY($2::int[]))
+  AND (cardinality($3::int[]) = 0 OR customer_id = ANY($3::int[]))
+  AND (cardinality($4::int[]) = 0 OR employee_id = ANY($4::int[]))
+  AND ($5::int IS NULL OR appointment_id = $5::int)
+  AND (cardinality($6::varchar[]) = 0 OR clinic_service = ANY($6::varchar[]))
+  AND ($7::boolean IS NULL OR is_emergency = $7::boolean)
+  AND ($8::boolean IS NULL OR (deleted_at IS NOT NULL) = $8::boolean)
+  AND ($9::timestamptz IS NULL OR visit_date >= $9::timestamptz)
+  AND ($10::timestamptz IS NULL OR visit_date <= $10::timestamptz)
+  AND ($11::timestamptz IS NULL OR follow_up_date >= $11::timestamptz)
+  AND ($12::timestamptz IS NULL OR follow_up_date <= $12::timestamptz)
+`
+
+type CountMedicalSessionsBySpecParams struct {
+	Ids            []int32
+	PetIds         []int32
+	CustomerIds    []int32
+	EmployeeIds    []int32
+	AppointmentID  pgtype.Int4
+	ClinicServices []string
+	IsEmergency    pgtype.Bool
+	IsDeleted      pgtype.Bool
+	VisitDateFrom  pgtype.Timestamptz
+	VisitDateTo    pgtype.Timestamptz
+	FollowUpFrom   pgtype.Timestamptz
+	FollowUpTo     pgtype.Timestamptz
+}
+
+func (q *Queries) CountMedicalSessionsBySpec(ctx context.Context, arg CountMedicalSessionsBySpecParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countMedicalSessionsBySpec,
+		arg.Ids,
+		arg.PetIds,
+		arg.CustomerIds,
+		arg.EmployeeIds,
+		arg.AppointmentID,
+		arg.ClinicServices,
+		arg.IsEmergency,
+		arg.IsDeleted,
+		arg.VisitDateFrom,
+		arg.VisitDateTo,
+		arg.FollowUpFrom,
+		arg.FollowUpTo,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -688,6 +782,100 @@ func (q *Queries) FindMedicalSessionByPetID(ctx context.Context, arg FindMedical
 	return items, nil
 }
 
+const findMedicalSessionsBySpec = `-- name: FindMedicalSessionsBySpec :many
+SELECT id, pet_id, customer_id, employee_id, appointment_id, clinic_service, visit_date, visit_type, diagnosis, notes, treatment, condition, weight, temperature, heart_rate, respiratory_rate, symptoms, medications, follow_up_date, is_emergency, created_at, updated_at, deleted_at FROM medical_sessions
+WHERE (cardinality($1::int[]) = 0 OR id = ANY($1::int[]))
+  AND (cardinality($2::int[]) = 0 OR pet_id = ANY($2::int[]))
+  AND (cardinality($3::int[]) = 0 OR customer_id = ANY($3::int[]))
+  AND (cardinality($4::int[]) = 0 OR employee_id = ANY($4::int[]))
+  AND ($5::int IS NULL OR appointment_id = $5::int)
+  AND (cardinality($6::varchar[]) = 0 OR clinic_service = ANY($6::varchar[]))
+  AND ($7::boolean IS NULL OR is_emergency = $7::boolean)
+  AND ($8::boolean IS NULL OR (deleted_at IS NOT NULL) = $8::boolean)
+  AND ($9::timestamptz IS NULL OR visit_date >= $9::timestamptz)
+  AND ($10::timestamptz IS NULL OR visit_date <= $10::timestamptz)
+  AND ($11::timestamptz IS NULL OR follow_up_date >= $11::timestamptz)
+  AND ($12::timestamptz IS NULL OR follow_up_date <= $12::timestamptz)
+ORDER BY visit_date DESC
+LIMIT $14 OFFSET $13
+`
+
+type FindMedicalSessionsBySpecParams struct {
+	Ids            []int32
+	PetIds         []int32
+	CustomerIds    []int32
+	EmployeeIds    []int32
+	AppointmentID  pgtype.Int4
+	ClinicServices []string
+	IsEmergency    pgtype.Bool
+	IsDeleted      pgtype.Bool
+	VisitDateFrom  pgtype.Timestamptz
+	VisitDateTo    pgtype.Timestamptz
+	FollowUpFrom   pgtype.Timestamptz
+	FollowUpTo     pgtype.Timestamptz
+	PageOffset     int32
+	PageLimit      int32
+}
+
+func (q *Queries) FindMedicalSessionsBySpec(ctx context.Context, arg FindMedicalSessionsBySpecParams) ([]MedicalSession, error) {
+	rows, err := q.db.Query(ctx, findMedicalSessionsBySpec,
+		arg.Ids,
+		arg.PetIds,
+		arg.CustomerIds,
+		arg.EmployeeIds,
+		arg.AppointmentID,
+		arg.ClinicServices,
+		arg.IsEmergency,
+		arg.IsDeleted,
+		arg.VisitDateFrom,
+		arg.VisitDateTo,
+		arg.FollowUpFrom,
+		arg.FollowUpTo,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MedicalSession
+	for rows.Next() {
+		var i MedicalSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.PetID,
+			&i.CustomerID,
+			&i.EmployeeID,
+			&i.AppointmentID,
+			&i.ClinicService,
+			&i.VisitDate,
+			&i.VisitType,
+			&i.Diagnosis,
+			&i.Notes,
+			&i.Treatment,
+			&i.Condition,
+			&i.Weight,
+			&i.Temperature,
+			&i.HeartRate,
+			&i.RespiratoryRate,
+			&i.Symptoms,
+			&i.Medications,
+			&i.FollowUpDate,
+			&i.IsEmergency,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findRecentMedicalSessionByPetID = `-- name: FindRecentMedicalSessionByPetID :many
 SELECT id, pet_id, customer_id, employee_id, appointment_id, clinic_service, visit_date, visit_type, diagnosis, notes, treatment, condition, weight, temperature, heart_rate, respiratory_rate, symptoms, medications, follow_up_date, is_emergency, created_at, updated_at, deleted_at FROM medical_sessions
 WHERE pet_id = $1 AND deleted_at IS NULL
@@ -754,24 +942,37 @@ func (q *Queries) HardDeleteMedicalSession(ctx context.Context, id int32) error 
 	return err
 }
 
+const isDeletedMedicalSessionByID = `-- name: IsDeletedMedicalSessionByID :one
+SELECT deleted_at IS NOT NULL FROM medical_sessions WHERE id = $1
+`
+
+func (q *Queries) IsDeletedMedicalSessionByID(ctx context.Context, id int32) (interface{}, error) {
+	row := q.db.QueryRow(ctx, isDeletedMedicalSessionByID, id)
+	var column_1 interface{}
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const restoreMedicalSessionByID = `-- name: RestoreMedicalSessionByID :exec
+UPDATE medical_sessions
+SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+`
+
+func (q *Queries) RestoreMedicalSessionByID(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, restoreMedicalSessionByID, id)
+	return err
+}
+
 const saveMedicalSession = `-- name: SaveMedicalSession :one
 INSERT INTO medical_sessions (
-    pet_id, 
-    customer_id,
-    employee_id,
-    visit_date,
-    visit_type,
-    diagnosis, 
-    clinic_service,
-    treatment,
-    notes,
-    condition,
-    weight,
-    temperature,
-    heart_rate,
-    respiratory_rate
+    pet_id, customer_id, employee_id, appointment_id,
+    visit_date, visit_type, clinic_service,
+    diagnosis, treatment, notes, condition,
+    weight, temperature, heart_rate, respiratory_rate,
+    symptoms, medications, follow_up_date, is_emergency
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
 )
 RETURNING id, pet_id, customer_id, employee_id, appointment_id, clinic_service, visit_date, visit_type, diagnosis, notes, treatment, condition, weight, temperature, heart_rate, respiratory_rate, symptoms, medications, follow_up_date, is_emergency, created_at, updated_at, deleted_at
 `
@@ -780,10 +981,11 @@ type SaveMedicalSessionParams struct {
 	PetID           int32
 	CustomerID      int32
 	EmployeeID      int32
+	AppointmentID   pgtype.Int4
 	VisitDate       pgtype.Timestamptz
 	VisitType       string
-	Diagnosis       pgtype.Text
 	ClinicService   models.ClinicService
+	Diagnosis       pgtype.Text
 	Treatment       pgtype.Text
 	Notes           pgtype.Text
 	Condition       pgtype.Text
@@ -791,6 +993,10 @@ type SaveMedicalSessionParams struct {
 	Temperature     pgtype.Numeric
 	HeartRate       pgtype.Int4
 	RespiratoryRate pgtype.Int4
+	Symptoms        pgtype.Text
+	Medications     pgtype.Text
+	FollowUpDate    pgtype.Timestamptz
+	IsEmergency     pgtype.Bool
 }
 
 func (q *Queries) SaveMedicalSession(ctx context.Context, arg SaveMedicalSessionParams) (MedicalSession, error) {
@@ -798,10 +1004,11 @@ func (q *Queries) SaveMedicalSession(ctx context.Context, arg SaveMedicalSession
 		arg.PetID,
 		arg.CustomerID,
 		arg.EmployeeID,
+		arg.AppointmentID,
 		arg.VisitDate,
 		arg.VisitType,
-		arg.Diagnosis,
 		arg.ClinicService,
+		arg.Diagnosis,
 		arg.Treatment,
 		arg.Notes,
 		arg.Condition,
@@ -809,6 +1016,10 @@ func (q *Queries) SaveMedicalSession(ctx context.Context, arg SaveMedicalSession
 		arg.Temperature,
 		arg.HeartRate,
 		arg.RespiratoryRate,
+		arg.Symptoms,
+		arg.Medications,
+		arg.FollowUpDate,
+		arg.IsEmergency,
 	)
 	var i MedicalSession
 	err := row.Scan(
@@ -854,21 +1065,12 @@ func (q *Queries) SoftDeleteMedicalSession(ctx context.Context, id int32) error 
 
 const updateMedicalSession = `-- name: UpdateMedicalSession :one
 UPDATE medical_sessions
-SET 
-    pet_id = $2, 
-    customer_id = $3,
-    employee_id = $4,
-    visit_date = $5, 
-    visit_type = $6,
-    diagnosis = $7, 
-    treatment = $8,
-    notes = $9,
-    condition = $10,
-    weight = $11,
-    temperature = $12,
-    heart_rate = $13,
-    respiratory_rate = $14,
-    clinic_service = $15,
+SET
+    pet_id = $2, customer_id = $3, employee_id = $4, appointment_id = $5,
+    visit_date = $6, visit_type = $7, clinic_service = $8,
+    diagnosis = $9, treatment = $10, notes = $11, condition = $12,
+    weight = $13, temperature = $14, heart_rate = $15, respiratory_rate = $16,
+    symptoms = $17, medications = $18, follow_up_date = $19, is_emergency = $20,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, pet_id, customer_id, employee_id, appointment_id, clinic_service, visit_date, visit_type, diagnosis, notes, treatment, condition, weight, temperature, heart_rate, respiratory_rate, symptoms, medications, follow_up_date, is_emergency, created_at, updated_at, deleted_at
@@ -879,8 +1081,10 @@ type UpdateMedicalSessionParams struct {
 	PetID           int32
 	CustomerID      int32
 	EmployeeID      int32
+	AppointmentID   pgtype.Int4
 	VisitDate       pgtype.Timestamptz
 	VisitType       string
+	ClinicService   models.ClinicService
 	Diagnosis       pgtype.Text
 	Treatment       pgtype.Text
 	Notes           pgtype.Text
@@ -889,7 +1093,10 @@ type UpdateMedicalSessionParams struct {
 	Temperature     pgtype.Numeric
 	HeartRate       pgtype.Int4
 	RespiratoryRate pgtype.Int4
-	ClinicService   models.ClinicService
+	Symptoms        pgtype.Text
+	Medications     pgtype.Text
+	FollowUpDate    pgtype.Timestamptz
+	IsEmergency     pgtype.Bool
 }
 
 func (q *Queries) UpdateMedicalSession(ctx context.Context, arg UpdateMedicalSessionParams) (MedicalSession, error) {
@@ -898,8 +1105,10 @@ func (q *Queries) UpdateMedicalSession(ctx context.Context, arg UpdateMedicalSes
 		arg.PetID,
 		arg.CustomerID,
 		arg.EmployeeID,
+		arg.AppointmentID,
 		arg.VisitDate,
 		arg.VisitType,
+		arg.ClinicService,
 		arg.Diagnosis,
 		arg.Treatment,
 		arg.Notes,
@@ -908,7 +1117,10 @@ func (q *Queries) UpdateMedicalSession(ctx context.Context, arg UpdateMedicalSes
 		arg.Temperature,
 		arg.HeartRate,
 		arg.RespiratoryRate,
-		arg.ClinicService,
+		arg.Symptoms,
+		arg.Medications,
+		arg.FollowUpDate,
+		arg.IsEmergency,
 	)
 	var i MedicalSession
 	err := row.Scan(
