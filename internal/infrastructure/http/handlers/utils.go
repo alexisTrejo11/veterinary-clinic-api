@@ -75,6 +75,11 @@ func CustomerIDFromParam(c *gin.Context) (uint, error) {
 	return http.ParseParamToUInt(c, "customer_id")
 }
 
+// CustomerIDFromIDParam returns customer ID from the URL path param "id" (e.g. /customers/:id/appointments).
+func CustomerIDFromIDParam(c *gin.Context) (uint, error) {
+	return http.ParseParamToUInt(c, "id")
+}
+
 // CustomerIDFromContext returns the customer ID for the authenticated user by calling the resolver.
 func CustomerIDFromContext(c *gin.Context, resolver CustomerIDResolver) (uint, error) {
 	userID, err := UserIDFromContext(c)
@@ -105,6 +110,11 @@ type EmployeeIDProvider func(c *gin.Context) (uint, error)
 // EmployeeIDFromParam returns employee_id from the URL path param "employee_id".
 func EmployeeIDFromParam(c *gin.Context) (uint, error) {
 	return http.ParseParamToUInt(c, "employee_id")
+}
+
+// EmployeeIDFromIDParam returns employee ID from the URL path param "id" (e.g. /employees/:id/appointments).
+func EmployeeIDFromIDParam(c *gin.Context) (uint, error) {
+	return http.ParseParamToUInt(c, "id")
 }
 
 // EmployeeIDFromContext returns the employee ID for the authenticated user by calling the resolver.

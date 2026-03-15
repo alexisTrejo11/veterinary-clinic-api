@@ -212,24 +212,24 @@ func (r *APIRouter) appointmentRoutes() {
 		managerAppointments.POST("/:id/not-attend", r.appHandlers.appointment.NotAttendAppointment) // ?employee_id=1
 	}
 
-	// Manager: list appointments by customer (path has customer_id)
-	customersAppointments := r.config.Router.Group("/customers/:customer_id/appointments")
+	// Manager: list appointments by customer (use :id to match /customers/:id)
+	customersAppointments := r.config.Router.Group("/customers/:id/appointments")
 	customersAppointments.Use(r.config.AuthMiddleware.Authenticate())
 	customersAppointments.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{
 		customersAppointments.GET("/", r.appHandlers.appointment.GetAppointmentsByCustomerID)
 	}
 
-	// Manager: list appointments by employee (path has employee_id)
-	employeesAppointments := r.config.Router.Group("/employees/:employee_id/appointments")
+	// Manager: list appointments by employee (use :id to match /employees/:id)
+	employeesAppointments := r.config.Router.Group("/employees/:id/appointments")
 	employeesAppointments.Use(r.config.AuthMiddleware.Authenticate())
 	employeesAppointments.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{
 		employeesAppointments.GET("/", r.appHandlers.appointment.GetAppointmentsByEmployeeID)
 	}
 
-	// Manager: list appointments by pet (path has pet_id)
-	petsAppointments := r.config.Router.Group("/pets/:pet_id/appointments")
+	// Manager: list appointments by pet
+	petsAppointments := r.config.Router.Group("/pets/:id/appointments")
 	petsAppointments.Use(r.config.AuthMiddleware.Authenticate())
 	petsAppointments.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{

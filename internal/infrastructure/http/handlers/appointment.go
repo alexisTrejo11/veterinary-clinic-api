@@ -476,7 +476,7 @@ func (h *AppointmentHandler) GetAppointmentsByCustomerID(c *gin.Context) {
 		if err := http.ShouldBindPageParams(&pageParams, ctx, h.validator); err != nil {
 			return nil, err
 		}
-		return h.getAppointmentsByCustomerIDInternal(ctx, CustomerIDFromParam, pageParams.ToPagination())
+		return h.getAppointmentsByCustomerIDInternal(ctx, CustomerIDFromIDParam, pageParams.ToPagination())
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, res any) {
 		if res == nil {
@@ -495,7 +495,7 @@ func (h *AppointmentHandler) GetAppointmentsByEmployeeID(c *gin.Context) {
 		if err := http.ShouldBindPageParams(&pageParams, ctx, h.validator); err != nil {
 			return nil, err
 		}
-		return h.getAppointmentsByEmployeeIDInternal(ctx, EmployeeIDFromParam, pageParams.ToPagination())
+		return h.getAppointmentsByEmployeeIDInternal(ctx, EmployeeIDFromIDParam, pageParams.ToPagination())
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, res any) {
 		if res == nil {
@@ -510,7 +510,7 @@ func (h *AppointmentHandler) GetAppointmentsByEmployeeID(c *gin.Context) {
 
 func (h *AppointmentHandler) GetAppointmentsByPetID(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
-		petIDRaw, err := http.ParseParamToUInt(c, "pet_id")
+		petIDRaw, err := http.ParseParamToUInt(ctx, "id")
 		if err != nil {
 			return nil, err
 		}

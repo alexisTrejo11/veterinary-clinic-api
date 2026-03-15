@@ -42,32 +42,6 @@ services:
       #timeout: 10s
       #retries: 5
 
-  # MongoDB Service
-  mongodb:
-      container_name: mongodb
-      image: mongo:7.0
-      env_file:
-        - .env
-      environment:
-        MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
-        MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
-        MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
-      ports:
-        - "27017:27017"
-      volumes:
-        - mongodb_data:/data/db
-      networks:
-        - vet_network
-      healthcheck:
-        test: >
-          mongosh --username admin --password mongopassword
-          --authenticationDatabase admin
-          --eval "db.adminCommand({ ping: 1 }).ok"
-          --quiet
-        interval: 10s
-        timeout: 5s
-        start_period: 40s
-        retries: 5
 
   # Redis Service
   redis:
@@ -102,8 +76,6 @@ services:
         condition: service_healthy
       #postgres12_test:
       #  condition: service_healthy
-      mongodb:
-        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
@@ -121,9 +93,6 @@ services:
       - TEST_DB_USER=${POSTGRES_USER}
       - TEST_DB_PASSWORD=${POSTGRES_PASSWORD}
 
-      # MongoDB
-      - MONGODB_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/${MONGO_INITDB_DATABASE}?authSource=admin
-      - MONGODB_DATABASE=${MONGO_INITDB_DATABASE}
 
       # Redis
       - REDIS_HOST=redis
@@ -156,7 +125,5 @@ volumes:
     driver: local
   #gdata_test:
   #  driver: local
-  mongodb_data:
-    driver: local
   redis_data:
     driver: local
