@@ -2,12 +2,18 @@
 package config
 
 import (
+	"clinic-vet-api/internal/infrastructure/http"
+	"clinic-vet-api/internal/middleware"
+	"clinic-vet-api/sqlc"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 // AppSettings holds all application configuration
@@ -51,7 +57,6 @@ type ServerConfig struct {
 type ServicesConfig struct {
 	Twilio TwilioConfig `json:"twilio"`
 	Email  EmailConfig  `json:"email"`
-	Mongo  MongoConfig  `json:"mongo"`
 }
 
 type AppConfig struct {
@@ -152,19 +157,6 @@ func loadServicesConfig(config *ServicesConfig) error {
 		return fmt.Errorf("invalid SMTP_PORT: %w", err)
 	}
 
-	// MongoDB
-	config.Mongo.URI = os.Getenv("MONGO_URI")
-	config.Mongo.Database = getEnvWithDefault("MONGO_DATABASE", "clinic_vet")
-
-	if config.Mongo.URI == "" {
-		return fmt.Errorf("MONGO_URI is required")
-	}
-
-	config.Mongo.Timeout, err = parseDuration("MONGO_TIMEOUT", "10s")
-	if err != nil {
-		return fmt.Errorf("invalid MONGO_TIMEOUT: %w", err)
-	}
-
 	return nil
 }
 
@@ -204,9 +196,6 @@ func (s *AppSettings) Validate() error {
 	if s.Services.Email.SMTPHost == "" {
 		errors = append(errors, "SMTP host is required")
 	}
-	if s.Services.Mongo.URI == "" {
-		errors = append(errors, "MongoDB URI is required")
-	}
 
 	if len(errors) > 0 {
 		return fmt.Errorf("configuration validation failed: %s", strings.Join(errors, "; "))
@@ -228,4 +217,18 @@ func (s *AppSettings) IsProduction() bool {
 // GetServerAddr returns the full server address
 func (s *AppSettings) GetServerAddr() string {
 	return s.Server.Host + ":" + s.Server.Port
+}
+
+func BootstrapAPIModules(
+	routerGroup *gin.RouterGroup,
+	queries *sqlc.Queries,
+	validator *validator.Validate,
+	redis *redis.Client,
+	jwtSecret string,
+) error {
+	authMiddleware := middleware.NewAuthMiddleware(jwtSecret)
+	if err := http.Bootstrap(routerGroup, queries, validator, authMiddleware, redis, jwtSecret); err != nil {
+		return fmt.Errorf("failed to bootstrap API modules: %w", err)
+	}
+	return nil
 }

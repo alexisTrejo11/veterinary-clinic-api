@@ -90,7 +90,7 @@ func (r *SqlcNotificationRepository) FindByUser(ctx context.Context, userID shar
 	return page.NewPage(items, total, pagReq), nil
 }
 
-func (r *SqlcNotificationRepository) FindBySpecies(ctx context.Context, notificationType string, pagination page.Pagination) (page.Page[notifications.Notification], error) {
+func (r *SqlcNotificationRepository) FindByType(ctx context.Context, notificationType string, pagination page.Pagination) (page.Page[notifications.Notification], error) {
 	params := sqlc.FindNotificationsByTypeParams{
 		NotificationType: notificationType,
 		Limit:            pagination.Limit(),

@@ -1,13 +1,23 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
+	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"clinic-vet-api/internal/config"
+	"clinic-vet-api/internal/middleware"
+	"clinic-vet-api/internal/shared/log"
 	"clinic-vet-api/sqlc"
 
 	_ "clinic-vet-api/docs"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -21,7 +31,6 @@ type Application struct {
 	Queries   *sqlc.Queries
 }
 
-/*
 // @title API Clínica Veterinaria
 // @version 1.0
 // @description Esta es la documentación para la API de la clínica veterinaria.
@@ -123,9 +132,6 @@ func initializeExternalServices(settings *config.AppSettings) error {
 	// Initialize Redis
 	config.InitRedis(settings.Redis)
 
-	// MongoDB is initialized in setupModules since it's passed to specific modules
-	config.InitMongoDB(settings.Services.Mongo)
-
 	return nil
 }
 
@@ -157,7 +163,7 @@ func setupRouter(settings *config.AppSettings) *gin.Engine {
 
 	// Swagger documentation (only in development)
 	if settings.App.EnableSwagger && !settings.IsProduction() {
-		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+		//router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 		log.App.Info("Swagger UI available at http://" + settings.GetServerAddr() + "/swagger/index.html")
 	}
 
@@ -186,15 +192,12 @@ func setupCORS(settings *config.AppSettings) gin.HandlerFunc {
 
 // setupModules initializes and registers all application modules
 func setupModules(router *gin.Engine, settings *config.AppSettings, queries *sqlc.Queries, validator *validator.Validate) error {
-	// Initialize MongoDB for notification module
-	mongoClient := config.InitMongoDB(settings.Services.Mongo)
 
 	// Setup notification module
 	routerGroup := router.Group("/api/v2")
-	notificationService := notiAPI.SetupNotificationModule(routerGroup, mongoClient, settings.Services.Email, config.GetTwilioClient())
 
 	// Bootstrap other API modules
-	if err := config.BootstrapAPIModules(routerGroup, queries, notificationService, validator, config.RedisClient, settings.Auth.JWTSecret); err != nil {
+	if err := config.BootstrapAPIModules(routerGroup, queries, validator, config.RedisClient, settings.Auth.JWTSecret); err != nil {
 		return fmt.Errorf("failed to bootstrap API modules: %w", err)
 	}
 
@@ -281,10 +284,6 @@ func (app *Application) waitForShutdown(ctx context.Context) {
 
 // cleanup handles cleanup of resources
 func (app *Application) cleanup() {
-	// Close MongoDB connection
-	if err := config.CloseMongoDB(); err != nil {
-		log.App.Error(fmt.Sprintf("Error closing MongoDB: %v", err))
-	}
 
 	// Close Redis connection
 	if err := config.CloseRedis(); err != nil {
@@ -323,4 +322,3 @@ func getEnvWithDefault(key, defaultValue string) string {
 	}
 	return defaultValue
 }
-*/

@@ -2,26 +2,23 @@ package http
 
 import (
 	"clinic-vet-api/internal/infrastructure/http/handlers"
-	"clinic-vet-api/internal/middleware"
 	"errors"
-
-	"github.com/gin-gonic/gin"
 )
 
 type APIRouter struct {
-	routerGroup    *gin.RouterGroup
-	appHandlers    *AppHandlers
-	authMiddleware *middleware.AuthMiddleware
+	appHandlers *AppHandlers
+	config      *APIConfig
 }
 
 type AppHandlers struct {
-	auth        *handlers.AuthHandler
-	user        *handlers.UserHandler
-	pets        *handlers.PetHandler
-	profile     *handlers.ProfileHandler
-	appointment *handlers.AppointmentHandler
-	customer    *handlers.CustomerHandler
-	employee    *handlers.EmployeeHandler
+	address      *handlers.AddressHandler
+	auth         *handlers.AuthHandler
+	user         *handlers.UserHandler
+	pets         *handlers.PetHandler
+	profile      *handlers.ProfileHandler
+	appointment  *handlers.AppointmentHandler
+	customer     *handlers.CustomerHandler
+	employee     *handlers.EmployeeHandler
 	payment      *handlers.PaymentHandler
 	medical      *handlers.MedicalHandler
 	notification *handlers.NotificationHandler
@@ -31,16 +28,19 @@ func (r *APIRouter) Validate() error {
 	if r.appHandlers.auth == nil {
 		return errors.New("auth handler is required")
 	}
-	if r.authMiddleware == nil {
+	if r.config.AuthMiddleware == nil {
 		return errors.New("auth middleware is required")
 	}
-	if r.routerGroup == nil {
+	if r.config.Router == nil {
 		return errors.New("router group is required")
 	}
 	return nil
 }
 
 func (a *AppHandlers) Validate() error {
+	if a.address == nil {
+		return errors.New("address handler is required")
+	}
 	if a.auth == nil {
 		return errors.New("auth handler is required")
 	}
@@ -70,13 +70,11 @@ func (a *AppHandlers) Validate() error {
 
 func NewAPIRouter(
 	appHandlers *AppHandlers,
-	authMiddleware *middleware.AuthMiddleware,
-	routerGroup *gin.RouterGroup,
+	config *APIConfig,
 ) (*APIRouter, error) {
 	router := &APIRouter{
-		appHandlers:    appHandlers,
-		authMiddleware: authMiddleware,
-		routerGroup:    routerGroup,
+		appHandlers: appHandlers,
+		config:      config,
 	}
 
 	if err := router.Validate(); err != nil {
@@ -91,6 +89,8 @@ func (r *APIRouter) RegisterRoutes() {
 	r.authRoutes()
 	r.profileRoutes()
 	r.userRoutes()
+	r.customerRoutes()
+	r.employeeRoutes()
 	r.appointmentRoutes()
 	r.medicalRoutes()
 	r.notificationRoutes()
@@ -102,31 +102,31 @@ func (r *APIRouter) RegisterRoutes() {
 
 func (r *APIRouter) authRoutes() {
 
-	publicAuthRoutes := r.routerGroup.Group("/auth")
+	publicAuthRoutes := r.config.Router.Group("/auth")
 	{
 		publicAuthRoutes.POST("/register", r.appHandlers.auth.Register)
 		publicAuthRoutes.POST("/login", r.appHandlers.auth.Login)
 		publicAuthRoutes.POST("/activate", r.appHandlers.auth.ActivateAccount)
 	}
 
-	authenticatedAuthRoutes := r.routerGroup.Group("/auth")
-	authenticatedAuthRoutes.Use(r.authMiddleware.Authenticate())
+	authenticatedAuthRoutes := r.config.Router.Group("/auth")
+	authenticatedAuthRoutes.Use(r.config.AuthMiddleware.Authenticate())
 	{
 		authenticatedAuthRoutes.POST("/logout", r.appHandlers.auth.Logout)
 		authenticatedAuthRoutes.POST("/logout-all", r.appHandlers.auth.LogoutAll)
 		authenticatedAuthRoutes.POST("/refresh", r.appHandlers.auth.RefreshToken)
 	}
 
-	twoFactorAuthRoutes := r.routerGroup.Group("/auth/2fa")
-	twoFactorAuthRoutes.Use(r.authMiddleware.Authenticate())
+	twoFactorAuthRoutes := r.config.Router.Group("/auth/2fa")
+	twoFactorAuthRoutes.Use(r.config.AuthMiddleware.Authenticate())
 	{
 		twoFactorAuthRoutes.POST("/verify", r.appHandlers.auth.VerifyTwoFactor)
 		twoFactorAuthRoutes.POST("/enable", r.appHandlers.auth.EnableTwoFactor)
 		twoFactorAuthRoutes.POST("/disable", r.appHandlers.auth.DisableTwoFactor)
 	}
 
-	resetPasswordAuthRoutes := r.routerGroup.Group("/auth/reset-password")
-	resetPasswordAuthRoutes.Use(r.authMiddleware.Authenticate())
+	resetPasswordAuthRoutes := r.config.Router.Group("/auth/reset-password")
+	resetPasswordAuthRoutes.Use(r.config.AuthMiddleware.Authenticate())
 	{
 		resetPasswordAuthRoutes.POST("/request", r.appHandlers.auth.RequestResetPassword)
 		resetPasswordAuthRoutes.POST("/reset", r.appHandlers.auth.ResetPassword)
@@ -138,8 +138,8 @@ func (r *APIRouter) authRoutes() {
 // ------------------------------------------------------------
 
 func (r *APIRouter) profileRoutes() {
-	profileRoutes := r.routerGroup.Group("/profile")
-	profileRoutes.Use(r.authMiddleware.Authenticate())
+	profileRoutes := r.config.Router.Group("/profile")
+	profileRoutes.Use(r.config.AuthMiddleware.Authenticate())
 	{
 		profileRoutes.GET("/", r.appHandlers.profile.GetProfile)
 		profileRoutes.PUT("/", r.appHandlers.profile.UpdateProfile)
@@ -151,9 +151,9 @@ func (r *APIRouter) profileRoutes() {
 // ------------------------------------------------------------
 
 func (r *APIRouter) userRoutes() {
-	userRoutes := r.routerGroup.Group("/users")
-	userRoutes.Use(r.authMiddleware.Authenticate())
-	userRoutes.Use(r.authMiddleware.RequireAnyRole("admin", "manager"))
+	userRoutes := r.config.Router.Group("/users")
+	userRoutes.Use(r.config.AuthMiddleware.Authenticate())
+	userRoutes.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{
 		userRoutes.GET("/", r.appHandlers.user.SearchUsers)
 		userRoutes.GET("/:id", r.appHandlers.user.GetUserByID)
@@ -170,9 +170,9 @@ func (r *APIRouter) userRoutes() {
 
 func (r *APIRouter) appointmentRoutes() {
 	// ----- Customer: "my" appointments (customer sees only their own) -----
-	meAppointments := r.routerGroup.Group("/me/appointments")
-	meAppointments.Use(r.authMiddleware.Authenticate())
-	meAppointments.Use(r.authMiddleware.RequireAnyRole("customer"))
+	meAppointments := r.config.Router.Group("/me/appointments")
+	meAppointments.Use(r.config.AuthMiddleware.Authenticate())
+	meAppointments.Use(r.config.AuthMiddleware.RequireAnyRole("customer"))
 	{
 		meAppointments.GET("/", r.appHandlers.appointment.GetMyAppointments)
 		meAppointments.GET("/:id", r.appHandlers.appointment.GetMyAppointment)
@@ -180,9 +180,9 @@ func (r *APIRouter) appointmentRoutes() {
 	}
 
 	// ----- Employee: "my" assigned appointments (employee sees only their own) -----
-	employeeAppointments := r.routerGroup.Group("/employees/appointments")
-	employeeAppointments.Use(r.authMiddleware.Authenticate())
-	employeeAppointments.Use(r.authMiddleware.RequireAnyRole("employee", "manager"))
+	employeeAppointments := r.config.Router.Group("/employees/appointments")
+	employeeAppointments.Use(r.config.AuthMiddleware.Authenticate())
+	employeeAppointments.Use(r.config.AuthMiddleware.RequireAnyRole("employee", "manager"))
 	{
 		employeeAppointments.GET("/", r.appHandlers.appointment.GetMyAppointmentsAsEmployee)
 		employeeAppointments.GET("/:id", r.appHandlers.appointment.GetMyAppointmentAsEmployee)
@@ -196,9 +196,9 @@ func (r *APIRouter) appointmentRoutes() {
 	}
 
 	// ----- Manager/Admin: all appointments (search, CRUD, by customer/employee/pet) -----
-	managerAppointments := r.routerGroup.Group("/appointments")
-	managerAppointments.Use(r.authMiddleware.Authenticate())
-	managerAppointments.Use(r.authMiddleware.RequireAnyRole("admin", "manager"))
+	managerAppointments := r.config.Router.Group("/appointments")
+	managerAppointments.Use(r.config.AuthMiddleware.Authenticate())
+	managerAppointments.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{
 		managerAppointments.GET("/", r.appHandlers.appointment.SearchAppointments)
 		managerAppointments.GET("/:id", r.appHandlers.appointment.GetAppointmentByID)
@@ -213,25 +213,25 @@ func (r *APIRouter) appointmentRoutes() {
 	}
 
 	// Manager: list appointments by customer (path has customer_id)
-	customersAppointments := r.routerGroup.Group("/customers/:customer_id/appointments")
-	customersAppointments.Use(r.authMiddleware.Authenticate())
-	customersAppointments.Use(r.authMiddleware.RequireAnyRole("admin", "manager"))
+	customersAppointments := r.config.Router.Group("/customers/:customer_id/appointments")
+	customersAppointments.Use(r.config.AuthMiddleware.Authenticate())
+	customersAppointments.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{
 		customersAppointments.GET("/", r.appHandlers.appointment.GetAppointmentsByCustomerID)
 	}
 
 	// Manager: list appointments by employee (path has employee_id)
-	employeesAppointments := r.routerGroup.Group("/employees/:employee_id/appointments")
-	employeesAppointments.Use(r.authMiddleware.Authenticate())
-	employeesAppointments.Use(r.authMiddleware.RequireAnyRole("admin", "manager"))
+	employeesAppointments := r.config.Router.Group("/employees/:employee_id/appointments")
+	employeesAppointments.Use(r.config.AuthMiddleware.Authenticate())
+	employeesAppointments.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{
 		employeesAppointments.GET("/", r.appHandlers.appointment.GetAppointmentsByEmployeeID)
 	}
 
 	// Manager: list appointments by pet (path has pet_id)
-	petsAppointments := r.routerGroup.Group("/pets/:pet_id/appointments")
-	petsAppointments.Use(r.authMiddleware.Authenticate())
-	petsAppointments.Use(r.authMiddleware.RequireAnyRole("admin", "manager"))
+	petsAppointments := r.config.Router.Group("/pets/:pet_id/appointments")
+	petsAppointments.Use(r.config.AuthMiddleware.Authenticate())
+	petsAppointments.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{
 		petsAppointments.GET("/", r.appHandlers.appointment.GetAppointmentsByPetID)
 	}
@@ -242,9 +242,9 @@ func (r *APIRouter) appointmentRoutes() {
 // ------------------------------------------------------------
 
 func (r *APIRouter) customerRoutes() {
-	customerRoutes := r.routerGroup.Group("/customers")
-	customerRoutes.Use(r.authMiddleware.Authenticate())
-	customerRoutes.Use(r.authMiddleware.RequireAnyRole("admin", "manager"))
+	customerRoutes := r.config.Router.Group("/customers")
+	customerRoutes.Use(r.config.AuthMiddleware.Authenticate())
+	customerRoutes.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{
 		customerRoutes.GET("/", r.appHandlers.customer.SearchCustomers)
 		customerRoutes.GET("/:id", r.appHandlers.customer.GetCustomerByID)
@@ -260,9 +260,9 @@ func (r *APIRouter) customerRoutes() {
 // ------------------------------------------------------------
 
 func (r *APIRouter) employeeRoutes() {
-	employeeRoutes := r.routerGroup.Group("/employees")
-	employeeRoutes.Use(r.authMiddleware.Authenticate())
-	employeeRoutes.Use(r.authMiddleware.RequireAnyRole("admin", "manager"))
+	employeeRoutes := r.config.Router.Group("/employees")
+	employeeRoutes.Use(r.config.AuthMiddleware.Authenticate())
+	employeeRoutes.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{
 		employeeRoutes.GET("/", r.appHandlers.employee.SearchEmployees)
 		employeeRoutes.GET("/:id", r.appHandlers.employee.GetEmployeeByID)
@@ -284,9 +284,9 @@ func (r *APIRouter) medicalRoutes() {
 	m := r.appHandlers.medical
 
 	// Customer: read-only (my sessions, my pets’ data)
-	meMedical := r.routerGroup.Group("/me/medical")
-	meMedical.Use(r.authMiddleware.Authenticate())
-	meMedical.Use(r.authMiddleware.RequireAnyRole("customer"))
+	meMedical := r.config.Router.Group("/me/medical")
+	meMedical.Use(r.config.AuthMiddleware.Authenticate())
+	meMedical.Use(r.config.AuthMiddleware.RequireAnyRole("customer"))
 	{
 		meMedical.GET("/sessions", m.GetMySessions)
 		meMedical.GET("/sessions/:id/full", m.GetMySessionFull)
@@ -298,9 +298,9 @@ func (r *APIRouter) medicalRoutes() {
 	}
 
 	// Staff (employee + manager): read and write
-	medical := r.routerGroup.Group("/medical")
-	medical.Use(r.authMiddleware.Authenticate())
-	medical.Use(r.authMiddleware.RequireAnyRole("employee", "manager", "admin"))
+	medical := r.config.Router.Group("/medical")
+	medical.Use(r.config.AuthMiddleware.Authenticate())
+	medical.Use(r.config.AuthMiddleware.RequireAnyRole("employee", "manager", "admin"))
 	{
 		// Sessions (more specific routes first)
 		medical.GET("/sessions", m.GetSessionsBySpecification)
@@ -375,18 +375,18 @@ func (r *APIRouter) notificationRoutes() {
 	n := r.appHandlers.notification
 
 	// Customer: read-only (my notifications)
-	meNotif := r.routerGroup.Group("/me/notifications")
-	meNotif.Use(r.authMiddleware.Authenticate())
-	meNotif.Use(r.authMiddleware.RequireAnyRole("customer", "employee", "manager", "admin"))
+	meNotif := r.config.Router.Group("/me/notifications")
+	meNotif.Use(r.config.AuthMiddleware.Authenticate())
+	meNotif.Use(r.config.AuthMiddleware.RequireAnyRole("customer", "employee", "manager", "admin"))
 	{
 		meNotif.GET("", n.GetMyNotifications)
 		meNotif.GET("/:id", n.GetMyNotificationByID)
 	}
 
 	// Staff: monitoring (by type, channel, id, summary) + manual send
-	notif := r.routerGroup.Group("/notifications")
-	notif.Use(r.authMiddleware.Authenticate())
-	notif.Use(r.authMiddleware.RequireAnyRole("employee", "manager", "admin"))
+	notif := r.config.Router.Group("/notifications")
+	notif.Use(r.config.AuthMiddleware.Authenticate())
+	notif.Use(r.config.AuthMiddleware.RequireAnyRole("employee", "manager", "admin"))
 	{
 		notif.GET("/type/:type", n.GetNotificationsByType)
 		notif.GET("/channel/:channel", n.GetNotificationsByChannel)
