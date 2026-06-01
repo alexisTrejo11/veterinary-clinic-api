@@ -329,3 +329,10 @@ No license file is included yet. Add a `LICENSE` file before distributing or pub
 | Overview | [docs/project/generated/ProjectOverview.md](docs/project/generated/ProjectOverview.md) |
 | API reference (generated) | [docs/project/generated/APISchema.md](docs/project/generated/APISchema.md) |
 | Health (placeholder) | https://api.vet-clinic.example.com/health |
+
+
+# Run Migration manually
+
+```bash
+migrate -path db/migrations -database "postgresql://user:password@localhost/vet_database?sslmode=disable" up
+```

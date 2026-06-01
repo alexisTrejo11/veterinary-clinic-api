@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
+
+	"clinic-vet-api/internal/config"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -14,25 +15,19 @@ import (
 )
 
 func main() {
-	dbHost := getEnv("DB_HOST", "postgres12")
-	dbPort := getEnv("DB_PORT", "5432")
-	dbName := getEnv("DB_NAME", "vet_database")
-	dbUser := getEnv("DB_USER", "postgres")
-	dbPassword := getEnv("DB_PASSWORD", "root")
-
-	databaseURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
-		dbUser, dbPassword, dbHost, dbPort, dbName)
-
-	fmt.Printf("Running migrations on: %s\n", databaseURL)
-
-	// Wait for database to be ready
-	if err := waitForDatabase(databaseURL, 30*time.Second); err != nil {
-		log.Fatalf("❌ Database not ready: %v", err)
+	databaseURL, err := config.ResolveDatabaseURL()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// Run migrations
+	fmt.Println("Running migrations...")
+
+	if err := waitForDatabase(databaseURL, 30*time.Second); err != nil {
+		log.Fatalf("database not ready: %v", err)
+	}
+
 	if err := runMigrations(databaseURL); err != nil {
-		log.Fatalf("❌ Migration failed: %v", err)
+		log.Fatalf("migration failed: %v", err)
 	}
 
 	fmt.Println("Migrations completed successfully!")
@@ -74,11 +69,4 @@ func waitForDatabase(databaseURL string, timeout time.Duration) error {
 			time.Sleep(2 * time.Second)
 		}
 	}
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }

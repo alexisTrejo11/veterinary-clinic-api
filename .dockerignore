@@ -1,11 +1,19 @@
 .git
 .gitignore
-Dockerfile
-docker-compose.yml
+.env
+.env.*
+!.env.example
+docker/compose*.yml
+docker/README.md
 node_modules
 *.log
 dist
 coverage
 .idea
 .vscode
-EOF
+logs
+*.md
+# Keep docs/docs.go (Swagger) for the build; exclude project documentation only
+docs/project
+docs/generated
+docs/api

@@ -3,20 +3,20 @@
 -- WARNING: This script is for demonstration purposes only. Do not use in production.
 
 -- Insert demo users (password is 'password123' hashed with bcrypt)
-INSERT INTO users (email, phone_number, password, status, role, last_login) VALUES
+INSERT INTO users (email, phone_number, hashed_password, status, role, last_login, name) VALUES
 -- Veterinarians
-('dr.martinez@vetclinic.com', '+52-555-0001', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'veterinarian', '2024-01-15 08:30:00'),
-('dr.garcia@vetclinic.com', '+52-555-0002', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'veterinarian', '2024-01-15 09:15:00'),
-('dr.rodriguez@vetclinic.com', '+52-555-0003', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'veterinarian', '2024-01-14 14:20:00'),
+('dr.martinez@vetclinic.com', '+52-555-0001', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'veterinarian', '2024-01-15 08:30:00', 'Dr. Martinez'),
+('dr.garcia@vetclinic.com', '+52-555-0002', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'veterinarian', '2024-01-15 09:15:00', 'Dr. Garcia'),
+('dr.rodriguez@vetclinic.com', '+52-555-0003', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'veterinarian', '2024-01-14 14:20:00', 'Dr. Rodriguez'),
 -- Receptionists and Admin
-('admin@vetclinic.com', '+52-555-0004', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'admin', '2024-01-15 07:45:00'),
-('recepcion@vetclinic.com', '+52-555-0005', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'receptionist', '2024-01-15 08:00:00'),
+('admin@vetclinic.com', '+52-555-0004', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'admin', '2024-01-15 07:45:00', 'Admin User'),
+('recepcion@vetclinic.com', '+52-555-0005', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'receptionist', '2024-01-15 08:00:00', 'Recepcion'),
 -- Customers
-('juan.lopez@email.com', '+52-555-1001', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', '2024-01-14 18:30:00'),
-('maria.gonzalez@email.com', '+52-555-1002', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', '2024-01-13 20:15:00'),
-('carlos.hernandez@email.com', '+52-555-1003', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', '2024-01-12 16:45:00'),
-('ana.flores@email.com', '+52-555-1004', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', '2024-01-15 12:20:00'),
-('pedro.silva@email.com', '+52-555-1005', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', NULL);
+('juan.lopez@email.com', '+52-555-1001', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', '2024-01-14 18:30:00', 'Juan Lopez'),
+('maria.gonzalez@email.com', '+52-555-1002', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', '2024-01-13 20:15:00', 'Maria Gonzalez'),
+('carlos.hernandez@email.com', '+52-555-1003', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', '2024-01-12 16:45:00', 'Carlos Hernandez'),
+('ana.flores@email.com', '+52-555-1004', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', '2024-01-15 12:20:00', 'Ana Flores'),
+('pedro.silva@email.com', '+52-555-1005', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'active', 'customer', NULL, 'Pedro Silva');
 
 -- Insert demo customers
 INSERT INTO customers (first_name, last_name, photo, date_of_birth, gender, user_id, is_active) VALUES

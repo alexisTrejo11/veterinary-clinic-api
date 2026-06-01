@@ -78,30 +78,30 @@ func ClosePgxPool() {
 }
 
 func loadDatabaseConfig(config *DatabaseConfig) error {
-	config.URL = os.Getenv("DATABASE_URL")
-	if config.URL == "" {
-		return fmt.Errorf("DATABASE_URL is required")
+	dbURL, err := ResolveDatabaseURL()
+	if err != nil {
+		return err
+	}
+	config.URL = dbURL
+
+	config.MaxOpenConns, err = parseIntWithDefault("DATABASE_MAX_OPEN_CONNS", 25)
+	if err != nil {
+		return fmt.Errorf("invalid DATABASE_MAX_OPEN_CONNS: %w", err)
 	}
 
-	var err error
-	config.MaxOpenConns, err = parseIntWithDefault("DB_MAX_OPEN_CONNS", 25)
+	config.MaxIdleConns, err = parseIntWithDefault("DATABASE_MAX_IDLE_CONNS", 5)
 	if err != nil {
-		return fmt.Errorf("invalid DB_MAX_OPEN_CONNS: %w", err)
+		return fmt.Errorf("invalid DATABASE_MAX_IDLE_CONNS: %w", err)
 	}
 
-	config.MaxIdleConns, err = parseIntWithDefault("DB_MAX_IDLE_CONNS", 5)
+	config.ConnMaxLifetime, err = parseDuration("DATABASE_CONN_MAX_LIFETIME", "1h")
 	if err != nil {
-		return fmt.Errorf("invalid DB_MAX_IDLE_CONNS: %w", err)
+		return fmt.Errorf("invalid DATABASE_CONN_MAX_LIFETIME: %w", err)
 	}
 
-	config.ConnMaxLifetime, err = parseDuration("DB_CONN_MAX_LIFETIME", "1h")
+	config.ConnMaxIdleTime, err = parseDuration("DATABASE_CONN_MAX_IDLE_TIME", "30m")
 	if err != nil {
-		return fmt.Errorf("invalid DB_CONN_MAX_LIFETIME: %w", err)
-	}
-
-	config.ConnMaxIdleTime, err = parseDuration("DB_CONN_MAX_IDLE_TIME", "30m")
-	if err != nil {
-		return fmt.Errorf("invalid DB_CONN_MAX_IDLE_TIME: %w", err)
+		return fmt.Errorf("invalid DATABASE_CONN_MAX_IDLE_TIME: %w", err)
 	}
 
 	return nil

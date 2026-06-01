@@ -6,13 +6,14 @@ import (
 	"os"
 	"time"
 
+	"clinic-vet-api/internal/shared/rediskeys"
+
 	"github.com/redis/go-redis/v9"
 )
 
 type RedisConfig struct {
-	URL      string `json:"url"`
-	Password string `json:"password"`
-	DB       int    `json:"db"`
+	URL       string `json:"url"`
+	KeyPrefix string `json:"key_prefix"`
 }
 
 var RedisClient *redis.Client
@@ -22,15 +23,7 @@ func loadRedisConfig(config *RedisConfig) error {
 	if config.URL == "" {
 		return fmt.Errorf("REDIS_URL is required")
 	}
-
-	config.Password = getEnvWithDefault("REDIS_PASSWORD", "")
-
-	var err error
-	config.DB, err = parseIntWithDefault("REDIS_DB", 0)
-	if err != nil {
-		return fmt.Errorf("invalid REDIS_DB: %w", err)
-	}
-
+	config.KeyPrefix = getEnvWithDefault("REDIS_KEY_PREFIX", "vet-clinic-api")
 	return nil
 }
 
@@ -39,19 +32,23 @@ func InitRedis(config RedisConfig) {
 		panic("REDIS_URL environment variable is not set")
 	}
 
+	rediskeys.Init(config.KeyPrefix)
+
 	opt, err := redis.ParseURL(config.URL)
 	if err != nil {
 		panic(err)
 	}
 	RedisClient = redis.NewClient(opt)
+	if rediskeys.Prefix() != "" {
+		RedisClient.AddHook(keyPrefixHook{})
+	}
 
-	// Verify connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := RedisClient.Ping(ctx).Err(); err != nil {
 		panic(fmt.Sprintf("Failed to connect to Redis: %v", err))
 	}
-	fmt.Println("Successfully connected to Redis!")
+	fmt.Printf("Successfully connected to Redis (key prefix: %q)!\n", rediskeys.Prefix())
 }
 
 // CloseRedis closes the Redis connection gracefully

@@ -1,0 +1,82 @@
+# Local profile: PostgreSQL, Redis, and API (full stack)
+#
+# The API service overrides DATABASE_URL and REDIS_URL so the app always talks to
+# the postgres12 and redis containers on the Docker network — regardless of
+# localhost / cloud values in your .env (used for go run on the host or dev profile).
+#
+# Start from repo root:
+#   docker compose --env-file .env -f docker/compose.local.yml up --build
+name: vet-clinic-local
+
+services:
+  postgres12:
+    container_name: postgres12
+    image: postgres:12-alpine
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME:-vet_database}
+    ports:
+      - "${POSTGRES_PUBLISHED_PORT:-5431}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - vet_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PUBLISHED_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vet_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+
+  api:
+    container_name: clinical_vet_api
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    ports:
+      - "${SERVER_PORT:-8000}:8000"
+    restart: unless-stopped
+    depends_on:
+      postgres12:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vet_network
+    environment:
+      SERVER_PORT: "8000"
+      SKIP_MIGRATIONS: ${SKIP_MIGRATIONS:-false}
+      SKIP_DB_WAIT: ${SKIP_DB_WAIT:-false}
+      # --- In-network overrides (win over env_file; dev profile is unchanged) ---
+      DATABASE_URL: postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres12:5432/${DATABASE_NAME:-vet_database}?sslmode=disable
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/${REDIS_DB:-0}
+
+networks:
+  vet_network:
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local
+  redis_data:
+    driver: local
