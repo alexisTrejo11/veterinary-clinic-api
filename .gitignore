@@ -25,5 +25,10 @@ go.work.sum
 
 ./docs/api/
 
+/logs/
+*.log
+.DS_Store
+
+.env
+.env.*
 /certs
-/logs
