@@ -21,14 +21,29 @@
 go.work
 go.work.sum
 
-.env
-
-./docs/api/
-
-/logs/
-*.log
-.DS_Store
-
+# Env & secrets
 .env
 .env.*
+!.env.example
 /certs
+
+# Logs
+/logs/
+*.log
+
+# OS / IDE
+.DS_Store
+**/.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Build / tooling outputs
+/docs/api/
+**/build/
+build/
+.gradle/
+**/bin/
+*.class
+*.jar
+!**/gradle-wrapper.jar
