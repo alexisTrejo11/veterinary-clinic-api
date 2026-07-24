@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
+	"clinic-vet-api/database/sqlc"
 	"clinic-vet-api/internal/config"
 	"clinic-vet-api/internal/middleware"
 	"clinic-vet-api/internal/shared/log"
-	"clinic-vet-api/database/sqlc"
 
 	_ "clinic-vet-api/docs"
 
@@ -164,9 +164,6 @@ func setupRouter(settings *config.AppSettings) *gin.Engine {
 		router.Use(middleware.RateLimiter(rateLimitConfig))
 	}
 
-	// Health check endpoint
-	router.GET("/health", healthCheck)
-
 	// Swagger documentation (only in development)
 	if settings.App.EnableSwagger && !settings.IsProduction() {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
@@ -299,28 +296,4 @@ func (app *Application) cleanup() {
 	config.SyncLogger()
 
 	log.App.Info("Cleanup completed")
-}
-
-// Health check endpoint
-// @Summary Health Check
-// @Description Check if the API is running
-// @Tags health
-// @Accept json
-// @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Router /health [get]
-func healthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status":    "ok",
-		"timestamp": time.Now().Unix(),
-		"service":   "clinic-vet-api",
-		"version":   getEnvWithDefault("APP_VERSION", "2.0.0"),
-	})
-}
-
-func getEnvWithDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }

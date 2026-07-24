@@ -1,11 +1,11 @@
 package repository
 
 import (
+	"clinic-vet-api/database/sqlc"
 	"clinic-vet-api/internal/core/pets"
 	customErr "clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/database/sqlc"
 	"context"
 	"database/sql"
 	"errors"
@@ -168,7 +168,7 @@ func (r *PetSqlcRepository) FindByIDAndCustomerID(ctx context.Context, id pets.P
 	sqlRow, err := r.queries.FindPetByIDAndCustomerID(ctx, params)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return pets.Pet{}, r.notFoundError("id and customer_id", fmt.Sprintf("%s and %s", id.String(), customerID))
+			return pets.Pet{}, r.notFoundError("id and customer_id", fmt.Sprintf("%s and %d", id.String(), customerID))
 		}
 		return pets.Pet{}, r.dbError(OpSelect, ErrMsgFindPetByIDAndCustomerID, err)
 	}
@@ -259,18 +259,18 @@ func (r *PetSqlcRepository) wrapConversionError(err error) error {
 
 func (r *PetSqlcRepository) rowToEntity(row sqlc.Pet) pets.Pet {
 	pet := pets.Pet{
-		Name:        row.Name,
-		Photo:       r.pgMap.PgText.ToStringPtr(row.Photo),
-		Species:     pets.PetSpecies(row.Species),
-		Breed:       r.pgMap.PgText.ToStringPtr(row.Breed),
-		Age:         r.pgMap.PgInt2.ToIntPtr(row.Age),
-		Gender:      pets.PetGender(r.pgMap.PgText.ToString(row.Gender)),
-		Color:       r.pgMap.PgText.ToStringPtr(row.Color),
-		MicrochipID: r.pgMap.PgText.ToStringPtr(row.Microchip),
-		BloodType:   r.pgMap.PgText.ToStringPtr(row.BloodType),
-		IsNeutered:  r.pgMap.PgBool.ToBoolPtr(row.IsNeutered),
-		CustomerID:  uint(row.CustomerID),
-		IsActive:    row.IsActive,
+		Name:                  row.Name,
+		Photo:                 r.pgMap.PgText.ToStringPtr(row.Photo),
+		Species:               pets.PetSpecies(row.Species),
+		Breed:                 r.pgMap.PgText.ToStringPtr(row.Breed),
+		Age:                   r.pgMap.PgInt2.ToIntPtr(row.Age),
+		Gender:                pets.PetGender(r.pgMap.PgText.ToString(row.Gender)),
+		Color:                 r.pgMap.PgText.ToStringPtr(row.Color),
+		MicrochipID:           r.pgMap.PgText.ToStringPtr(row.Microchip),
+		BloodType:             r.pgMap.PgText.ToStringPtr(row.BloodType),
+		IsNeutered:            r.pgMap.PgBool.ToBoolPtr(row.IsNeutered),
+		CustomerID:            uint(row.CustomerID),
+		IsActive:              row.IsActive,
 		Allergies:             r.pgMap.PgText.ToStringPtr(row.Allergies),
 		CurrentMedications:    r.pgMap.PgText.ToStringPtr(row.CurrentMedications),
 		SpecialNeeds:          r.pgMap.PgText.ToStringPtr(row.SpecialNeeds),

@@ -22,6 +22,7 @@ type AppHandlers struct {
 	payment      *handlers.PaymentHandler
 	medical      *handlers.MedicalHandler
 	notification *handlers.NotificationHandler
+	home         *handlers.HomeHandler
 }
 
 func (r *APIRouter) Validate() error {
@@ -394,4 +395,13 @@ func (r *APIRouter) notificationRoutes() {
 		notif.GET("/:id", n.GetNotificationByID)
 		notif.POST("", n.SendNotification)
 	}
+}
+
+// ------------------------------------------------------------
+// Home Routes
+// ------------------------------------------------------------
+
+func (r *APIRouter) homeRoutes() {
+	homeRoutes := r.config.Router.Group("")
+	homeRoutes.GET("/health", r.appHandlers.home.HealthCheck)
 }

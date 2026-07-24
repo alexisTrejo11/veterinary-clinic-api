@@ -1,3 +1,19 @@
+# Build → test → publish to GHCR → deploy over Cloudflare Access SSH.
+#
+# Required repository secrets:
+#   SSH_HOST              Cloudflare Access SSH hostname
+#   SSH_USER              SSH user on the remote host
+#   SSH_PRIVATE_KEY       Private key for that user
+#   CF_CLIENT_ID          Cloudflare Access service token client id
+#   CF_CLIENT_SECRET      Cloudflare Access service token client secret
+#   GHCR_TOKEN            PAT (or fine-grained token) with read:packages
+#   DEPLOY_PATH           Remote deploy directory (e.g. ~/homelab/deploys/servers/veterinary-clinic)
+#
+# Optional:
+#   GHCR_USER             GHCR username (defaults to github.repository_owner)
+
+name: CI/CD
+
 on:
   push:
     branches:
@@ -8,50 +24,60 @@ on:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
+  GO_VERSION: "1.24.0"
 
 jobs:
-  build:
+  # ---------------------------------------------------------------------------
+  # CI — build and test on every PR and push to main
+  # ---------------------------------------------------------------------------
+  ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.20
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Download modules
+        run: go mod download
+
       - name: Build
-        run: go build ./...
-      - name: Test
-        run: go test ./...
-      - name: Lint
-        run: go lint ./...
-      - name: Format
-        run: go fmt ./...
-      - name: Security
-        run: go sec ./...
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.20
+        run: go build -o /dev/null ./cmd/api
+
       - name: Test
         run: go test ./...
 
+      - name: Vet
+        run: go vet ./...
+
+  # ---------------------------------------------------------------------------
+  # Publish — build and push Docker image to GHCR (main only)
+  # ---------------------------------------------------------------------------
   publish:
-    needs: test
+    needs: ci
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+      tag: ${{ steps.meta.outputs.tag }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Lowercase image name
-        run: echo "IMAGE=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+      - name: Image metadata
+        id: meta
+        run: |
+          IMAGE="$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')"
+          TAG="${{ github.sha }}"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -60,7 +86,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Build
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push
@@ -70,20 +96,20 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE }}:latest
-            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ steps.meta.outputs.image }}:latest
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   # ---------------------------------------------------------------------------
-  # Deploy — SSH via Cloudflare Access, then pull/restart this project's service.
+  # Deploy — SSH via Cloudflare Access, pull image, refresh service
   # ---------------------------------------------------------------------------
   deploy:
     needs: publish
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-main
-      cancel-in-progress: true
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - name: Install cloudflared
@@ -103,14 +129,11 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
-          # Same private key you use locally (e.g. fedora-host).
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          # Alias "deploy-host" = Cloudflare Access SSH hostname.
           # Service Token auth must NOT go in ProxyCommand as --id/--secret:
-          # cloudflared treats those positionals as a listen address ("missing port").
-          # Pass CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET via env on the ssh step.
+          # cloudflared treats those as a listen address. Pass via CF_ACCESS_* env.
           {
             echo "Host deploy-host"
             echo "  HostName ${SSH_HOST}"
@@ -125,28 +148,37 @@ jobs:
       - name: Deploy via SSH (GHCR pull + restart)
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          # PAT owner (or org) — not necessarily the actor who triggered the run.
-          GHCR_USER: ${{ secrets.GHCR_USER || github.repository_owner }}
-          IMAGE: ghcr.io/${{ github.repository }}
-          IMAGE_TAG: ${{ github.sha }}
-          # cloudflared picks these up for non-interactive Access (Service Token).
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          IMAGE: ${{ needs.publish.outputs.image }}
+          IMAGE_TAG: ${{ needs.publish.outputs.tag }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_CLIENT_SECRET }}
         run: |
           set -euo pipefail
 
-          IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
+          if [ -z "${DEPLOY_PATH:-}" ]; then
+            echo "DEPLOY_PATH secret is required (remote directory with the Makefile)."
+            exit 1
+          fi
+
+          GHCR_USER="${GHCR_USER:-${{ github.repository_owner }}}"
 
           # printf %q keeps tokens with special chars safe inside the remote shell.
           ssh deploy-host \
-            "export GHCR_TOKEN=$(printf '%q' "$GHCR_TOKEN") GHCR_USER=$(printf '%q' "$GHCR_USER") IMAGE=$(printf '%q' "$IMAGE") IMAGE_TAG=$(printf '%q' "$IMAGE_TAG"); bash -s" <<'REMOTE'
+            "export GHCR_TOKEN=$(printf '%q' "$GHCR_TOKEN") \
+                    GHCR_USER=$(printf '%q' "$GHCR_USER") \
+                    IMAGE=$(printf '%q' "$IMAGE") \
+                    IMAGE_TAG=$(printf '%q' "$IMAGE_TAG") \
+                    DEPLOY_PATH=$(printf '%q' "$DEPLOY_PATH"); bash -s" <<'REMOTE'
           set -euo pipefail
 
-          cd ~/homelab/deploys/servers/bank
+          cd "$DEPLOY_PATH"
 
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-          make refresh
+          # Expects a Makefile target that pulls IMAGE:IMAGE_TAG (or :latest) and restarts.
+          make refresh IMAGE="$IMAGE" IMAGE_TAG="$IMAGE_TAG"
 
           # Safe cleanup: only unused images for THIS project (not host-wide prune).
           echo "Cleaning unused images for $IMAGE only..."
