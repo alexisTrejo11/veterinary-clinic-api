@@ -49,7 +49,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.AppointmentSearchRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentSearchRequest"
                         }
                     }
                 ],
@@ -57,25 +57,659 @@ const docTemplate = `{
                     "200": {
                         "description": "Paginated appointments",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new appointment, optionally assigned to an employee via query param. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Create appointment (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Employee ID to assign",
+                        "name": "employee_id",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Appointment data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Appointment created (data contains new appointment ID)",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/appointments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a single appointment by ID. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get appointment by ID (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates general info (reason, notes, service) of an appointment. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Update appointment (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentUpdateGeneralInfoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment updated",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes an appointment. Soft-delete by default; pass hard=true for permanent deletion. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Delete appointment (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Hard delete (permanent)",
+                        "name": "hard",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment deleted",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/appointments/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels an appointment, with optional employee and reason. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Cancel appointment (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Employee ID",
+                        "name": "employee_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cancellation reason",
+                        "name": "reason",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment cancelled",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/appointments/{id}/complete": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks an appointment as completed, with optional employee and notes. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Complete appointment (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Employee ID",
+                        "name": "employee_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Completion notes",
+                        "name": "notes",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment completed",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/appointments/{id}/confirm": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Confirms an appointment and assigns the employee given in the query param. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Confirm appointment (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Employee ID to assign",
+                        "name": "employee_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment confirmed",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID or missing employee_id",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/appointments/{id}/not-attend": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks an appointment as not attended, with optional employee. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Mark appointment as not attended (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Employee ID",
+                        "name": "employee_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment marked as not attended",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/appointments/{id}/reschedule": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reschedules an appointment to a new date/time. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Reschedule appointment (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New date/time and optional reason",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RescheduleAppointmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment rescheduled",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -103,19 +737,19 @@ const docTemplate = `{
                     "200": {
                         "description": "2FA disabled",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -146,7 +780,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.EnableTwoFactorRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EnableTwoFactorRequest"
                         }
                     }
                 ],
@@ -154,25 +788,25 @@ const docTemplate = `{
                     "200": {
                         "description": "2FA enabled",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -203,7 +837,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.VerifyTwoFactorRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.VerifyTwoFactorRequest"
                         }
                     }
                 ],
@@ -211,25 +845,37 @@ const docTemplate = `{
                     "200": {
                         "description": "Session with tokens",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.SessionResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Invalid code",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -268,7 +914,7 @@ const docTemplate = `{
                         "name": "body",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/dtos.ActivateAccountRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ActivateAccountRequest"
                         }
                     }
                 ],
@@ -276,19 +922,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Account activated",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid or missing parameters",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -296,7 +942,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticates with email and password. Returns access and refresh tokens. If 2FA is enabled, may return requires_two_factor with user_id.",
+                "description": "Authenticates with email and password. Returns access and refresh tokens. If 2FA is enabled, data contains dtos.RequiresTwoFactorResponse instead of the session.",
                 "consumes": [
                     "application/json"
                 ],
@@ -314,7 +960,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.LoginRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.LoginRequest"
                         }
                     }
                 ],
@@ -322,25 +968,37 @@ const docTemplate = `{
                     "200": {
                         "description": "Login successful (session payload with tokens and user)",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.SessionResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Invalid credentials or validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -371,7 +1029,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.LogoutRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.LogoutRequest"
                         }
                     }
                 ],
@@ -379,25 +1037,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Logged out",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -425,19 +1083,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Logged out from all devices",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -468,7 +1126,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.RefreshTokenRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RefreshTokenRequest"
                         }
                     }
                 ],
@@ -476,25 +1134,37 @@ const docTemplate = `{
                     "200": {
                         "description": "New session payload",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.SessionResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Invalid or expired refresh token",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -520,7 +1190,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.RegisterRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RegisterRequest"
                         }
                     }
                 ],
@@ -528,19 +1198,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Registration successful",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request body or validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -571,7 +1241,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.RequestResetPasswordRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RequestResetPasswordRequest"
                         }
                     }
                 ],
@@ -579,25 +1249,25 @@ const docTemplate = `{
                     "200": {
                         "description": "If email exists, reset link sent",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -628,7 +1298,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.ResetPasswordRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ResetPasswordRequest"
                         }
                     }
                 ],
@@ -636,25 +1306,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Password reset",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid or expired code",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -685,7 +1355,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.CustomerSearchRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerSearchRequest"
                         }
                     }
                 ],
@@ -693,25 +1363,40 @@ const docTemplate = `{
                     "200": {
                         "description": "Paginated list of customers",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -740,7 +1425,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.CustomerCreateRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerCreateRequest"
                         }
                     }
                 ],
@@ -748,25 +1433,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Customer created",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -805,13 +1490,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/http.APIResponse"
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dtos.CustomerResponse"
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerResponse"
                                         }
                                     }
                                 }
@@ -821,25 +1506,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Customer not found",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -868,7 +1553,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.CustomerUpdateRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerUpdateRequest"
                         }
                     }
                 ],
@@ -876,25 +1561,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Customer updated",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -929,25 +1614,109 @@ const docTemplate = `{
                     "200": {
                         "description": "Customer deleted",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/customers/{id}/appointments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated appointments for a given customer. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get appointments by customer (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated appointments",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -984,25 +1753,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Customer restored",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1033,7 +1802,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.EmployeeSearchRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeSearchRequest"
                         }
                     }
                 ],
@@ -1041,25 +1810,40 @@ const docTemplate = `{
                     "200": {
                         "description": "Paginated list of employees",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1088,7 +1872,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.EmployeeCreateRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeCreateRequest"
                         }
                     }
                 ],
@@ -1096,25 +1880,618 @@ const docTemplate = `{
                     "201": {
                         "description": "Employee created",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/appointments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated appointments assigned to the authenticated employee. Requires employee or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get my assigned appointments (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated appointments",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates an appointment assigned to the authenticated employee. Requires employee or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Create appointment (employee)",
+                "parameters": [
+                    {
+                        "description": "Appointment data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Appointment created (data contains new appointment ID)",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/appointments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a single appointment assigned to the authenticated employee. Requires employee or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get my assigned appointment by ID (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates general info (reason, notes, service) of an appointment assigned to the authenticated employee. Requires employee or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Update my appointment (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentUpdateGeneralInfoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment updated",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/appointments/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels an appointment assigned to the authenticated employee. Requires employee or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Cancel my appointment (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cancellation reason",
+                        "name": "reason",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment cancelled",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/appointments/{id}/complete": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks an appointment assigned to the authenticated employee as completed. Requires employee or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Complete my appointment (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Completion notes",
+                        "name": "notes",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment completed",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/appointments/{id}/confirm": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Confirms an appointment assigned to the authenticated employee. Requires employee or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Confirm my appointment (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment confirmed",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/appointments/{id}/not-attend": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks an appointment assigned to the authenticated employee as not attended. Requires employee or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Mark my appointment as not attended (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment marked as not attended",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/appointments/{id}/reschedule": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reschedules an appointment assigned to the authenticated employee to a new date/time. Requires employee or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Reschedule my appointment (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New date/time and optional reason",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RescheduleAppointmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment rescheduled",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1153,13 +2530,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/http.APIResponse"
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dtos.EmployeeResponse"
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeResponse"
                                         }
                                     }
                                 }
@@ -1169,25 +2546,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Employee not found",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1216,7 +2593,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.EmployeeUpdateRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeUpdateRequest"
                         }
                     }
                 ],
@@ -1224,25 +2601,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Employee updated",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1277,25 +2654,109 @@ const docTemplate = `{
                     "200": {
                         "description": "Employee deleted",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/{id}/appointments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated appointments for a given employee. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get appointments by employee (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Employee ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated appointments",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1332,25 +2793,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Employee restored",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1418,19 +2879,34 @@ const docTemplate = `{
                     "200": {
                         "description": "Paginated appointments",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1459,7 +2935,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.AppointmentRequestByCustomerRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentRequestByCustomerRequest"
                         }
                     }
                 ],
@@ -1467,25 +2943,98 @@ const docTemplate = `{
                     "200": {
                         "description": "Request submitted",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/appointments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a single appointment belonging to the authenticated customer. Requires customer role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get my appointment by ID (customer)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1529,19 +3078,34 @@ const docTemplate = `{
                     "200": {
                         "description": "Paginated notifications",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1578,31 +3142,398 @@ const docTemplate = `{
                     "200": {
                         "description": "Notification",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Manually sends a notification through the given channel (email, sms). Requires employee, manager, or admin role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Send notification (staff)",
+                "parameters": [
+                    {
+                        "description": "Notification to send",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.SendNotificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notification sent",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/channel/{channel}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated notifications filtered by delivery channel (email, sms). Requires employee, manager, or admin role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Get notifications by channel (staff)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Delivery channel (email, sms)",
+                        "name": "channel",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated notifications",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Missing or invalid channel",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a summary of sent notifications, optionally filtered by sender. Requires employee, manager, or admin role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Get notification summary (staff)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sender ID to filter by",
+                        "name": "sender_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notification summary",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/type/{type}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated notifications filtered by type. Requires employee, manager, or admin role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Get notifications by type (staff)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notification type",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated notifications",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Missing or invalid type",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a single notification by ID. Requires employee, manager, or admin role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Get notification by ID (staff)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notification",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1641,13 +3572,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/http.APIResponse"
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dtos.PaymentResponse"
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse"
                                         }
                                     }
                                 }
@@ -1657,25 +3588,109 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Payment not found",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pets/{id}/appointments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated appointments for a given pet. Requires admin or manager role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Get appointments by pet (manager/admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated appointments",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1705,13 +3720,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/http.APIResponse"
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dtos.ProfileResponse"
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileResponse"
                                         }
                                     }
                                 }
@@ -1721,13 +3736,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1756,7 +3771,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.UpdateProfileRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateProfileRequest"
                         }
                     }
                 ],
@@ -1764,25 +3779,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Profile updated",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1844,25 +3859,40 @@ const docTemplate = `{
                     "200": {
                         "description": "Paginated list of users",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Invalid query params",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1891,7 +3921,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dtos.CreateUserRequest"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateUserRequest"
                         }
                     }
                 ],
@@ -1899,25 +3929,25 @@ const docTemplate = `{
                     "201": {
                         "description": "User created",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -1956,13 +3986,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/http.APIResponse"
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dtos.UserResponse"
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserResponse"
                                         }
                                     }
                                 }
@@ -1972,25 +4002,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -2025,25 +4055,25 @@ const docTemplate = `{
                     "200": {
                         "description": "User deleted",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -2080,25 +4110,25 @@ const docTemplate = `{
                     "200": {
                         "description": "User restored",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -2131,36 +4161,38 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "New status (e.g. active, inactive)",
-                        "name": "status",
-                        "in": "path",
-                        "required": true
+                        "description": "New status",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateUserStatusRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Status updated",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid ID or status",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -2168,7 +4200,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dtos.ActivateAccountRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.ActivateAccountRequest": {
             "description": "User ID and activation code (e.g. from email link). Supports query params or JSON body.",
             "type": "object",
             "required": [
@@ -2186,7 +4218,56 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.AppointmentRequestByCustomerRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentCreateRequest": {
+            "description": "Request body for creating a new appointment",
+            "type": "object",
+            "required": [
+                "customer_id",
+                "pet_id",
+                "reason",
+                "scheduled_date",
+                "service",
+                "status"
+            ],
+            "properties": {
+                "customer_id": {
+                    "description": "ID of the customer making the appointment\nRequired: true",
+                    "type": "integer",
+                    "example": 123
+                },
+                "notes": {
+                    "description": "Additional notes for the appointment (optional)",
+                    "type": "string",
+                    "example": "Patient has allergy to penicillin"
+                },
+                "pet_id": {
+                    "description": "ID of the pet for the appointment\nRequired: true",
+                    "type": "integer",
+                    "example": 456
+                },
+                "reason": {
+                    "description": "Reason for the appointment\nRequired: true",
+                    "type": "string",
+                    "example": "Annual checkup"
+                },
+                "scheduled_date": {
+                    "description": "Date and time of the appointment\nRequired: true\nFormat: RFC3339",
+                    "type": "string",
+                    "example": "2024-03-15T10:30:00Z"
+                },
+                "service": {
+                    "description": "Service requested\nRequired: true",
+                    "type": "string",
+                    "example": "Vaccination"
+                },
+                "status": {
+                    "description": "Status of the appointment\nRequired: false (defaults to \"scheduled\")",
+                    "type": "string",
+                    "example": "scheduled"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentRequestByCustomerRequest": {
             "description": "Pet ID, scheduled date/time, reason, service, optional notes. Customer ID is taken from auth.",
             "type": "object",
             "required": [
@@ -2213,7 +4294,49 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.AppointmentSearchRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse": {
+            "description": "Appointment entity: id, pet_id, customer_id, employee_id, service, datetime, status, reason, notes, timestamps.",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "integer"
+                },
+                "date_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "pet_id": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "scheduled_date": {
+                    "type": "string"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "vet_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentSearchRequest": {
             "description": "Optional customer_id, vet_id, pet_id, service, status, reason, start_date, end_date, has_notes, plus pagination.",
             "type": "object",
             "properties": {
@@ -2257,7 +4380,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/page.SortDirection"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_page.SortDirection"
                         }
                     ]
                 },
@@ -2273,7 +4396,31 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.CreateUserRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentUpdateGeneralInfoRequest": {
+            "description": "Optional reason, notes, and service. Only provided fields are updated.",
+            "type": "object",
+            "properties": {
+                "notes": {
+                    "description": "Optional: Additional notes or observations about the appointment",
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "Patient requires special handling"
+                },
+                "reason": {
+                    "description": "Optional: Reason for updating the appointment",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Updated reason for appointment"
+                },
+                "service": {
+                    "description": "Optional: Service type for the appointment (e.g., \"checkup\", \"vaccination\", \"surgery\")",
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "Annual checkup"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateUserRequest": {
             "description": "Request body for creating a new user account",
             "type": "object",
             "required": [
@@ -2303,7 +4450,7 @@ const docTemplate = `{
                     "description": "User profile information",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/dtos.ProfileInfo"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileInfo"
                         }
                     ]
                 },
@@ -2330,7 +4477,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.CustomerCreateRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerCreateRequest": {
             "description": "First name, last name, email, gender, date of birth, optional photo URL, is_active, and optional user_id to link account.",
             "type": "object",
             "required": [
@@ -2373,7 +4520,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.CustomerResponse": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerResponse": {
             "description": "Customer entity: id, name, gender, date of birth, photo, user_id, is_active, timestamps.",
             "type": "object",
             "properties": {
@@ -2409,7 +4556,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.CustomerSearchRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerSearchRequest": {
             "description": "Pagination plus optional search text and is_active filter.",
             "type": "object",
             "properties": {
@@ -2441,13 +4588,13 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/page.SortDirection"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_page.SortDirection"
                         }
                     ]
                 }
             }
         },
-        "dtos.CustomerUpdateRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerUpdateRequest": {
             "description": "ID (required) plus optional fields to update. ID can also be taken from URL path.",
             "type": "object",
             "required": [
@@ -2486,7 +4633,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.EmployeeCreateRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeCreateRequest": {
             "description": "Name, gender, date of birth, photo, license number, years experience, specialty, schedule, optional is_active.",
             "type": "object",
             "required": [
@@ -2527,7 +4674,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "schedule": {
-                    "$ref": "#/definitions/dtos.EmployeeScheduleRequest"
+                    "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeScheduleRequest"
                 },
                 "specialty": {
                     "type": "string"
@@ -2539,7 +4686,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.EmployeeResponse": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeResponse": {
             "description": "Employee entity: id, name, gender, date of birth, photo, license, specialty, years experience, is_active, user_id, timestamps.",
             "type": "object",
             "properties": {
@@ -2584,7 +4731,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.EmployeeScheduleRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeScheduleRequest": {
             "description": "Day of week, entry/departure time (0-23), optional break window.",
             "type": "object",
             "required": [
@@ -2620,7 +4767,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.EmployeeSearchRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeSearchRequest": {
             "description": "Pagination plus optional specialty and is_active filter.",
             "type": "object",
             "properties": {
@@ -2647,7 +4794,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/page.SortDirection"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_page.SortDirection"
                         }
                     ]
                 },
@@ -2656,7 +4803,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.EmployeeUpdateRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeUpdateRequest": {
             "description": "ID (required) plus optional fields and optional schedule.",
             "type": "object",
             "required": [
@@ -2694,7 +4841,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "schedule": {
-                    "$ref": "#/definitions/dtos.EmployeeScheduleRequest"
+                    "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeScheduleRequest"
                 },
                 "specialty": {
                     "type": "string"
@@ -2706,7 +4853,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.EnableTwoFactorRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.EnableTwoFactorRequest": {
             "description": "2FA method: totp, sms, or email.",
             "type": "object",
             "required": [
@@ -2723,7 +4870,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.LoginRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.LoginRequest": {
             "description": "Email, password, and optional two_factor_code when 2FA is enabled.",
             "type": "object",
             "required": [
@@ -2745,7 +4892,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.LogoutRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.LogoutRequest": {
             "description": "Refresh token to revoke for the current session.",
             "type": "object",
             "required": [
@@ -2758,7 +4905,63 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.PaymentResponse": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse": {
+            "description": "Notification entity: id, user_id, user_email, user_phone, title, subject, message, type, channel, created_at.",
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "description": "Delivery channel (email, sms)",
+                    "type": "string",
+                    "example": "email"
+                },
+                "created_at": {
+                    "description": "Creation timestamp",
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                },
+                "id": {
+                    "description": "Unique identifier of the notification",
+                    "type": "string",
+                    "example": "665f1c2ab3d4e5f6a7b8c9d0"
+                },
+                "message": {
+                    "description": "Notification message body",
+                    "type": "string",
+                    "example": "Don't forget your appointment at 10:00."
+                },
+                "subject": {
+                    "description": "Notification subject",
+                    "type": "string",
+                    "example": "Your appointment is tomorrow"
+                },
+                "title": {
+                    "description": "Notification title",
+                    "type": "string",
+                    "example": "Appointment reminder"
+                },
+                "type": {
+                    "description": "Notification type",
+                    "type": "string",
+                    "example": "appointment_reminder"
+                },
+                "user_email": {
+                    "description": "Target email (for email channel)",
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "user_id": {
+                    "description": "ID of the target user (if any)",
+                    "type": "string",
+                    "example": "123"
+                },
+                "user_phone": {
+                    "description": "Target phone (for sms channel)",
+                    "type": "string",
+                    "example": "+1234567890"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse": {
             "description": "Payment entity: id, amount, currency, status, method, transaction_id, description, due_date, paid_at, customer_id, timestamps, optional refund/delete info.",
             "type": "object",
             "properties": {
@@ -2824,7 +5027,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.ProfileInfo": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileInfo": {
             "description": "User profile details",
             "type": "object",
             "properties": {
@@ -2856,7 +5059,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.ProfileResponse": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileResponse": {
             "description": "Authenticated user's profile: id, email, phone, role, status, name, gender, date of birth, profile picture URL, bio.",
             "type": "object",
             "properties": {
@@ -2892,7 +5095,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.RefreshTokenRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.RefreshTokenRequest": {
             "description": "Refresh token string to exchange for new access and refresh tokens.",
             "type": "object",
             "required": [
@@ -2905,7 +5108,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.RegisterRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.RegisterRequest": {
             "description": "Request body for user registration. Role: admin, veterinarian, customer, or receptionist. Admins get immediate access; others may require activation.",
             "type": "object",
             "required": [
@@ -2968,7 +5171,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.RequestResetPasswordRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.RequestResetPasswordRequest": {
             "description": "Email address to send the password reset link/code to.",
             "type": "object",
             "required": [
@@ -2981,7 +5184,27 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.ResetPasswordRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.RescheduleAppointmentRequest": {
+            "description": "New date/time (RFC3339) and optional reason.",
+            "type": "object",
+            "required": [
+                "datetime"
+            ],
+            "properties": {
+                "datetime": {
+                    "description": "@Required Required: New date and time for the appointment (RFC3339 format)",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "reason": {
+                    "description": "Optional: Reason for rescheduling the appointment",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Routine checkup"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.ResetPasswordRequest": {
             "description": "Email, code received by email, and new password.",
             "type": "object",
             "required": [
@@ -3005,7 +5228,82 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.UpdateProfileRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.SendNotificationRequest": {
+            "description": "Channel (email/sms), type, optional user_id, user_email (for email), user_phone (for sms), title, subject, message, optional token (e.g. reset link).",
+            "type": "object",
+            "required": [
+                "channel",
+                "message",
+                "subject",
+                "type"
+            ],
+            "properties": {
+                "channel": {
+                    "description": "email, sms",
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "token": {
+                    "description": "optional; e.g. for reset links",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "notification type",
+                    "type": "string"
+                },
+                "user_email": {
+                    "description": "required for email",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "optional; for in-app targeting",
+                    "type": "string"
+                },
+                "user_phone": {
+                    "description": "required for sms",
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.SessionResponse": {
+            "description": "Contains access token, refresh token, and minimal user info.",
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.TokenResponse"
+                },
+                "refresh_token": {
+                    "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.TokenResponse"
+                },
+                "user": {
+                    "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserAuthResponse"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.TokenResponse": {
+            "description": "JWT token string, expiry time, and type (e.g. Bearer).",
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateProfileRequest": {
             "description": "Authenticated user's profile fields to update (name, gender, date of birth, photo URL, bio).",
             "type": "object",
             "required": [
@@ -3033,7 +5331,41 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.UserResponse": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateUserStatusRequest": {
+            "description": "Request body for updating user account status",
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "description": "New status (active, inactive, banned)\nRequired: true",
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "inactive",
+                        "banned"
+                    ],
+                    "example": "active"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserAuthResponse": {
+            "description": "User identifier, email, and role returned in login/session payloads.",
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserResponse": {
             "description": "User account information (excluding sensitive data)",
             "type": "object",
             "properties": {
@@ -3086,7 +5418,7 @@ const docTemplate = `{
                     "description": "User profile information",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/dtos.ProfileResponse"
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileResponse"
                         }
                     ]
                 },
@@ -3112,7 +5444,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dtos.VerifyTwoFactorRequest": {
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.VerifyTwoFactorRequest": {
             "description": "One-time 2FA code (TOTP or backup code).",
             "type": "object",
             "required": [
@@ -3125,7 +5457,7 @@ const docTemplate = `{
                 }
             }
         },
-        "http.APIResponse": {
+        "clinic-vet-api_internal_shared_http.APIResponse": {
             "description": "Standardized API response structure.",
             "type": "object",
             "properties": {
@@ -3136,7 +5468,7 @@ const docTemplate = `{
                     "description": "Details of the error if the request was not successful.",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/http.ErrorInfo"
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.ErrorInfo"
                         }
                     ]
                 },
@@ -3161,7 +5493,7 @@ const docTemplate = `{
                 }
             }
         },
-        "http.ErrorInfo": {
+        "clinic-vet-api_internal_shared_http.ErrorInfo": {
             "description": "Detailed information about an error.",
             "type": "object",
             "properties": {
@@ -3190,7 +5522,7 @@ const docTemplate = `{
                 }
             }
         },
-        "page.SortDirection": {
+        "clinic-vet-api_internal_shared_page.SortDirection": {
             "type": "string",
             "enum": [
                 "ASC",

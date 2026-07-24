@@ -124,7 +124,7 @@ func (ctrl *UserHandler) GetUserByPhone(ctx *gin.Context) {
 // @Param        email        query     string  false  "Filter by email"
 // @Param        role         query     string  false  "Filter by role"
 // @Param        status       query     string  false  "Filter by status"
-// @Success      200          {object}  http.APIResponse  "Paginated list of users"
+// @Success      200          {object}  http.APIResponse{data=[]dtos.UserResponse}  "Paginated list of users"
 // @Failure      400          {object}  http.APIResponse  "Invalid query params"
 // @Failure      401          {object}  http.APIResponse  "Unauthorized"
 // @Failure      500          {object}  http.APIResponse  "Internal server error"
@@ -194,12 +194,12 @@ func (ctrl *UserHandler) CreateUser(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Param        id       path      int     true   "User ID"
-// @Param        status   path      string  true   "New status (e.g. active, inactive)"
-// @Success      200      {object}  http.APIResponse  "Status updated"
-// @Failure      400      {object}  http.APIResponse  "Invalid ID or status"
-// @Failure      401      {object}  http.APIResponse  "Unauthorized"
-// @Failure      500      {object}  http.APIResponse  "Internal server error"
+// @Param        id     path      int                           true  "User ID"
+// @Param        body   body      dtos.UpdateUserStatusRequest  true  "New status"
+// @Success      200    {object}  http.APIResponse  "Status updated"
+// @Failure      400    {object}  http.APIResponse  "Invalid ID or status"
+// @Failure      401    {object}  http.APIResponse  "Unauthorized"
+// @Failure      500    {object}  http.APIResponse  "Internal server error"
 // @Router       /users/{id}/status [post]
 func (ctrl *UserHandler) UpdateUserStatus(c *gin.Context) {
 	userID, err := http.ParseParamToUInt(c, "id")
@@ -208,13 +208,13 @@ func (ctrl *UserHandler) UpdateUserStatus(c *gin.Context) {
 		return
 	}
 
-	statusStr := c.Param("status")
-	if statusStr == "" {
-		err := fmt.Errorf("status is required")
-		http.BadRequest(c, errors.RequestURLParamError(err, "status", ""))
+	var requestData dtos.UpdateUserStatusRequest
+	if err := http.ShouldBindAndValidateBody(c, &requestData, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
+		return
 	}
 
-	status, err := users.ParseUserStatus(statusStr)
+	status, err := users.ParseUserStatus(requestData.Status)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
@@ -231,7 +231,7 @@ func (ctrl *UserHandler) UpdateUserStatus(c *gin.Context) {
 		return
 	}
 
-	http.Success(c, nil, "User Succesfully Unbaned")
+	http.Success(c, nil, "User status updated successfully")
 }
 
 // DeleteUser godoc

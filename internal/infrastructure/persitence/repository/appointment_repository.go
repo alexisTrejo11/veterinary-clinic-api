@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"clinic-vet-api/db/models"
+	"clinic-vet-api/database/models"
 	"clinic-vet-api/internal/core/appointments"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/employees"
@@ -9,7 +9,7 @@ import (
 	customErr "clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/mapper"
 	p "clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/sqlc"
+	"clinic-vet-api/database/sqlc"
 	"context"
 	"database/sql"
 	"errors"

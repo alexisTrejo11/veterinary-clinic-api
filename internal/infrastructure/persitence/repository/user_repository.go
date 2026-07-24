@@ -12,7 +12,7 @@ import (
 	"clinic-vet-api/internal/core/users"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/sqlc"
+	"clinic-vet-api/database/sqlc"
 
 	"github.com/jackc/pgx/v5/pgtype"
 

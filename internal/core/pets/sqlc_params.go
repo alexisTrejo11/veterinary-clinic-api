@@ -1,7 +1,7 @@
 package pets
 
 import (
-	"clinic-vet-api/sqlc"
+	"clinic-vet-api/database/sqlc"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )

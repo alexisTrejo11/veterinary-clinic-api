@@ -109,7 +109,7 @@ func (r *APIRouter) authRoutes() {
 		publicAuthRoutes.POST("/activate", r.appHandlers.auth.ActivateAccount)
 	}
 
-	authenticatedAuthRoutes := r.config.Router.Group("/auth")
+	authenticatedAuthRoutes := r.config.Router.Group("/api/v2/auth")
 	authenticatedAuthRoutes.Use(r.config.AuthMiddleware.Authenticate())
 	{
 		authenticatedAuthRoutes.POST("/logout", r.appHandlers.auth.Logout)
@@ -117,7 +117,7 @@ func (r *APIRouter) authRoutes() {
 		authenticatedAuthRoutes.POST("/refresh", r.appHandlers.auth.RefreshToken)
 	}
 
-	twoFactorAuthRoutes := r.config.Router.Group("/auth/2fa")
+	twoFactorAuthRoutes := r.config.Router.Group("/api/v2/auth/2fa")
 	twoFactorAuthRoutes.Use(r.config.AuthMiddleware.Authenticate())
 	{
 		twoFactorAuthRoutes.POST("/verify", r.appHandlers.auth.VerifyTwoFactor)
@@ -125,7 +125,7 @@ func (r *APIRouter) authRoutes() {
 		twoFactorAuthRoutes.POST("/disable", r.appHandlers.auth.DisableTwoFactor)
 	}
 
-	resetPasswordAuthRoutes := r.config.Router.Group("/auth/reset-password")
+	resetPasswordAuthRoutes := r.config.Router.Group("/api/v2/auth/reset-password")
 	resetPasswordAuthRoutes.Use(r.config.AuthMiddleware.Authenticate())
 	{
 		resetPasswordAuthRoutes.POST("/request", r.appHandlers.auth.RequestResetPassword)
@@ -151,7 +151,7 @@ func (r *APIRouter) profileRoutes() {
 // ------------------------------------------------------------
 
 func (r *APIRouter) userRoutes() {
-	userRoutes := r.config.Router.Group("/users")
+	userRoutes := r.config.Router.Group("/api/v2/users")
 	userRoutes.Use(r.config.AuthMiddleware.Authenticate())
 	userRoutes.Use(r.config.AuthMiddleware.RequireAnyRole("admin", "manager"))
 	{

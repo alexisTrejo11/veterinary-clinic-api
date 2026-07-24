@@ -20,7 +20,7 @@ import (
 	"clinic-vet-api/internal/middleware"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/password"
-	"clinic-vet-api/sqlc"
+	"clinic-vet-api/database/sqlc"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"

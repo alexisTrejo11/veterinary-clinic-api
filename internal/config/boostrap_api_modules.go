@@ -3,7 +3,7 @@ package config
 /*
 import (
 	"clinic-vet-api/app/middleware"
-	"clinic-vet-api/sqlc"
+	"clinic-vet-api/database/sqlc"
 	"fmt"
 	"log"
 

@@ -1,13 +1,13 @@
 package repository
 
 import (
-	"clinic-vet-api/db/models"
+	"clinic-vet-api/database/models"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/payments"
 	customErr "clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/sqlc"
+	"clinic-vet-api/database/sqlc"
 	"context"
 	"fmt"
 	"time"

@@ -4,7 +4,7 @@ package config
 import (
 	"clinic-vet-api/internal/infrastructure/http"
 	"clinic-vet-api/internal/middleware"
-	"clinic-vet-api/sqlc"
+	"clinic-vet-api/database/sqlc"
 	"fmt"
 	"os"
 	"strings"

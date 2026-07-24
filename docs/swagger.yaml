@@ -1,6 +1,6 @@
 basePath: /api/v2
 definitions:
-  dtos.ActivateAccountRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.ActivateAccountRequest:
     description: User ID and activation code (e.g. from email link). Supports query
       params or JSON body.
     properties:
@@ -14,7 +14,59 @@ definitions:
     - code
     - user_id
     type: object
-  dtos.AppointmentRequestByCustomerRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentCreateRequest:
+    description: Request body for creating a new appointment
+    properties:
+      customer_id:
+        description: |-
+          ID of the customer making the appointment
+          Required: true
+        example: 123
+        type: integer
+      notes:
+        description: Additional notes for the appointment (optional)
+        example: Patient has allergy to penicillin
+        type: string
+      pet_id:
+        description: |-
+          ID of the pet for the appointment
+          Required: true
+        example: 456
+        type: integer
+      reason:
+        description: |-
+          Reason for the appointment
+          Required: true
+        example: Annual checkup
+        type: string
+      scheduled_date:
+        description: |-
+          Date and time of the appointment
+          Required: true
+          Format: RFC3339
+        example: "2024-03-15T10:30:00Z"
+        type: string
+      service:
+        description: |-
+          Service requested
+          Required: true
+        example: Vaccination
+        type: string
+      status:
+        description: |-
+          Status of the appointment
+          Required: false (defaults to "scheduled")
+        example: scheduled
+        type: string
+    required:
+    - customer_id
+    - pet_id
+    - reason
+    - scheduled_date
+    - service
+    - status
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentRequestByCustomerRequest:
     description: Pet ID, scheduled date/time, reason, service, optional notes. Customer
       ID is taken from auth.
     properties:
@@ -34,7 +86,36 @@ definitions:
     - scheduled_date
     - service
     type: object
-  dtos.AppointmentSearchRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse:
+    description: 'Appointment entity: id, pet_id, customer_id, employee_id, service,
+      datetime, status, reason, notes, timestamps.'
+    properties:
+      created_at:
+        type: string
+      customer_id:
+        type: integer
+      date_time:
+        type: string
+      id:
+        type: integer
+      notes:
+        type: string
+      pet_id:
+        type: integer
+      reason:
+        type: string
+      scheduled_date:
+        type: string
+      service:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      vet_id:
+        type: integer
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentSearchRequest:
     description: Optional customer_id, vet_id, pet_id, service, status, reason, start_date,
       end_date, has_notes, plus pagination.
     properties:
@@ -64,7 +145,7 @@ definitions:
         type: string
       sort_direction:
         allOf:
-        - $ref: '#/definitions/page.SortDirection'
+        - $ref: '#/definitions/clinic-vet-api_internal_shared_page.SortDirection'
         enum:
         - ASC
         - DESC
@@ -76,7 +157,27 @@ definitions:
         minimum: 1
         type: integer
     type: object
-  dtos.CreateUserRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentUpdateGeneralInfoRequest:
+    description: Optional reason, notes, and service. Only provided fields are updated.
+    properties:
+      notes:
+        description: 'Optional: Additional notes or observations about the appointment'
+        example: Patient requires special handling
+        maxLength: 1000
+        type: string
+      reason:
+        description: 'Optional: Reason for updating the appointment'
+        example: Updated reason for appointment
+        maxLength: 500
+        type: string
+      service:
+        description: 'Optional: Service type for the appointment (e.g., "checkup",
+          "vaccination", "surgery")'
+        example: Annual checkup
+        maxLength: 100
+        type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateUserRequest:
     description: Request body for creating a new user account
     properties:
       email:
@@ -104,7 +205,7 @@ definitions:
         type: string
       profile:
         allOf:
-        - $ref: '#/definitions/dtos.ProfileInfo'
+        - $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileInfo'
         description: User profile information
       role:
         description: |-
@@ -134,7 +235,7 @@ definitions:
     - password
     - role
     type: object
-  dtos.CustomerCreateRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerCreateRequest:
     description: First name, last name, email, gender, date of birth, optional photo
       URL, is_active, and optional user_id to link account.
     properties:
@@ -166,7 +267,7 @@ definitions:
     - gender
     - last_name
     type: object
-  dtos.CustomerResponse:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerResponse:
     description: 'Customer entity: id, name, gender, date of birth, photo, user_id,
       is_active, timestamps.'
     properties:
@@ -191,7 +292,7 @@ definitions:
       user_id:
         type: integer
     type: object
-  dtos.CustomerSearchRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerSearchRequest:
     description: Pagination plus optional search text and is_active filter.
     properties:
       is_active:
@@ -212,12 +313,12 @@ definitions:
         type: string
       sort_direction:
         allOf:
-        - $ref: '#/definitions/page.SortDirection'
+        - $ref: '#/definitions/clinic-vet-api_internal_shared_page.SortDirection'
         enum:
         - ASC
         - DESC
     type: object
-  dtos.CustomerUpdateRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerUpdateRequest:
     description: ID (required) plus optional fields to update. ID can also be taken
       from URL path.
     properties:
@@ -245,7 +346,7 @@ definitions:
     required:
     - id
     type: object
-  dtos.EmployeeCreateRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeCreateRequest:
     description: Name, gender, date of birth, photo, license number, years experience,
       specialty, schedule, optional is_active.
     properties:
@@ -269,7 +370,7 @@ definitions:
       photo:
         type: string
       schedule:
-        $ref: '#/definitions/dtos.EmployeeScheduleRequest'
+        $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeScheduleRequest'
       specialty:
         type: string
       years_experience:
@@ -285,7 +386,7 @@ definitions:
     - schedule
     - specialty
     type: object
-  dtos.EmployeeResponse:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeResponse:
     description: 'Employee entity: id, name, gender, date of birth, photo, license,
       specialty, years experience, is_active, user_id, timestamps.'
     properties:
@@ -316,7 +417,7 @@ definitions:
       years_experience:
         type: integer
     type: object
-  dtos.EmployeeScheduleRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeScheduleRequest:
     description: Day of week, entry/departure time (0-23), optional break window.
     properties:
       day:
@@ -344,7 +445,7 @@ definitions:
     - departure_time
     - entry_time
     type: object
-  dtos.EmployeeSearchRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeSearchRequest:
     description: Pagination plus optional specialty and is_active filter.
     properties:
       is_active:
@@ -361,14 +462,14 @@ definitions:
         type: integer
       sort_direction:
         allOf:
-        - $ref: '#/definitions/page.SortDirection'
+        - $ref: '#/definitions/clinic-vet-api_internal_shared_page.SortDirection'
         enum:
         - ASC
         - DESC
       specialty:
         type: string
     type: object
-  dtos.EmployeeUpdateRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeUpdateRequest:
     description: ID (required) plus optional fields and optional schedule.
     properties:
       date_of_birth:
@@ -393,7 +494,7 @@ definitions:
       photo:
         type: string
       schedule:
-        $ref: '#/definitions/dtos.EmployeeScheduleRequest'
+        $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeScheduleRequest'
       specialty:
         type: string
       years_experience:
@@ -403,7 +504,7 @@ definitions:
     required:
     - id
     type: object
-  dtos.EnableTwoFactorRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.EnableTwoFactorRequest:
     description: '2FA method: totp, sms, or email.'
     properties:
       method:
@@ -415,7 +516,7 @@ definitions:
     required:
     - method
     type: object
-  dtos.LoginRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.LoginRequest:
     description: Email, password, and optional two_factor_code when 2FA is enabled.
     properties:
       email:
@@ -431,7 +532,7 @@ definitions:
     - email
     - password
     type: object
-  dtos.LogoutRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.LogoutRequest:
     description: Refresh token to revoke for the current session.
     properties:
       refresh_token:
@@ -440,7 +541,52 @@ definitions:
     required:
     - refresh_token
     type: object
-  dtos.PaymentResponse:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse:
+    description: 'Notification entity: id, user_id, user_email, user_phone, title,
+      subject, message, type, channel, created_at.'
+    properties:
+      channel:
+        description: Delivery channel (email, sms)
+        example: email
+        type: string
+      created_at:
+        description: Creation timestamp
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      id:
+        description: Unique identifier of the notification
+        example: 665f1c2ab3d4e5f6a7b8c9d0
+        type: string
+      message:
+        description: Notification message body
+        example: Don't forget your appointment at 10:00.
+        type: string
+      subject:
+        description: Notification subject
+        example: Your appointment is tomorrow
+        type: string
+      title:
+        description: Notification title
+        example: Appointment reminder
+        type: string
+      type:
+        description: Notification type
+        example: appointment_reminder
+        type: string
+      user_email:
+        description: Target email (for email channel)
+        example: user@example.com
+        type: string
+      user_id:
+        description: ID of the target user (if any)
+        example: "123"
+        type: string
+      user_phone:
+        description: Target phone (for sms channel)
+        example: "+1234567890"
+        type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse:
     description: 'Payment entity: id, amount, currency, status, method, transaction_id,
       description, due_date, paid_at, customer_id, timestamps, optional refund/delete
       info.'
@@ -486,7 +632,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  dtos.ProfileInfo:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileInfo:
     description: User profile details
     properties:
       bio:
@@ -511,7 +657,7 @@ definitions:
         example: https://example.com/photo.jpg
         type: string
     type: object
-  dtos.ProfileResponse:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileResponse:
     description: 'Authenticated user''s profile: id, email, phone, role, status, name,
       gender, date of birth, profile picture URL, bio.'
     properties:
@@ -536,7 +682,7 @@ definitions:
       status:
         type: string
     type: object
-  dtos.RefreshTokenRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.RefreshTokenRequest:
     description: Refresh token string to exchange for new access and refresh tokens.
     properties:
       refresh_token:
@@ -545,7 +691,7 @@ definitions:
     required:
     - refresh_token
     type: object
-  dtos.RegisterRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.RegisterRequest:
     description: 'Request body for user registration. Role: admin, veterinarian, customer,
       or receptionist. Admins get immediate access; others may require activation.'
     properties:
@@ -594,7 +740,7 @@ definitions:
     - password
     - role
     type: object
-  dtos.RequestResetPasswordRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.RequestResetPasswordRequest:
     description: Email address to send the password reset link/code to.
     properties:
       email:
@@ -603,7 +749,23 @@ definitions:
     required:
     - email
     type: object
-  dtos.ResetPasswordRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.RescheduleAppointmentRequest:
+    description: New date/time (RFC3339) and optional reason.
+    properties:
+      datetime:
+        description: '@Required Required: New date and time for the appointment (RFC3339
+          format)'
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      reason:
+        description: 'Optional: Reason for rescheduling the appointment'
+        example: Routine checkup
+        maxLength: 500
+        type: string
+    required:
+    - datetime
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.ResetPasswordRequest:
     description: Email, code received by email, and new password.
     properties:
       code:
@@ -621,7 +783,61 @@ definitions:
     - email
     - password
     type: object
-  dtos.UpdateProfileRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.SendNotificationRequest:
+    description: Channel (email/sms), type, optional user_id, user_email (for email),
+      user_phone (for sms), title, subject, message, optional token (e.g. reset link).
+    properties:
+      channel:
+        description: email, sms
+        type: string
+      message:
+        type: string
+      subject:
+        type: string
+      title:
+        type: string
+      token:
+        description: optional; e.g. for reset links
+        type: string
+      type:
+        description: notification type
+        type: string
+      user_email:
+        description: required for email
+        type: string
+      user_id:
+        description: optional; for in-app targeting
+        type: string
+      user_phone:
+        description: required for sms
+        type: string
+    required:
+    - channel
+    - message
+    - subject
+    - type
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.SessionResponse:
+    description: Contains access token, refresh token, and minimal user info.
+    properties:
+      access_token:
+        $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.TokenResponse'
+      refresh_token:
+        $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.TokenResponse'
+      user:
+        $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserAuthResponse'
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.TokenResponse:
+    description: JWT token string, expiry time, and type (e.g. Bearer).
+    properties:
+      expires_at:
+        type: string
+      token:
+        type: string
+      type:
+        type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateProfileRequest:
     description: Authenticated user's profile fields to update (name, gender, date
       of birth, photo URL, bio).
     properties:
@@ -642,7 +858,33 @@ definitions:
     - gender
     - name
     type: object
-  dtos.UserResponse:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateUserStatusRequest:
+    description: Request body for updating user account status
+    properties:
+      status:
+        description: |-
+          New status (active, inactive, banned)
+          Required: true
+        enum:
+        - active
+        - inactive
+        - banned
+        example: active
+        type: string
+    required:
+    - status
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserAuthResponse:
+    description: User identifier, email, and role returned in login/session payloads.
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      role:
+        type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserResponse:
     description: User account information (excluding sensitive data)
     properties:
       created_at:
@@ -701,7 +943,7 @@ definitions:
         type: string
       profile:
         allOf:
-        - $ref: '#/definitions/dtos.ProfileResponse'
+        - $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileResponse'
         description: User profile information
       role:
         description: |-
@@ -728,7 +970,7 @@ definitions:
         example: "2024-03-10T15:30:00Z"
         type: string
     type: object
-  dtos.VerifyTwoFactorRequest:
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.VerifyTwoFactorRequest:
     description: One-time 2FA code (TOTP or backup code).
     properties:
       two_factor_code:
@@ -737,14 +979,14 @@ definitions:
     required:
     - two_factor_code
     type: object
-  http.APIResponse:
+  clinic-vet-api_internal_shared_http.APIResponse:
     description: Standardized API response structure.
     properties:
       data:
         description: The data payload of the response for successful requests.
       error:
         allOf:
-        - $ref: '#/definitions/http.ErrorInfo'
+        - $ref: '#/definitions/clinic-vet-api_internal_shared_http.ErrorInfo'
         description: Details of the error if the request was not successful.
       message:
         description: A message providing additional context about the response.
@@ -761,7 +1003,7 @@ definitions:
         description: The timestamp when the response was generated.
         type: string
     type: object
-  http.ErrorInfo:
+  clinic-vet-api_internal_shared_http.ErrorInfo:
     description: Detailed information about an error.
     properties:
       code:
@@ -782,7 +1024,7 @@ definitions:
         description: The type of the error.
         type: string
     type: object
-  page.SortDirection:
+  clinic-vet-api_internal_shared_page.SortDirection:
     enum:
     - ASC
     - DESC
@@ -823,29 +1065,440 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.AppointmentSearchRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentSearchRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Paginated appointments
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse'
+                  type: array
+              type: object
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Search appointments (manager/admin)
+      tags:
+      - appointments
+    post:
+      consumes:
+      - application/json
+      description: Creates a new appointment, optionally assigned to an employee via
+        query param. Requires admin or manager role.
+      parameters:
+      - description: Employee ID to assign
+        in: query
+        name: employee_id
+        type: integer
+      - description: Appointment data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Appointment created (data contains new appointment ID)
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create appointment (manager/admin)
+      tags:
+      - appointments
+  /appointments/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an appointment. Soft-delete by default; pass hard=true
+        for permanent deletion. Requires admin or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: false
+        description: Hard delete (permanent)
+        in: query
+        name: hard
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment deleted
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete appointment (manager/admin)
+      tags:
+      - appointments
+    get:
+      consumes:
+      - application/json
+      description: Returns a single appointment by ID. Requires admin or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment found
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse'
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get appointment by ID (manager/admin)
+      tags:
+      - appointments
+    put:
+      consumes:
+      - application/json
+      description: Updates general info (reason, notes, service) of an appointment.
+        Requires admin or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentUpdateGeneralInfoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment updated
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update appointment (manager/admin)
+      tags:
+      - appointments
+  /appointments/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels an appointment, with optional employee and reason. Requires
+        admin or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: query
+        name: employee_id
+        type: integer
+      - description: Cancellation reason
+        in: query
+        name: reason
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment cancelled
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel appointment (manager/admin)
+      tags:
+      - appointments
+  /appointments/{id}/complete:
+    post:
+      consumes:
+      - application/json
+      description: Marks an appointment as completed, with optional employee and notes.
+        Requires admin or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: query
+        name: employee_id
+        type: integer
+      - description: Completion notes
+        in: query
+        name: notes
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment completed
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Complete appointment (manager/admin)
+      tags:
+      - appointments
+  /appointments/{id}/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirms an appointment and assigns the employee given in the query
+        param. Requires admin or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee ID to assign
+        in: query
+        name: employee_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment confirmed
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID or missing employee_id
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Confirm appointment (manager/admin)
+      tags:
+      - appointments
+  /appointments/{id}/not-attend:
+    post:
+      consumes:
+      - application/json
+      description: Marks an appointment as not attended, with optional employee. Requires
+        admin or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: query
+        name: employee_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment marked as not attended
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark appointment as not attended (manager/admin)
+      tags:
+      - appointments
+  /appointments/{id}/reschedule:
+    post:
+      consumes:
+      - application/json
+      description: Reschedules an appointment to a new date/time. Requires admin or
+        manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New date/time and optional reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RescheduleAppointmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment rescheduled
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Reschedule appointment (manager/admin)
       tags:
       - appointments
   /auth/2fa/disable:
@@ -859,15 +1512,15 @@ paths:
         "200":
           description: 2FA disabled
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Disable two-factor authentication
@@ -885,26 +1538,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.EnableTwoFactorRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EnableTwoFactorRequest'
       produces:
       - application/json
       responses:
         "200":
           description: 2FA enabled
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid request
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Enable two-factor authentication
@@ -922,26 +1575,31 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.VerifyTwoFactorRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.VerifyTwoFactorRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Session with tokens
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.SessionResponse'
+              type: object
         "400":
           description: Invalid code
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Verify 2FA code
@@ -968,22 +1626,22 @@ paths:
         in: body
         name: body
         schema:
-          $ref: '#/definitions/dtos.ActivateAccountRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ActivateAccountRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Account activated
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid or missing parameters
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       summary: Activate account
       tags:
       - auth
@@ -992,33 +1650,39 @@ paths:
       consumes:
       - application/json
       description: Authenticates with email and password. Returns access and refresh
-        tokens. If 2FA is enabled, may return requires_two_factor with user_id.
+        tokens. If 2FA is enabled, data contains dtos.RequiresTwoFactorResponse instead
+        of the session.
       parameters:
       - description: Email and password; optional two_factor_code
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.LoginRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Login successful (session payload with tokens and user)
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.SessionResponse'
+              type: object
         "400":
           description: Invalid credentials or validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       summary: Login
       tags:
       - auth
@@ -1034,26 +1698,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.LogoutRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.LogoutRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Logged out
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid request
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Logout
@@ -1071,15 +1735,15 @@ paths:
         "200":
           description: Logged out from all devices
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Logout from all devices
@@ -1097,26 +1761,31 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.RefreshTokenRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RefreshTokenRequest'
       produces:
       - application/json
       responses:
         "200":
           description: New session payload
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.SessionResponse'
+              type: object
         "400":
           description: Invalid or expired refresh token
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Refresh access token
@@ -1134,22 +1803,22 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.RegisterRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Registration successful
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid request body or validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       summary: Register a new user
       tags:
       - auth
@@ -1165,26 +1834,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.RequestResetPasswordRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RequestResetPasswordRequest'
       produces:
       - application/json
       responses:
         "200":
           description: If email exists, reset link sent
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid request
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Request password reset
@@ -1202,26 +1871,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.ResetPasswordRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ResetPasswordRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Password reset
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid or expired code
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Reset password
@@ -1239,26 +1908,33 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.CustomerSearchRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerSearchRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Paginated list of customers
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerResponse'
+                  type: array
+              type: object
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Search customers
@@ -1274,26 +1950,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.CustomerCreateRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Customer created
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Create customer
@@ -1316,19 +1992,19 @@ paths:
         "200":
           description: Customer deleted
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Delete customer
@@ -1351,27 +2027,27 @@ paths:
           description: Customer found
           schema:
             allOf:
-            - $ref: '#/definitions/http.APIResponse'
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dtos.CustomerResponse'
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerResponse'
               type: object
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "404":
           description: Customer not found
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Get customer by ID
@@ -1387,31 +2063,84 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.CustomerUpdateRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerUpdateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Customer updated
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Update customer
       tags:
       - customers
+  /customers/{id}/appointments:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated appointments for a given customer. Requires admin
+        or manager role.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated appointments
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get appointments by customer (manager/admin)
+      tags:
+      - appointments
   /customers/{id}/restore:
     post:
       consumes:
@@ -1429,19 +2158,19 @@ paths:
         "200":
           description: Customer restored
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Restore customer
@@ -1459,26 +2188,33 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.EmployeeSearchRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeSearchRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Paginated list of employees
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeResponse'
+                  type: array
+              type: object
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Search employees
@@ -1494,26 +2230,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.EmployeeCreateRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Employee created
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Create employee
@@ -1536,19 +2272,19 @@ paths:
         "200":
           description: Employee deleted
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Delete employee
@@ -1571,27 +2307,27 @@ paths:
           description: Employee found
           schema:
             allOf:
-            - $ref: '#/definitions/http.APIResponse'
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dtos.EmployeeResponse'
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeResponse'
               type: object
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "404":
           description: Employee not found
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Get employee by ID
@@ -1607,31 +2343,84 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.EmployeeUpdateRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeUpdateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Employee updated
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Update employee
       tags:
       - employees
+  /employees/{id}/appointments:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated appointments for a given employee. Requires admin
+        or manager role.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated appointments
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get appointments by employee (manager/admin)
+      tags:
+      - appointments
   /employees/{id}/restore:
     post:
       consumes:
@@ -1649,24 +2438,408 @@ paths:
         "200":
           description: Employee restored
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Restore employee
       tags:
       - employees
+  /employees/appointments:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated appointments assigned to the authenticated employee.
+        Requires employee or manager role.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated appointments
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my assigned appointments (employee)
+      tags:
+      - appointments
+    post:
+      consumes:
+      - application/json
+      description: Creates an appointment assigned to the authenticated employee.
+        Requires employee or manager role.
+      parameters:
+      - description: Appointment data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Appointment created (data contains new appointment ID)
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create appointment (employee)
+      tags:
+      - appointments
+  /employees/appointments/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a single appointment assigned to the authenticated employee.
+        Requires employee or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment found
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse'
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my assigned appointment by ID (employee)
+      tags:
+      - appointments
+    put:
+      consumes:
+      - application/json
+      description: Updates general info (reason, notes, service) of an appointment
+        assigned to the authenticated employee. Requires employee or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentUpdateGeneralInfoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment updated
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update my appointment (employee)
+      tags:
+      - appointments
+  /employees/appointments/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels an appointment assigned to the authenticated employee.
+        Requires employee or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Cancellation reason
+        in: query
+        name: reason
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment cancelled
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel my appointment (employee)
+      tags:
+      - appointments
+  /employees/appointments/{id}/complete:
+    post:
+      consumes:
+      - application/json
+      description: Marks an appointment assigned to the authenticated employee as
+        completed. Requires employee or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Completion notes
+        in: query
+        name: notes
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment completed
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Complete my appointment (employee)
+      tags:
+      - appointments
+  /employees/appointments/{id}/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirms an appointment assigned to the authenticated employee.
+        Requires employee or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment confirmed
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Confirm my appointment (employee)
+      tags:
+      - appointments
+  /employees/appointments/{id}/not-attend:
+    post:
+      consumes:
+      - application/json
+      description: Marks an appointment assigned to the authenticated employee as
+        not attended. Requires employee or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment marked as not attended
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark my appointment as not attended (employee)
+      tags:
+      - appointments
+  /employees/appointments/{id}/reschedule:
+    post:
+      consumes:
+      - application/json
+      description: Reschedules an appointment assigned to the authenticated employee
+        to a new date/time. Requires employee or manager role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New date/time and optional reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.RescheduleAppointmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment rescheduled
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Reschedule my appointment (employee)
+      tags:
+      - appointments
   /health:
     get:
       consumes:
@@ -1706,15 +2879,22 @@ paths:
         "200":
           description: Paginated appointments
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse'
+                  type: array
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Get my appointments (customer)
@@ -1731,29 +2911,74 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.AppointmentRequestByCustomerRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentRequestByCustomerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Request submitted
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Request appointment (customer)
+      tags:
+      - appointments
+  /me/appointments/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a single appointment belonging to the authenticated customer.
+        Requires customer role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Appointment found
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse'
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my appointment by ID (customer)
       tags:
       - appointments
   /me/notifications:
@@ -1779,15 +3004,22 @@ paths:
         "200":
           description: Paginated notifications
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse'
+                  type: array
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Get my notifications
@@ -1811,26 +3043,253 @@ paths:
         "200":
           description: Notification
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Get my notification by ID
+      tags:
+      - notifications
+  /notifications:
+    post:
+      consumes:
+      - application/json
+      description: Manually sends a notification through the given channel (email,
+        sms). Requires employee, manager, or admin role.
+      parameters:
+      - description: Notification to send
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.SendNotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notification sent
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Send notification (staff)
+      tags:
+      - notifications
+  /notifications/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a single notification by ID. Requires employee, manager,
+        or admin role.
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notification
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification by ID (staff)
+      tags:
+      - notifications
+  /notifications/channel/{channel}:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated notifications filtered by delivery channel (email,
+        sms). Requires employee, manager, or admin role.
+      parameters:
+      - description: Delivery channel (email, sms)
+        in: path
+        name: channel
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated notifications
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse'
+                  type: array
+              type: object
+        "400":
+          description: Missing or invalid channel
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notifications by channel (staff)
+      tags:
+      - notifications
+  /notifications/summary:
+    get:
+      consumes:
+      - application/json
+      description: Returns a summary of sent notifications, optionally filtered by
+        sender. Requires employee, manager, or admin role.
+      parameters:
+      - description: Sender ID to filter by
+        in: query
+        name: sender_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notification summary
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification summary (staff)
+      tags:
+      - notifications
+  /notifications/type/{type}:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated notifications filtered by type. Requires employee,
+        manager, or admin role.
+      parameters:
+      - description: Notification type
+        in: path
+        name: type
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated notifications
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.NotificationResponse'
+                  type: array
+              type: object
+        "400":
+          description: Missing or invalid type
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notifications by type (staff)
       tags:
       - notifications
   /payments/{id}:
@@ -1851,32 +3310,85 @@ paths:
           description: Payment found
           schema:
             allOf:
-            - $ref: '#/definitions/http.APIResponse'
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dtos.PaymentResponse'
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse'
               type: object
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "404":
           description: Payment not found
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Get payment by ID
       tags:
       - payments
+  /pets/{id}/appointments:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated appointments for a given pet. Requires admin
+        or manager role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated appointments
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get appointments by pet (manager/admin)
+      tags:
+      - appointments
   /profile:
     get:
       consumes:
@@ -1889,19 +3401,19 @@ paths:
           description: Profile
           schema:
             allOf:
-            - $ref: '#/definitions/http.APIResponse'
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dtos.ProfileResponse'
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileResponse'
               type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Get my profile
@@ -1918,26 +3430,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.UpdateProfileRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateProfileRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Profile updated
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Update my profile
@@ -1978,19 +3490,26 @@ paths:
         "200":
           description: Paginated list of users
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserResponse'
+                  type: array
+              type: object
         "400":
           description: Invalid query params
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Search users
@@ -2006,26 +3525,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dtos.CreateUserRequest'
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: User created
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Create user
@@ -2048,19 +3567,19 @@ paths:
         "200":
           description: User deleted
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Delete user
@@ -2083,27 +3602,27 @@ paths:
           description: User found
           schema:
             allOf:
-            - $ref: '#/definitions/http.APIResponse'
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dtos.UserResponse'
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserResponse'
               type: object
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "404":
           description: User not found
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Get user by ID
@@ -2126,19 +3645,19 @@ paths:
         "200":
           description: User restored
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid ID
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Restore user
@@ -2156,30 +3675,31 @@ paths:
         name: id
         required: true
         type: integer
-      - description: New status (e.g. active, inactive)
-        in: path
-        name: status
+      - description: New status
+        in: body
+        name: body
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateUserStatusRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Status updated
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "400":
           description: Invalid ID or status
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/http.APIResponse'
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
       summary: Update user status

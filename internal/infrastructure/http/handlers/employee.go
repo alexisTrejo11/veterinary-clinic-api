@@ -120,7 +120,7 @@ func (s *EmployeeHandler) GetEmployeeStats(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        body   body      dtos.EmployeeSearchRequest  true  "Search criteria and pagination"
-// @Success      200     {object}  http.APIResponse           "Paginated list of employees"
+// @Success      200     {object}  http.APIResponse{data=[]dtos.EmployeeResponse}  "Paginated list of employees"
 // @Failure      400     {object}  http.APIResponse           "Validation error"
 // @Failure      401     {object}  http.APIResponse           "Unauthorized"
 // @Failure      500     {object}  http.APIResponse           "Internal server error"

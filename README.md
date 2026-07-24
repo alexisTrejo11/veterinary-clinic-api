@@ -23,7 +23,6 @@ REST API for veterinary clinic operations—customers, pets, appointments, clini
 - [Project structure](#project-structure)
 - [Deployment](#deployment)
 - [Testing](#testing)
-- [Maintaining documentation](#maintaining-documentation)
 - [Contributing](#contributing)
 - [Security](#security)
 - [License](#license)
@@ -49,48 +48,31 @@ Production data plane targets **Amazon RDS (PostgreSQL)** and **Upstash Redis**;
 
 ## Features
 
-- **JWT authentication & RBAC** — Register, activate, login, refresh, logout, 2FA hooks, password reset ([details](docs/project/generated/ProjectFeature.md#jwt-authentication--rbac))
-- **Appointment scheduling** — Customer requests, employee assignments, admin search; overlap and hourly capacity rules ([details](docs/project/generated/ProjectFeature.md#appointment-scheduling--lifecycle))
-- **Customers & employees** — Clinic CRUD with soft-delete and restore ([details](docs/project/generated/ProjectFeature.md#customers--employees-crud))
-- **Docker & migrations** — Local full stack or API-only profile against cloud DB/Redis ([details](docs/project/generated/ProjectInfrastructure.md))
+- **JWT authentication & RBAC** — Register, activate, login, refresh, logout, 2FA hooks, password reset ([details](https://alexis-trejo.com/projects/veterinary-clinic-api/features))
+- **Appointment scheduling** — Customer requests, employee assignments, admin search; overlap and hourly capacity rules ([details](https://alexis-trejo.com/projects/veterinary-clinic-api/features))
+- **Customers & employees** — Clinic CRUD with soft-delete and restore ([details](https://alexis-trejo.com/projects/veterinary-clinic-api/features))
+- **Docker & migrations** — Local full stack or API-only profile against cloud DB/Redis ([details](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure))
 
-See [Project Features](docs/project/generated/ProjectFeature.md) for the full breakdown (pets, medical, payments status included).
+See [Project Features](https://alexis-trejo.com/projects/veterinary-clinic-api/features) for the full breakdown (pets, medical, payments status included).
 
 ---
 
 ## Documentation
 
-Structured **YAML source** lives in `docs/project/source/` (matches `schema.ts`). **Human-readable docs** are generated into `docs/project/generated/`.
-
-**Start here:** [Documentation hub](docs/project/generated/README.md) · [Short path](docs/generated/README.md)
+Project documentation lives on the portfolio site: [veterinary-clinic-api](https://alexis-trejo.com/projects/veterinary-clinic-api).
 
 ### Documentation index
 
 | Document | What you will find |
 |----------|-------------------|
-| [Overview](docs/project/generated/ProjectOverview.md) | Problem, solution, metrics, links |
-| [Metadata](docs/project/generated/ProjectMetadata.md) | Project id, version, tech stack, URLs |
-| [API schema](docs/project/generated/APISchema.md) | Endpoints, auth, rate limits, examples |
-| [Architecture](docs/project/generated/ProjectArchitecture.md) | Layers, patterns, diagram, data flows |
-| [Infrastructure](docs/project/generated/ProjectInfrastructure.md) | Docker, RDS, Upstash, AWS deploy target |
-| [Features](docs/project/generated/ProjectFeature.md) | Feature cards, snippets, status per area |
-| [Code showcase](docs/project/generated/ProjectCodeShowCase.md) | Curated code examples from the repo |
+| [Overview](https://alexis-trejo.com/projects/veterinary-clinic-api/overview) | Problem, solution, metrics, stack, links |
+| [Architecture](https://alexis-trejo.com/projects/veterinary-clinic-api/architecture) | Layers, patterns, diagram, data flows |
+| [Features](https://alexis-trejo.com/projects/veterinary-clinic-api/features) | Feature cards, snippets, status per area |
+| [Infrastructure](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure) | Docker, RDS, Upstash, AWS deploy target |
+| [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) | Endpoints, auth, rate limits, examples |
+| [Code](https://alexis-trejo.com/projects/veterinary-clinic-api/code) | Curated code examples from the repo |
 
-### Source vs generated
-
-| Path | Purpose |
-|------|---------|
-| `docs/project/source/*.md` | Edit YAML frontmatter here |
-| `docs/project/generated/*.md` | Read on GitHub / in the IDE (regenerate; do not edit by hand) |
-| `docs/project/yaml_to_markdown.py` | Builds `docs/project/generated/` from source |
-| `docs/project/source/schema.ts` | TypeScript contract for portfolio tools |
-
-```bash
-pip install pyyaml
-python docs/project/yaml_to_markdown.py
-```
-
-Docker-specific setup: [docker/README.md](docker/README.md).
+Docker-specific setup: [docker/README.md](docker/README.md). Local OpenAPI: `docs/swagger.json` / Swagger UI when enabled.
 
 ---
 
@@ -120,7 +102,7 @@ flowchart LR
   API --> Notify[SMTP / Twilio]
 ```
 
-Full diagram, layers, and decisions: [ProjectArchitecture.md](docs/project/generated/ProjectArchitecture.md).
+Full diagram, layers, and decisions: [Architecture](https://alexis-trejo.com/projects/veterinary-clinic-api/architecture).
 
 ---
 
@@ -129,7 +111,6 @@ Full diagram, layers, and decisions: [ProjectArchitecture.md](docs/project/gener
 - **Go 1.24+**
 - **Docker** & Docker Compose (recommended for local stack)
 - **PostgreSQL** and **Redis** (included via `./docker/up-local.sh`, or cloud URLs in `.env`)
-- **Python 3** + PyYAML (only to regenerate project docs)
 
 ---
 
@@ -179,7 +160,7 @@ Point `.env` at your RDS and Upstash URLs, then:
 docker compose --env-file .env -f docker/compose.dev.yml up --build
 ```
 
-See [ProjectInfrastructure.md](docs/project/generated/ProjectInfrastructure.md) and [docker/README.md](docker/README.md).
+See [Infrastructure](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure) and [docker/README.md](docker/README.md).
 
 ---
 
@@ -214,19 +195,19 @@ Authentication: `Authorization: Bearer <access_token>` on protected routes.
 
 | Area | Base path | Doc |
 |------|-----------|-----|
-| Health | `GET /health` | [APISchema](docs/project/generated/APISchema.md#service) |
-| Auth (public) | `/api/v2/auth/` | [APISchema — auth](docs/project/generated/APISchema.md#auth) |
-| Auth (session) | `/auth/` (logout, refresh, 2FA) | [APISchema — auth](docs/project/generated/APISchema.md#auth) |
-| Profile | `/api/v2/profile/` | [APISchema](docs/project/generated/APISchema.md) |
-| Users | `/users/` | [APISchema](docs/project/generated/APISchema.md) |
-| Customers | `/api/v2/customers/` | [APISchema](docs/project/generated/APISchema.md#customers) |
-| Employees | `/api/v2/employees/` | [APISchema](docs/project/generated/APISchema.md#employees) |
-| Appointments | `/api/v2/me/appointments/`, `/api/v2/appointments/`, … | [APISchema — appointments](docs/project/generated/APISchema.md#appointments) |
-| Notifications | `/api/v2/me/notifications`, `/api/v2/notifications` | [APISchema — notifications](docs/project/generated/APISchema.md#notifications) |
-| Medical | `/api/v2/medical/`, `/api/v2/me/medical/` | [APISchema — medical](docs/project/generated/APISchema.md#medical) |
-| Pets / payments / addresses | Planned (handlers exist) | [APISchema](docs/project/generated/APISchema.md) |
+| Health | `GET /health` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Auth (public) | `/api/v2/auth/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Auth (session) | `/auth/` (logout, refresh, 2FA) | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Profile | `/api/v2/profile/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Users | `/users/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Customers | `/api/v2/customers/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Employees | `/api/v2/employees/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Appointments | `/api/v2/me/appointments/`, `/api/v2/appointments/`, … | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Notifications | `/api/v2/me/notifications`, `/api/v2/notifications` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Medical | `/api/v2/medical/`, `/api/v2/me/medical/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Pets / payments / addresses | Planned (handlers exist) | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
 
-Full endpoint list with request/response examples: [APISchema.md](docs/project/generated/APISchema.md).
+Full endpoint list with request/response examples: [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api).
 
 ---
 
@@ -244,12 +225,7 @@ veterinary-clinic-api/
 │   └── middleware/              # Auth, CORS, audit, rate limit
 ├── db/migrations/               # SQL migrations
 ├── sqlc/                        # Generated query code
-├── docs/
-│   ├── docs.go                  # Swagger bundle
-│   └── project/
-│       ├── source/              # YAML doc sources
-│       ├── generated/           # Generated Markdown (read these)
-│       └── yaml_to_markdown.py
+├── docs/                        # Swagger bundle (docs.go, swagger.*)
 ├── docker/                      # Dockerfile, compose, up-local.sh
 ├── scripts/                     # entrypoint, URL parsers
 ├── .env.example
@@ -264,7 +240,7 @@ veterinary-clinic-api/
 
 **Next step (documented, not automated in repo):** Build `docker/Dockerfile` → push to ECR → run on **ECS Fargate** behind an **ALB** with health check `GET /health`. Alternative: EC2 + `docker/compose.dev.yml`.
 
-Checklist and cost placeholders: [ProjectInfrastructure.md](docs/project/generated/ProjectInfrastructure.md).
+Checklist and cost placeholders: [Infrastructure](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure).
 
 ```bash
 # Example: API-only container against cloud DB/Redis
@@ -280,16 +256,6 @@ go test ./...
 ```
 
 Add focused tests under the same package as the code under test (`internal/...`).
-
----
-
-## Maintaining documentation
-
-1. Edit YAML frontmatter in `docs/project/source/<Section>.md` (align with `docs/project/source/schema.ts`).
-2. Run `python docs/project/yaml_to_markdown.py`.
-3. Commit both `docs/project/source/` and `docs/project/generated/` so GitHub shows docs without running the script.
-
-Notes below the closing `---` in source files appear as **Additional notes** in generated Markdown.
 
 ---
 
@@ -325,9 +291,9 @@ No license file is included yet. Add a `LICENSE` file before distributing or pub
 | Resource | URL |
 |----------|-----|
 | Repository | https://github.com/alexisTrejo11/veterinary-clinic-api |
-| **Documentation hub** | [docs/project/generated/README.md](docs/project/generated/README.md) · [docs/generated](docs/generated/README.md) |
-| Overview | [docs/project/generated/ProjectOverview.md](docs/project/generated/ProjectOverview.md) |
-| API reference (generated) | [docs/project/generated/APISchema.md](docs/project/generated/APISchema.md) |
+| **Documentation hub** | https://alexis-trejo.com/projects/veterinary-clinic-api |
+| Overview | https://alexis-trejo.com/projects/veterinary-clinic-api/overview |
+| API | https://alexis-trejo.com/projects/veterinary-clinic-api/api |
 | Health (placeholder) | https://api.vet-clinic.example.com/health |
 
 

@@ -242,6 +242,20 @@ func (h *AppointmentHandler) getMyEmployeeID(c *gin.Context) (uint, error) {
 // Customer handlers (only their appointments)
 // ------------------------------------------------------------
 
+// GetMyAppointment godoc
+// @Summary      Get my appointment by ID (customer)
+// @Description  Returns a single appointment belonging to the authenticated customer. Requires customer role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Appointment ID"
+// @Success      200  {object}  http.APIResponse{data=dtos.AppointmentResponse}  "Appointment found"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      404  {object}  http.APIResponse  "Appointment not found"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /me/appointments/{id} [get]
 func (h *AppointmentHandler) GetMyAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		customerID, err := h.getMyCustomerID(ctx)
@@ -266,7 +280,7 @@ func (h *AppointmentHandler) GetMyAppointment(c *gin.Context) {
 // @Security     BearerAuth
 // @Param        page_number  query  int  false  "Page number"  default(1)
 // @Param        page_size    query  int  false  "Page size"    default(10)
-// @Success      200          {object}  http.APIResponse  "Paginated appointments"
+// @Success      200          {object}  http.APIResponse{data=[]dtos.AppointmentResponse}  "Paginated appointments"
 // @Failure      401          {object}  http.APIResponse  "Unauthorized"
 // @Failure      500          {object}  http.APIResponse  "Internal server error"
 // @Router       /me/appointments [get]
@@ -317,6 +331,20 @@ func (h *AppointmentHandler) RequestAppointment(c *gin.Context) {
 // Employee handlers (only their assigned appointments)
 // ------------------------------------------------------------
 
+// GetMyAppointmentAsEmployee godoc
+// @Summary      Get my assigned appointment by ID (employee)
+// @Description  Returns a single appointment assigned to the authenticated employee. Requires employee or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Appointment ID"
+// @Success      200  {object}  http.APIResponse{data=dtos.AppointmentResponse}  "Appointment found"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      404  {object}  http.APIResponse  "Appointment not found"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/appointments/{id} [get]
 func (h *AppointmentHandler) GetMyAppointmentAsEmployee(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		employeeID, err := h.getMyEmployeeID(ctx)
@@ -332,6 +360,19 @@ func (h *AppointmentHandler) GetMyAppointmentAsEmployee(c *gin.Context) {
 	http.HandleGetRequest(h.validator, "Appointment", logic)(c)
 }
 
+// GetMyAppointmentsAsEmployee godoc
+// @Summary      Get my assigned appointments (employee)
+// @Description  Returns paginated appointments assigned to the authenticated employee. Requires employee or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page_number  query  int  false  "Page number"  default(1)
+// @Param        page_size    query  int  false  "Page size"    default(10)
+// @Success      200          {object}  http.APIResponse{data=[]dtos.AppointmentResponse}  "Paginated appointments"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/appointments [get]
 func (h *AppointmentHandler) GetMyAppointmentsAsEmployee(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		var pageParams page.PaginationRequest
@@ -352,6 +393,19 @@ func (h *AppointmentHandler) GetMyAppointmentsAsEmployee(c *gin.Context) {
 	})(c)
 }
 
+// CreateAppointmentAsEmployee godoc
+// @Summary      Create appointment (employee)
+// @Description  Creates an appointment assigned to the authenticated employee. Requires employee or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body   body      dtos.AppointmentCreateRequest  true  "Appointment data"
+// @Success      201    {object}  http.APIResponse  "Appointment created (data contains new appointment ID)"
+// @Failure      400    {object}  http.APIResponse  "Validation error"
+// @Failure      401    {object}  http.APIResponse  "Unauthorized"
+// @Failure      500    {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/appointments [post]
 func (h *AppointmentHandler) CreateAppointmentAsEmployee(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.AppointmentCreateRequest) (any, error) {
 		employeeID, err := h.getMyEmployeeID(ctx)
@@ -363,6 +417,21 @@ func (h *AppointmentHandler) CreateAppointmentAsEmployee(c *gin.Context) {
 	http.HandleCreateRequest(h.validator, "Appointment", logic)(c)
 }
 
+// UpdateMyAppointment godoc
+// @Summary      Update my appointment (employee)
+// @Description  Updates general info (reason, notes, service) of an appointment assigned to the authenticated employee. Requires employee or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id     path      int                                        true  "Appointment ID"
+// @Param        body   body      dtos.AppointmentUpdateGeneralInfoRequest   true  "Fields to update"
+// @Success      200    {object}  http.APIResponse  "Appointment updated"
+// @Failure      400    {object}  http.APIResponse  "Validation error"
+// @Failure      401    {object}  http.APIResponse  "Unauthorized"
+// @Failure      404    {object}  http.APIResponse  "Appointment not found"
+// @Failure      500    {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/appointments/{id} [put]
 func (h *AppointmentHandler) UpdateMyAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.AppointmentUpdateGeneralInfoRequest) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)
@@ -374,6 +443,21 @@ func (h *AppointmentHandler) UpdateMyAppointment(c *gin.Context) {
 	http.HandleUpdateRequest(h.validator, "Appointment", logic)(c)
 }
 
+// RescheduleMyAppointment godoc
+// @Summary      Reschedule my appointment (employee)
+// @Description  Reschedules an appointment assigned to the authenticated employee to a new date/time. Requires employee or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id     path      int                                  true  "Appointment ID"
+// @Param        body   body      dtos.RescheduleAppointmentRequest    true  "New date/time and optional reason"
+// @Success      200    {object}  http.APIResponse  "Appointment rescheduled"
+// @Failure      400    {object}  http.APIResponse  "Validation error"
+// @Failure      401    {object}  http.APIResponse  "Unauthorized"
+// @Failure      404    {object}  http.APIResponse  "Appointment not found"
+// @Failure      500    {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/appointments/{id}/reschedule [post]
 func (h *AppointmentHandler) RescheduleMyAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.RescheduleAppointmentRequest) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)
@@ -387,6 +471,20 @@ func (h *AppointmentHandler) RescheduleMyAppointment(c *gin.Context) {
 	})(c)
 }
 
+// ConfirmMyAppointment godoc
+// @Summary      Confirm my appointment (employee)
+// @Description  Confirms an appointment assigned to the authenticated employee. Requires employee or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Appointment ID"
+// @Success      200  {object}  http.APIResponse  "Appointment confirmed"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      404  {object}  http.APIResponse  "Appointment not found"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/appointments/{id}/confirm [post]
 func (h *AppointmentHandler) ConfirmMyAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		employeeID, err := h.getMyEmployeeID(ctx)
@@ -404,6 +502,21 @@ func (h *AppointmentHandler) ConfirmMyAppointment(c *gin.Context) {
 	})(c)
 }
 
+// CompleteMyAppointment godoc
+// @Summary      Complete my appointment (employee)
+// @Description  Marks an appointment assigned to the authenticated employee as completed. Requires employee or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id     path   int     true   "Appointment ID"
+// @Param        notes  query  string  false  "Completion notes"
+// @Success      200    {object}  http.APIResponse  "Appointment completed"
+// @Failure      400    {object}  http.APIResponse  "Invalid ID"
+// @Failure      401    {object}  http.APIResponse  "Unauthorized"
+// @Failure      404    {object}  http.APIResponse  "Appointment not found"
+// @Failure      500    {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/appointments/{id}/complete [post]
 func (h *AppointmentHandler) CompleteMyAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		employeeID, err := h.getMyEmployeeID(ctx)
@@ -422,6 +535,21 @@ func (h *AppointmentHandler) CompleteMyAppointment(c *gin.Context) {
 	})(c)
 }
 
+// CancelMyAppointment godoc
+// @Summary      Cancel my appointment (employee)
+// @Description  Cancels an appointment assigned to the authenticated employee. Requires employee or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id      path   int     true   "Appointment ID"
+// @Param        reason  query  string  false  "Cancellation reason"
+// @Success      200     {object}  http.APIResponse  "Appointment cancelled"
+// @Failure      400     {object}  http.APIResponse  "Invalid ID"
+// @Failure      401     {object}  http.APIResponse  "Unauthorized"
+// @Failure      404     {object}  http.APIResponse  "Appointment not found"
+// @Failure      500     {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/appointments/{id}/cancel [post]
 func (h *AppointmentHandler) CancelMyAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		employeeID, err := h.getMyEmployeeID(ctx)
@@ -440,6 +568,20 @@ func (h *AppointmentHandler) CancelMyAppointment(c *gin.Context) {
 	})(c)
 }
 
+// NotAttendMyAppointment godoc
+// @Summary      Mark my appointment as not attended (employee)
+// @Description  Marks an appointment assigned to the authenticated employee as not attended. Requires employee or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Appointment ID"
+// @Success      200  {object}  http.APIResponse  "Appointment marked as not attended"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      404  {object}  http.APIResponse  "Appointment not found"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/appointments/{id}/not-attend [post]
 func (h *AppointmentHandler) NotAttendMyAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		employeeID, err := h.getMyEmployeeID(ctx)
@@ -461,6 +603,20 @@ func (h *AppointmentHandler) NotAttendMyAppointment(c *gin.Context) {
 // Manager/Admin handlers (all appointments)
 // ------------------------------------------------------------
 
+// GetAppointmentByID godoc
+// @Summary      Get appointment by ID (manager/admin)
+// @Description  Returns a single appointment by ID. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Appointment ID"
+// @Success      200  {object}  http.APIResponse{data=dtos.AppointmentResponse}  "Appointment found"
+// @Failure      400  {object}  http.APIResponse  "Invalid ID"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      404  {object}  http.APIResponse  "Appointment not found"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /appointments/{id} [get]
 func (h *AppointmentHandler) GetAppointmentByID(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)
@@ -480,7 +636,7 @@ func (h *AppointmentHandler) GetAppointmentByID(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        body   body      dtos.AppointmentSearchRequest  true  "Search criteria and pagination"
-// @Success      200    {object}  http.APIResponse               "Paginated appointments"
+// @Success      200    {object}  http.APIResponse{data=[]dtos.AppointmentResponse}  "Paginated appointments"
 // @Failure      400    {object}  http.APIResponse               "Validation error"
 // @Failure      401    {object}  http.APIResponse               "Unauthorized"
 // @Failure      500    {object}  http.APIResponse               "Internal server error"
@@ -509,6 +665,21 @@ func (h *AppointmentHandler) SearchAppointments(c *gin.Context) {
 	})(c)
 }
 
+// GetAppointmentsByCustomerID godoc
+// @Summary      Get appointments by customer (manager/admin)
+// @Description  Returns paginated appointments for a given customer. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id           path   int  true   "Customer ID"
+// @Param        page_number  query  int  false  "Page number"  default(1)
+// @Param        page_size    query  int  false  "Page size"    default(10)
+// @Success      200          {object}  http.APIResponse{data=[]dtos.AppointmentResponse}  "Paginated appointments"
+// @Failure      400          {object}  http.APIResponse  "Invalid ID"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /customers/{id}/appointments [get]
 func (h *AppointmentHandler) GetAppointmentsByCustomerID(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		var pageParams page.PaginationRequest
@@ -528,6 +699,21 @@ func (h *AppointmentHandler) GetAppointmentsByCustomerID(c *gin.Context) {
 	})(c)
 }
 
+// GetAppointmentsByEmployeeID godoc
+// @Summary      Get appointments by employee (manager/admin)
+// @Description  Returns paginated appointments for a given employee. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id           path   int  true   "Employee ID"
+// @Param        page_number  query  int  false  "Page number"  default(1)
+// @Param        page_size    query  int  false  "Page size"    default(10)
+// @Success      200          {object}  http.APIResponse{data=[]dtos.AppointmentResponse}  "Paginated appointments"
+// @Failure      400          {object}  http.APIResponse  "Invalid ID"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /employees/{id}/appointments [get]
 func (h *AppointmentHandler) GetAppointmentsByEmployeeID(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		var pageParams page.PaginationRequest
@@ -547,6 +733,21 @@ func (h *AppointmentHandler) GetAppointmentsByEmployeeID(c *gin.Context) {
 	})(c)
 }
 
+// GetAppointmentsByPetID godoc
+// @Summary      Get appointments by pet (manager/admin)
+// @Description  Returns paginated appointments for a given pet. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id           path   int  true   "Pet ID"
+// @Param        page_number  query  int  false  "Page number"  default(1)
+// @Param        page_size    query  int  false  "Page size"    default(10)
+// @Success      200          {object}  http.APIResponse{data=[]dtos.AppointmentResponse}  "Paginated appointments"
+// @Failure      400          {object}  http.APIResponse  "Invalid ID"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /pets/{id}/appointments [get]
 func (h *AppointmentHandler) GetAppointmentsByPetID(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		petIDRaw, err := http.ParseParamToUInt(ctx, "id")
@@ -575,6 +776,20 @@ func (h *AppointmentHandler) GetAppointmentsByPetID(c *gin.Context) {
 	})(c)
 }
 
+// CreateAppointment godoc
+// @Summary      Create appointment (manager/admin)
+// @Description  Creates a new appointment, optionally assigned to an employee via query param. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        employee_id  query  int                            false  "Employee ID to assign"
+// @Param        body         body   dtos.AppointmentCreateRequest  true   "Appointment data"
+// @Success      201          {object}  http.APIResponse  "Appointment created (data contains new appointment ID)"
+// @Failure      400          {object}  http.APIResponse  "Validation error"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /appointments [post]
 func (h *AppointmentHandler) CreateAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.AppointmentCreateRequest) (any, error) {
 		optEmployeeID, _ := OptionalEmployeeIDFromQuery(ctx)
@@ -583,6 +798,21 @@ func (h *AppointmentHandler) CreateAppointment(c *gin.Context) {
 	http.HandleCreateRequest(h.validator, "Appointment", logic)(c)
 }
 
+// UpdateAppointment godoc
+// @Summary      Update appointment (manager/admin)
+// @Description  Updates general info (reason, notes, service) of an appointment. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id     path      int                                       true  "Appointment ID"
+// @Param        body   body      dtos.AppointmentUpdateGeneralInfoRequest  true  "Fields to update"
+// @Success      200    {object}  http.APIResponse  "Appointment updated"
+// @Failure      400    {object}  http.APIResponse  "Validation error"
+// @Failure      401    {object}  http.APIResponse  "Unauthorized"
+// @Failure      404    {object}  http.APIResponse  "Appointment not found"
+// @Failure      500    {object}  http.APIResponse  "Internal server error"
+// @Router       /appointments/{id} [put]
 func (h *AppointmentHandler) UpdateAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.AppointmentUpdateGeneralInfoRequest) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)
@@ -594,6 +824,21 @@ func (h *AppointmentHandler) UpdateAppointment(c *gin.Context) {
 	http.HandleUpdateRequest(h.validator, "Appointment", logic)(c)
 }
 
+// DeleteAppointment godoc
+// @Summary      Delete appointment (manager/admin)
+// @Description  Deletes an appointment. Soft-delete by default; pass hard=true for permanent deletion. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path   int     true   "Appointment ID"
+// @Param        hard  query  bool    false  "Hard delete (permanent)"  default(false)
+// @Success      200   {object}  http.APIResponse  "Appointment deleted"
+// @Failure      400   {object}  http.APIResponse  "Invalid ID"
+// @Failure      401   {object}  http.APIResponse  "Unauthorized"
+// @Failure      404   {object}  http.APIResponse  "Appointment not found"
+// @Failure      500   {object}  http.APIResponse  "Internal server error"
+// @Router       /appointments/{id} [delete]
 func (h *AppointmentHandler) DeleteAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)
@@ -606,6 +851,21 @@ func (h *AppointmentHandler) DeleteAppointment(c *gin.Context) {
 	http.HandleDeleteRequest(h.validator, "Appointment", logic)(c)
 }
 
+// RescheduleAppointment godoc
+// @Summary      Reschedule appointment (manager/admin)
+// @Description  Reschedules an appointment to a new date/time. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id     path      int                                true  "Appointment ID"
+// @Param        body   body      dtos.RescheduleAppointmentRequest  true  "New date/time and optional reason"
+// @Success      200    {object}  http.APIResponse  "Appointment rescheduled"
+// @Failure      400    {object}  http.APIResponse  "Validation error"
+// @Failure      401    {object}  http.APIResponse  "Unauthorized"
+// @Failure      404    {object}  http.APIResponse  "Appointment not found"
+// @Failure      500    {object}  http.APIResponse  "Internal server error"
+// @Router       /appointments/{id}/reschedule [post]
 func (h *AppointmentHandler) RescheduleAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.RescheduleAppointmentRequest) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)
@@ -619,6 +879,21 @@ func (h *AppointmentHandler) RescheduleAppointment(c *gin.Context) {
 	})(c)
 }
 
+// ConfirmAppointment godoc
+// @Summary      Confirm appointment (manager/admin)
+// @Description  Confirms an appointment and assigns the employee given in the query param. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id           path   int  true  "Appointment ID"
+// @Param        employee_id  query  int  true  "Employee ID to assign"
+// @Success      200          {object}  http.APIResponse  "Appointment confirmed"
+// @Failure      400          {object}  http.APIResponse  "Invalid ID or missing employee_id"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      404          {object}  http.APIResponse  "Appointment not found"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /appointments/{id}/confirm [post]
 func (h *AppointmentHandler) ConfirmAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)
@@ -637,6 +912,22 @@ func (h *AppointmentHandler) ConfirmAppointment(c *gin.Context) {
 	})(c)
 }
 
+// CompleteAppointment godoc
+// @Summary      Complete appointment (manager/admin)
+// @Description  Marks an appointment as completed, with optional employee and notes. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id           path   int     true   "Appointment ID"
+// @Param        employee_id  query  int     false  "Employee ID"
+// @Param        notes        query  string  false  "Completion notes"
+// @Success      200          {object}  http.APIResponse  "Appointment completed"
+// @Failure      400          {object}  http.APIResponse  "Invalid ID"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      404          {object}  http.APIResponse  "Appointment not found"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /appointments/{id}/complete [post]
 func (h *AppointmentHandler) CompleteAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)
@@ -652,6 +943,22 @@ func (h *AppointmentHandler) CompleteAppointment(c *gin.Context) {
 	})(c)
 }
 
+// CancelAppointment godoc
+// @Summary      Cancel appointment (manager/admin)
+// @Description  Cancels an appointment, with optional employee and reason. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id           path   int     true   "Appointment ID"
+// @Param        employee_id  query  int     false  "Employee ID"
+// @Param        reason       query  string  false  "Cancellation reason"
+// @Success      200          {object}  http.APIResponse  "Appointment cancelled"
+// @Failure      400          {object}  http.APIResponse  "Invalid ID"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      404          {object}  http.APIResponse  "Appointment not found"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /appointments/{id}/cancel [post]
 func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)
@@ -667,6 +974,21 @@ func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
 	})(c)
 }
 
+// NotAttendAppointment godoc
+// @Summary      Mark appointment as not attended (manager/admin)
+// @Description  Marks an appointment as not attended, with optional employee. Requires admin or manager role.
+// @Tags         appointments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id           path   int  true   "Appointment ID"
+// @Param        employee_id  query  int  false  "Employee ID"
+// @Success      200          {object}  http.APIResponse  "Appointment marked as not attended"
+// @Failure      400          {object}  http.APIResponse  "Invalid ID"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Failure      404          {object}  http.APIResponse  "Appointment not found"
+// @Failure      500          {object}  http.APIResponse  "Internal server error"
+// @Router       /appointments/{id}/not-attend [post]
 func (h *AppointmentHandler) NotAttendAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		apptID, err := parseAppointmentIDFromParam(ctx)

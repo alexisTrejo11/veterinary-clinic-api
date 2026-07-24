@@ -5,7 +5,7 @@ import (
 	"clinic-vet-api/internal/infrastructure/http/handlers/dtos"
 	"clinic-vet-api/internal/infrastructure/http/handlers/mappers"
 	"clinic-vet-api/internal/middleware"
-	sharedhttp "clinic-vet-api/internal/shared/http"
+	"clinic-vet-api/internal/shared/http"
 	"errors"
 
 	"github.com/gin-gonic/gin"
@@ -38,24 +38,24 @@ func NewAuthHandler(service auth.AuthService, validator *validator.Validate, map
 // @Router       /auth/register [post]
 func (ctrl *AuthHandler) Register(c *gin.Context) {
 	var req dtos.RegisterRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
 	command, err := ctrl.mapper.RegisterRequestToCommand(req)
 	if err != nil {
-		sharedhttp.BadRequest(c, err)
+		http.BadRequest(c, err)
 		return
 	}
 
 	msg, err := ctrl.service.Register(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.SuccessCreated(c, msg, "Registration successful")
+	http.SuccessCreated(c, msg, "Registration successful")
 }
 
 // ActivateAccount godoc
@@ -74,45 +74,45 @@ func (ctrl *AuthHandler) Register(c *gin.Context) {
 func (ctrl *AuthHandler) ActivateAccount(c *gin.Context) {
 	var req dtos.ActivateAccountRequest
 	if err := c.ShouldBind(&req); err != nil {
-		sharedhttp.BadRequest(c, err)
+		http.BadRequest(c, err)
 		return
 	}
 	if err := ctrl.validator.Struct(&req); err != nil {
-		sharedhttp.BadRequest(c, err)
+		http.BadRequest(c, err)
 		return
 	}
 
 	command, err := ctrl.mapper.ActivateAccountRequestToCommand(req)
 	if err != nil {
-		sharedhttp.BadRequest(c, err)
+		http.BadRequest(c, err)
 		return
 	}
 
 	err = ctrl.service.ActivateAccount(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "Account activated successfully")
+	http.Success(c, nil, "Account activated successfully")
 }
 
 // Login godoc
 // @Summary      Login
-// @Description  Authenticates with email and password. Returns access and refresh tokens. If 2FA is enabled, may return requires_two_factor with user_id.
+// @Description  Authenticates with email and password. Returns access and refresh tokens. If 2FA is enabled, data contains dtos.RequiresTwoFactorResponse instead of the session.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
 // @Param        body    body      dtos.LoginRequest  true  "Email and password; optional two_factor_code"
-// @Success      200     {object}  http.APIResponse   "Login successful (session payload with tokens and user)"
+// @Success      200     {object}  http.APIResponse{data=dtos.SessionResponse}  "Login successful (session payload with tokens and user)"
 // @Failure      400     {object}  http.APIResponse   "Invalid credentials or validation error"
 // @Failure      401     {object}  http.APIResponse   "Unauthorized"
 // @Failure      500     {object}  http.APIResponse   "Internal server error"
 // @Router       /auth/login [post]
 func (ctrl *AuthHandler) Login(c *gin.Context) {
 	var req dtos.LoginRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
@@ -121,14 +121,14 @@ func (ctrl *AuthHandler) Login(c *gin.Context) {
 	if err != nil {
 		var requires2FA *auth.RequiresTwoFactorError
 		if errors.As(err, &requires2FA) {
-			sharedhttp.Success(c, ctrl.mapper.RequiresTwoFactorToResponse(requires2FA.UserID), "Two-factor authentication required")
+			http.Success(c, ctrl.mapper.RequiresTwoFactorToResponse(requires2FA.UserID), "Two-factor authentication required")
 			return
 		}
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, ctrl.mapper.SessionPayloadToResponse(session), "Login successful")
+	http.Success(c, ctrl.mapper.SessionPayloadToResponse(session), "Login successful")
 }
 
 // RefreshToken godoc
@@ -139,26 +139,26 @@ func (ctrl *AuthHandler) Login(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        body    body      dtos.RefreshTokenRequest  true  "Refresh token"
-// @Success      200     {object}  http.APIResponse          "New session payload"
+// @Success      200     {object}  http.APIResponse{data=dtos.SessionResponse}  "New session payload"
 // @Failure      400     {object}  http.APIResponse          "Invalid or expired refresh token"
 // @Failure      401     {object}  http.APIResponse          "Unauthorized"
 // @Failure      500     {object}  http.APIResponse          "Internal server error"
 // @Router       /auth/refresh [post]
 func (ctrl *AuthHandler) RefreshToken(c *gin.Context) {
 	var req dtos.RefreshTokenRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
 	command := ctrl.mapper.RefreshTokenRequestToCommand(req)
 	session, err := ctrl.service.RefreshToken(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, ctrl.mapper.SessionPayloadToResponse(session), "Token refreshed successfully")
+	http.Success(c, ctrl.mapper.SessionPayloadToResponse(session), "Token refreshed successfully")
 }
 
 // Logout godoc
@@ -176,19 +176,19 @@ func (ctrl *AuthHandler) RefreshToken(c *gin.Context) {
 // @Router       /auth/logout [post]
 func (ctrl *AuthHandler) Logout(c *gin.Context) {
 	var req dtos.LogoutRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
 	command := ctrl.mapper.LogoutRequestToCommand(req)
 	err := ctrl.service.Logout(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "Logout successful")
+	http.Success(c, nil, "Logout successful")
 }
 
 // LogoutAll godoc
@@ -205,17 +205,17 @@ func (ctrl *AuthHandler) Logout(c *gin.Context) {
 func (ctrl *AuthHandler) LogoutAll(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
-		sharedhttp.Unauthorized(c, err)
+		http.Unauthorized(c, err)
 		return
 	}
 
 	err = ctrl.service.LogoutAll(c.Request.Context(), auth.LogoutAllCommand{UserID: userID})
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "Logged out from all devices")
+	http.Success(c, nil, "Logged out from all devices")
 }
 
 // VerifyTwoFactor godoc
@@ -226,7 +226,7 @@ func (ctrl *AuthHandler) LogoutAll(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        body    body      dtos.VerifyTwoFactorRequest  true  "2FA code"
-// @Success      200     {object}  http.APIResponse            "Session with tokens"
+// @Success      200     {object}  http.APIResponse{data=dtos.SessionResponse}  "Session with tokens"
 // @Failure      400     {object}  http.APIResponse            "Invalid code"
 // @Failure      401     {object}  http.APIResponse            "Unauthorized"
 // @Failure      500     {object}  http.APIResponse            "Internal server error"
@@ -234,24 +234,24 @@ func (ctrl *AuthHandler) LogoutAll(c *gin.Context) {
 func (ctrl *AuthHandler) VerifyTwoFactor(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
-		sharedhttp.Unauthorized(c, err)
+		http.Unauthorized(c, err)
 		return
 	}
 
 	var req dtos.VerifyTwoFactorRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
 	command := ctrl.mapper.VerifyTwoFactorRequestToCommand(req, userID)
 	session, err := ctrl.service.VerifyTwoFactor(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, ctrl.mapper.SessionPayloadToResponse(session), "Two factor verified successfully")
+	http.Success(c, ctrl.mapper.SessionPayloadToResponse(session), "Two factor verified successfully")
 }
 
 // EnableTwoFactor godoc
@@ -270,24 +270,24 @@ func (ctrl *AuthHandler) VerifyTwoFactor(c *gin.Context) {
 func (ctrl *AuthHandler) EnableTwoFactor(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
-		sharedhttp.Unauthorized(c, err)
+		http.Unauthorized(c, err)
 		return
 	}
 
 	var req dtos.EnableTwoFactorRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
 	command := ctrl.mapper.EnableTwoFactorRequestToCommand(req, userID)
 	err = ctrl.service.EnableTwoFactor(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "Two factor enabled successfully")
+	http.Success(c, nil, "Two factor enabled successfully")
 }
 
 // DisableTwoFactor godoc
@@ -304,35 +304,35 @@ func (ctrl *AuthHandler) EnableTwoFactor(c *gin.Context) {
 func (ctrl *AuthHandler) DisableTwoFactor(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
-		sharedhttp.Unauthorized(c, err)
+		http.Unauthorized(c, err)
 		return
 	}
 
 	err = ctrl.service.DisableTwoFactor(c.Request.Context(), auth.DisableTwoFactorCommand{UserID: userID})
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "Two factor disabled successfully")
+	http.Success(c, nil, "Two factor disabled successfully")
 }
 
 // VerifyEmail POST /auth/verify-email — body: VerifyEmailRequest
 func (ctrl *AuthHandler) VerifyEmail(c *gin.Context) {
 	var req dtos.VerifyEmailRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
 	command := ctrl.mapper.VerifyEmailRequestToCommand(req)
 	err := ctrl.service.VerifyEmail(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "Email verified successfully")
+	http.Success(c, nil, "Email verified successfully")
 }
 
 // RequestResetPassword godoc
@@ -350,19 +350,19 @@ func (ctrl *AuthHandler) VerifyEmail(c *gin.Context) {
 // @Router       /auth/reset-password/request [post]
 func (ctrl *AuthHandler) RequestResetPassword(c *gin.Context) {
 	var req dtos.RequestResetPasswordRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
 	command := ctrl.mapper.RequestResetPasswordRequestToCommand(req)
 	err := ctrl.service.RequestResetPassword(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "If the email exists, a reset link has been sent")
+	http.Success(c, nil, "If the email exists, a reset link has been sent")
 }
 
 // ResetPassword godoc
@@ -380,58 +380,58 @@ func (ctrl *AuthHandler) RequestResetPassword(c *gin.Context) {
 // @Router       /auth/reset-password/reset [post]
 func (ctrl *AuthHandler) ResetPassword(c *gin.Context) {
 	var req dtos.ResetPasswordRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
 	command := ctrl.mapper.ResetPasswordRequestToCommand(req)
 	err := ctrl.service.ResetPassword(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "Password reset successfully")
+	http.Success(c, nil, "Password reset successfully")
 }
 
 // UpdatePassword POST /auth/update-password — body: UpdatePasswordRequest; requires auth
 func (ctrl *AuthHandler) UpdatePassword(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
-		sharedhttp.Unauthorized(c, err)
+		http.Unauthorized(c, err)
 		return
 	}
 
 	var req dtos.UpdatePasswordRequest
-	if err := sharedhttp.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
-		sharedhttp.BadRequest(c, err)
+	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
+		http.BadRequest(c, err)
 		return
 	}
 
 	command := ctrl.mapper.UpdatePasswordRequestToCommand(req, userID)
 	err = ctrl.service.UpdatePassword(c.Request.Context(), command)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "Password updated successfully")
+	http.Success(c, nil, "Password updated successfully")
 }
 
 // DeleteMyAccount DELETE /auth/me or POST /auth/delete-account — requires auth; user from context
 func (ctrl *AuthHandler) DeleteMyAccount(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
-		sharedhttp.Unauthorized(c, err)
+		http.Unauthorized(c, err)
 		return
 	}
 
 	err = ctrl.service.DeleteAccount(c.Request.Context(), userID)
 	if err != nil {
-		sharedhttp.ApplicationError(c, err)
+		http.ApplicationError(c, err)
 		return
 	}
 
-	sharedhttp.Success(c, nil, "Account deleted successfully")
+	http.Success(c, nil, "Account deleted successfully")
 }

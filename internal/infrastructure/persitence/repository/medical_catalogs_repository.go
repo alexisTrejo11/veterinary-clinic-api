@@ -5,7 +5,7 @@ import (
 	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/sqlc"
+	"clinic-vet-api/database/sqlc"
 	"context"
 	"database/sql"
 	"errors"

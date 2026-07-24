@@ -3,8 +3,7 @@
 .env
 .env.*
 !.env.example
-docker/compose*.yml
-docker/README.md
+docker-compose.yml
 node_modules
 *.log
 dist
@@ -13,7 +12,3 @@ coverage
 .vscode
 logs
 *.md
-# Keep docs/docs.go (Swagger) for the build; exclude project documentation only
-docs/project
-docs/generated
-docs/api
